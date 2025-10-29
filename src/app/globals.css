@@ -135,4 +135,17 @@ body {
       opacity: 0;
     }
   }
+
+  .animate-pulse-bg {
+    animation: pulse-bg 4s infinite;
+  }
+
+  @keyframes pulse-bg {
+    0%, 100% {
+      background-color: hsl(var(--card) / 0.6);
+    }
+    50% {
+      background-color: hsl(var(--card) / 0.7);
+    }
+  }
 }
