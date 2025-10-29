@@ -9,7 +9,7 @@ const titleToSlug = (title: string) => {
 
 export function OverviewStats() {
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
             {stats.map((stat, index) => (
                 <Link key={index} href={`/dashboard/stats/${titleToSlug(stat.title)}`}>
                     <GlassCard className="h-full rounded-3xl">
@@ -19,7 +19,7 @@ export function OverviewStats() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">{stat.value}</div>
-                            <p className="text-xs text-muted-foreground">{stat.change} vs last month</p>
+                            <p className="text-xs text-muted-foreground">{stat.change}</p>
                         </CardContent>
                     </GlassCard>
                 </Link>

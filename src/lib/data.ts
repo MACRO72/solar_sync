@@ -1,5 +1,5 @@
 import type { Device, Alert, PerformanceData, Stat, HistoricalData } from './types';
-import { Gauge, Zap, Wind, Thermometer, HeartPulse } from "lucide-react";
+import { Gauge, Zap, Wind, Thermometer, HeartPulse, Wrench } from "lucide-react";
 
 export const stats: Stat[] = [
     { title: "System Efficiency", value: "98.7%", icon: Gauge, change: "+0.2%", color: "text-primary" },
@@ -7,6 +7,7 @@ export const stats: Stat[] = [
     { title: "Dust Index", value: "Low", icon: Wind, change: "Stable", color: "text-status-neutral" },
     { title: "Avg. Temperature", value: "48°C", icon: Thermometer, change: "-1°C", color: "text-destructive" },
     { title: "System Health", value: "99.5%", icon: HeartPulse, change: "Excellent", color: "text-status-positive" },
+    { title: "Maintenance", value: "None Due", icon: Wrench, change: "All systems normal", color: "text-primary" },
 ];
 
 export const devices: Device[] = [
