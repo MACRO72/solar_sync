@@ -8,7 +8,7 @@ body {
 
 @layer base {
   :root {
-    --background: 222 78% 11%;
+    --background: 222 78% 15%;
     --foreground: 0 0% 98%;
     --card: 200 19% 22%;
     --card-foreground: 0 0% 98%;
@@ -44,7 +44,7 @@ body {
     --status-neutral: 210 10% 60%;
   }
   .dark {
-    --background: 223 71% 12%;
+    --background: 223 71% 16%;
     --foreground: 0 0% 98%;
     --card: 200 19% 22%;
     --card-foreground: 0 0% 98%;
@@ -88,7 +88,10 @@ body {
   body {
     @apply text-foreground;
     background-color: hsl(var(--background));
-    background-image: linear-gradient(to bottom right, hsl(var(--background)), hsl(223, 59%, 11%));
+    background-image:
+      repeating-linear-gradient(45deg, hsla(var(--primary), 0.1) 0, hsla(var(--primary), 0.1) 1px, transparent 1px, transparent 50px),
+      repeating-linear-gradient(-45deg, hsla(var(--primary), 0.1) 0, hsla(var(--primary), 0.1) 1px, transparent 1px, transparent 50px),
+      linear-gradient(to bottom right, hsl(var(--background)), hsl(223, 59%, 15%));
   }
 }
 
