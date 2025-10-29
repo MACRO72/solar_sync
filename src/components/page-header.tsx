@@ -18,7 +18,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { alerts } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { Navbar } from '@/components/navbar';
 import {
   Avatar,
   AvatarFallback,
@@ -28,6 +27,7 @@ import { User, Settings, LogOut } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { Logo } from './icons';
 
 const menuItems = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -61,7 +61,7 @@ export function PageHeader() {
               <Button
                 variant="outline"
                 size="icon"
-                className="shrink-0 md:hidden"
+                className="shrink-0"
               >
                 <Menu className="h-5 w-5" />
                 <span className="sr-only">Toggle navigation menu</span>
@@ -69,6 +69,13 @@ export function PageHeader() {
             </SheetTrigger>
             <SheetContent side="left">
               <nav className="grid gap-6 text-lg font-medium">
+                 <Link
+                    href="/dashboard"
+                    className="flex items-center gap-2 text-lg font-semibold"
+                 >
+                    <Logo className="size-8 text-primary" />
+                    <span className="text-xl font-semibold">solarsync</span>
+                </Link>
                  {menuItems.map((item) => (
                     <Link
                       key={item.path}
@@ -87,7 +94,13 @@ export function PageHeader() {
               </nav>
             </SheetContent>
           </Sheet>
-          <Navbar />
+          <Link
+            href="/dashboard"
+            className="hidden md:flex items-center gap-2 text-lg font-semibold"
+          >
+            <Logo className="size-8 text-primary" />
+            <span className="text-xl font-semibold">solarsync</span>
+        </Link>
       </div>
       <div className="ml-auto flex items-center gap-4">
         <DropdownMenu>
