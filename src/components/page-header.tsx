@@ -1,6 +1,6 @@
 
 "use client";
-import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb } from 'lucide-react';
+import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -23,7 +23,6 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@/components/ui/avatar';
-import { User, Settings, LogOut } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -73,7 +72,7 @@ export function PageHeader() {
                     href="/dashboard"
                     className="flex items-center gap-2 text-lg font-semibold"
                  >
-                    <Logo className="size-8 text-primary" />
+                    <Logo className="size-8 text-primary animate-logo-spin" />
                     <span className="text-xl font-semibold">solarsync</span>
                 </Link>
                  {menuItems.map((item) => (
@@ -98,7 +97,7 @@ export function PageHeader() {
             href="/dashboard"
             className="hidden md:flex items-center gap-2 text-lg font-semibold"
           >
-            <Logo className="size-8 text-primary" />
+            <Logo className="size-8 text-primary animate-logo-spin" />
             <span className="text-xl font-semibold">solarsync</span>
         </Link>
       </div>
@@ -148,13 +147,17 @@ export function PageHeader() {
             <DropdownMenuContent side="bottom" align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/settings">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+              <DropdownMenuItem asChild>
+                 <Link href="/dashboard/settings">
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
