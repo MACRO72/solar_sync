@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { GlassCard, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/glass-card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ export function UserProfileForm() {
     };
 
     return (
-        <GlassCard>
+        <Card>
             <CardHeader>
                 <CardTitle>Profile Settings</CardTitle>
                 <CardDescription>Manage your account settings and profile information.</CardDescription>
@@ -81,6 +81,6 @@ export function UserProfileForm() {
                     {isSaving ? 'Saving...' : 'Save Changes'}
                 </Button>
             </CardFooter>
-        </GlassCard>
+        </Card>
     );
 }
