@@ -23,7 +23,7 @@ export function Navbar() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex items-center gap-6 text-sm font-medium">
+    <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
         <Link
             href="/dashboard"
             className="flex items-center gap-2 text-lg font-semibold"

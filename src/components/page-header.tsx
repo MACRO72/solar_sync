@@ -1,6 +1,6 @@
 
 "use client";
-import { Bell } from 'lucide-react';
+import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -10,6 +10,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 import { Badge } from '@/components/ui/badge';
 import { alerts } from '@/lib/data';
 import { cn } from '@/lib/utils';
@@ -21,6 +26,15 @@ import {
 } from '@/components/ui/avatar';
 import { User, Settings, LogOut } from 'lucide-react';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+const menuItems = [
+  { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+  { path: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
+  { path: '/dashboard/devices', label: 'Devices', icon: PanelTop },
+  { path: '/dashboard/insights', label: 'Insights', icon: Lightbulb },
+];
 
 const getSeverityBadgeClass = (severity: 'High' | 'Medium' | 'Low') => {
   switch (severity) {
@@ -37,10 +51,44 @@ const getSeverityBadgeClass = (severity: 'High' | 'Medium' | 'Low') => {
 export function PageHeader() {
   const highPriorityAlerts = alerts.filter(a => a.severity === 'High').length;
   const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
+  const pathname = usePathname();
 
   return (
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background/80 px-4 md:px-6 z-10 backdrop-blur-sm">
-      <Navbar />
+      <div className="flex items-center gap-4">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 md:hidden"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+              <nav className="grid gap-6 text-lg font-medium">
+                 {menuItems.map((item) => (
+                    <Link
+                      key={item.path}
+                      href={item.path}
+                      className={cn(
+                          'flex items-center gap-4 px-2.5 transition-colors hover:text-foreground',
+                          pathname === item.path
+                          ? 'text-foreground'
+                          : 'text-muted-foreground'
+                      )}
+                      >
+                      <item.icon className="h-5 w-5" />
+                      {item.label}
+                    </Link>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
+          <Navbar />
+      </div>
       <div className="ml-auto flex items-center gap-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
