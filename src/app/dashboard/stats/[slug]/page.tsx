@@ -1,3 +1,7 @@
+
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { GlassCard, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/glass-card";
 import { HistoricalDataChart } from "./components/historical-data-chart";
 import { stats as statDetails } from '@/lib/data';
@@ -16,6 +20,12 @@ export default function StatDetailPage({ params }: { params: { slug: string } })
 
     return (
         <div className="space-y-6">
+            <Link href="/dashboard">
+                <Button variant="outline">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    Back to Dashboard
+                </Button>
+            </Link>
             <GlassCard>
                 <CardHeader>
                     <CardTitle>{stat.title} - Historical Data</CardTitle>
