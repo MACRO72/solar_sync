@@ -33,6 +33,8 @@ export type Stat = {
     icon: LucideIcon;
     change: string;
     color?: string;
+    actual?: number;
+    expected?: number;
 }
 
 export type HistoricalDataPoint = {

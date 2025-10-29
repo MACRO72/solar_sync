@@ -2,6 +2,7 @@ import Link from "next/link";
 import { GlassCard, CardHeader, CardTitle, CardContent } from "@/components/glass-card"
 import { stats } from "@/lib/data";
 import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
 
 const titleToSlug = (title: string) => {
     return title.toLowerCase().replace(/ /g, '-');
@@ -20,6 +21,15 @@ export function OverviewStats() {
                         <CardContent>
                             <div className="text-2xl font-bold">{stat.value}</div>
                             <p className="text-xs text-muted-foreground">{stat.change}</p>
+                             {stat.actual !== undefined && stat.expected !== undefined && (
+                                <div className="mt-2">
+                                     <Progress 
+                                        value={(stat.actual / stat.expected) * 100} 
+                                        className="h-2 bg-purple-400/20"
+                                        indicatorClassName="bg-gradient-to-r from-blue-400 to-purple-500"
+                                    />
+                                </div>
+                            )}
                         </CardContent>
                     </GlassCard>
                 </Link>
