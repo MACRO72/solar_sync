@@ -1,5 +1,5 @@
 "use client";
-import { Bell } from 'lucide-react';
+import { Bell, Menu } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -41,7 +41,7 @@ export function PageHeader() {
 
   return (
     <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
-      <SidebarTrigger className="md:hidden" />
+      <SidebarTrigger />
       <h1 className="text-xl font-semibold">{currentPage?.label}</h1>
 
       <div className="ml-auto flex items-center gap-2">
