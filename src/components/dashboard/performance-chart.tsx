@@ -19,17 +19,16 @@ type ChartData = {
     predicted: number;
 }
 
-type TimePeriod = '24h' | '7d' | '30d' | '12m';
+type TimePeriod = '24h' | '7d' | '30d';
 
 const timePeriodOptions: {value: TimePeriod, label: string}[] = [
     { value: '24h', label: '24h' },
     { value: '7d', label: '7d' },
     { value: '30d', label: '30d' },
-    { value: '12m', label: '12m' },
 ];
 
 
-export function PerformanceChart({ fullHeight = false, defaultPeriod = '12m' }: { fullHeight?: boolean, defaultPeriod?: TimePeriod }) {
+export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: { fullHeight?: boolean, defaultPeriod?: TimePeriod }) {
     const [timePeriod, setTimePeriod] = React.useState<TimePeriod>(defaultPeriod);
     
     const data = performanceData[timePeriod];
@@ -56,7 +55,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '12m' }: 
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig} className={fullHeight ? "h-[400px] w-full" : "h-[300px] w-full"}>
-                    <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 0, bottom: 0, left: -20 }}>
+                    <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" />
                         <XAxis
                             dataKey="time"
@@ -64,7 +63,6 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '12m' }: 
                             tickMargin={10}
                             axisLine={false}
                             tickFormatter={(value) => {
-                                if (timePeriod === '12m') return value.slice(0, 3);
                                 if (timePeriod === '24h') return value;
                                 return value.split(' ')[0];
                             }}
