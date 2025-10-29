@@ -138,21 +138,21 @@ body {
 
   .animate-energy-wave {
     background: linear-gradient(
-      110deg,
-      hsl(var(--card) / 0.6) 40%,
-      hsl(var(--card) / 0.8) 50%,
-      hsl(var(--card) / 0.6) 60%
+      135deg,
+      hsl(var(--card) / 0.6) 45%,
+      hsl(var(--card) / 0.9) 50%,
+      hsl(var(--card) / 0.6) 55%
     );
-    background-size: 200% 100%;
+    background-size: 400% 400%;
     animation: energy-wave 3s ease-in-out infinite;
   }
 
   @keyframes energy-wave {
     from {
-      background-position: 200% 0;
+      background-position: 0% 100%;
     }
     to {
-      background-position: -200% 0;
+      background-position: 100% 0%;
     }
   }
 }
