@@ -1,6 +1,6 @@
 
 "use client";
-import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut, Wifi } from 'lucide-react';
+import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut, Wifi, Cable } from 'lucide-react';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,6 +33,7 @@ const menuItems = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { path: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/dashboard/devices', label: 'Devices', icon: PanelTop },
+  { path: '/dashboard/connectivity', label: 'Connectivity', icon: Cable },
   { path: '/dashboard/insights', label: 'Insights', icon: Lightbulb },
 ];
 
@@ -110,10 +111,12 @@ export function PageHeader() {
         </Link>
       </div>
       <div className="ml-auto flex items-center gap-4">
-        <Button variant="ghost" size="icon" className="relative rounded-full">
-            <Wifi className="text-status-positive" />
-            <span className="sr-only">Sensor Status</span>
-        </Button>
+        <Link href="/dashboard/connectivity">
+          <Button variant="ghost" size="icon" className="relative rounded-full">
+              <Wifi className="text-status-positive" />
+              <span className="sr-only">Sensor Status</span>
+          </Button>
+        </Link>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative rounded-full">
