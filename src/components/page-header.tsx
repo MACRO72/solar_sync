@@ -24,10 +24,10 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@/components/ui/avatar';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from './icons';
+import { useAppState } from '@/context/app-state-provider';
 
 const menuItems = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -52,7 +52,7 @@ const getSeverityBadgeClass = (severity: 'High' | 'Medium' | 'Low') => {
 export function PageHeader() {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const highPriorityAlerts = alerts.filter(a => a.severity === 'High').length;
-  const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
+  const { avatar } = useAppState();
   const pathname = usePathname();
 
   const handleLinkClick = () => {
@@ -154,7 +154,7 @@ export function PageHeader() {
             <DropdownMenuTrigger asChild>
                <button className="flex items-center gap-2 rounded-full text-left text-sm outline-none ring-ring transition-colors focus-visible:ring-2">
                 <Avatar className="h-8 w-8">
-                  {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User Avatar" />}
+                  {avatar && <AvatarImage src={avatar} alt="User Avatar" />}
                   <AvatarFallback>AU</AvatarFallback>
                 </Avatar>
               </button>

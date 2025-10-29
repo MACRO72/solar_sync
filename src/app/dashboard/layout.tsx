@@ -1,8 +1,10 @@
 
+'use client';
 import * as React from 'react';
 
 import { PageHeader } from '@/components/page-header';
 import { PageTransition } from '@/components/page-transition';
+import { AppStateProvider } from '@/context/app-state-provider';
 
 export default function DashboardLayout({
   children,
@@ -10,11 +12,13 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen w-full flex-col">
-      <PageHeader />
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
-        <PageTransition>{children}</PageTransition>
-      </main>
-    </div>
+    <AppStateProvider>
+      <div className="flex min-h-screen w-full flex-col">
+        <PageHeader />
+        <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+          <PageTransition>{children}</PageTransition>
+        </main>
+      </div>
+    </AppStateProvider>
   );
 }
