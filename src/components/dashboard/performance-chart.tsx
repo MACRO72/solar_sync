@@ -6,7 +6,7 @@ import { performanceData } from "@/lib/data"
 
 const chartConfig = {
     actual: { label: "Actual", color: "hsl(var(--chart-1))" },
-    predicted: { label: "Predicted", color: "hsl(var(--chart-2))" },
+    predicted: { label: "Predicted", color: "hsl(var(--chart-4))" },
 } satisfies ChartConfig
 
 export function PerformanceChart({ fullHeight = false }: { fullHeight?: boolean }) {
