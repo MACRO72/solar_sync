@@ -25,8 +25,8 @@ export function OverviewStats() {
                                 <div className="mt-2">
                                      <Progress 
                                         value={(stat.actual / stat.expected) * 100} 
-                                        className="h-2 bg-purple-400/20"
-                                        indicatorClassName="bg-gradient-to-r from-blue-400 to-purple-500"
+                                        className="h-2 bg-blue-400/20"
+                                        indicatorClassName="bg-purple-500"
                                     />
                                 </div>
                             )}
