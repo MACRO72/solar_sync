@@ -8,7 +8,7 @@ body {
 
 @layer base {
   :root {
-    --background: 212 65% 23%;
+    --background: 225 68% 10%;
     --foreground: 0 0% 98%;
     --card: 200 19% 22%;
     --card-foreground: 0 0% 98%;
@@ -44,7 +44,7 @@ body {
     --status-neutral: 210 10% 60%;
   }
   .dark {
-    --background: 212 65% 23%;
+    --background: 225 68% 10%;
     --foreground: 0 0% 98%;
     --card: 200 19% 22%;
     --card-foreground: 0 0% 98%;
