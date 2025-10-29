@@ -112,7 +112,7 @@ export function PageHeader() {
       </div>
       <div className="ml-auto flex items-center gap-4">
         <Link href="/dashboard/connectivity">
-          <Button variant="ghost" size="icon" className="relative rounded-full">
+          <Button variant="ghost" size="icon" className="relative rounded-full transition-transform duration-300 ease-in-out hover:scale-125">
               <Wifi className="text-status-positive" />
               <span className="sr-only">Sensor Status</span>
           </Button>
