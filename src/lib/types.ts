@@ -1,3 +1,5 @@
+import { LucideIcon } from "lucide-react";
+
 export type Device = {
   id: string;
   name: string;
@@ -24,3 +26,19 @@ export type PerformanceData = {
   actual: number;
   predicted: number;
 };
+
+export type Stat = {
+    title: string;
+    value: string;
+    icon: LucideIcon;
+    change: string;
+}
+
+export type HistoricalDataPoint = {
+    day: number;
+    value: number;
+}
+
+export type HistoricalData = {
+    [key: string]: HistoricalDataPoint[];
+}

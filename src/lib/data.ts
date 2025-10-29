@@ -1,4 +1,13 @@
-import type { Device, Alert, PerformanceData } from './types';
+import type { Device, Alert, PerformanceData, Stat, HistoricalData } from './types';
+import { Gauge, Zap, Wind, Thermometer, HeartPulse } from "lucide-react";
+
+export const stats: Stat[] = [
+    { title: "System Efficiency", value: "98.7%", icon: Gauge, change: "+0.2%" },
+    { title: "Energy Output", value: "3,450 kWh", icon: Zap, change: "+5%" },
+    { title: "Dust Index", value: "Low", icon: Wind, change: "Stable" },
+    { title: "Avg. Temperature", value: "48°C", icon: Thermometer, change: "-1°C" },
+    { title: "System Health", value: "99.5%", icon: HeartPulse, change: "Excellent" },
+];
 
 export const devices: Device[] = [
   { id: 'ESP32-A1', name: 'North Wing Panel A1', status: 'Online', lastSeen: '1 min ago', temperature: 45, energyOutput: 1.2, location: { lat: 34.0522, lng: -118.2437 } },
@@ -27,5 +36,20 @@ export const performanceData: PerformanceData[] = [
   { month: 'Sep', actual: 540, predicted: 550 },
   { month: 'Oct', actual: 480, predicted: 470 },
   { month: 'Nov', actual: 410, predicted: 400 },
-  { month: 'Dec', actual: 360, predicted: 350 },
+  { month: 'Dec', a: 360, b: 350 },
 ];
+
+const generateHistoricalData = (base: number, volatility: number, days = 30) => {
+    return Array.from({ length: days }, (_, i) => ({
+        day: i + 1,
+        value: Math.round(base + (Math.random() - 0.5) * volatility * base),
+    }));
+};
+
+export const historicalData: HistoricalData = {
+    "System Efficiency": generateHistoricalData(98, 0.05),
+    "Energy Output": generateHistoricalData(115, 0.2),
+    "Dust Index": generateHistoricalData(5, 0.5),
+    "Avg. Temperature": generateHistoricalData(48, 0.1),
+    "System Health": generateHistoricalData(99, 0.02),
+}
