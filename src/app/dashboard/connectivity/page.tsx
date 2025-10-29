@@ -1,6 +1,8 @@
 
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { GlassCard, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/glass-card";
-import { CheckCircle, XCircle, Wifi, WifiOff, Cable } from "lucide-react";
+import { CheckCircle, XCircle, Wifi, WifiOff, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const panels = [
@@ -17,6 +19,12 @@ export default function ConnectivityPage() {
 
   return (
     <div className="space-y-6">
+       <Link href="/dashboard">
+          <Button variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Dashboard
+          </Button>
+      </Link>
       <GlassCard>
         <CardHeader>
           <div className="flex items-center justify-between">
