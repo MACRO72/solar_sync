@@ -18,7 +18,7 @@ export function PerformanceChart({ fullHeight = false }: { fullHeight?: boolean 
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig} className={fullHeight ? "h-[400px] w-full" : "h-[300px] w-full"}>
-                    <LineChart accessibilityLayer data={performanceData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                    <LineChart accessibilityLayer data={performanceData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" />
                         <XAxis
                             dataKey="month"
@@ -31,7 +31,6 @@ export function PerformanceChart({ fullHeight = false }: { fullHeight?: boolean 
                             tickLine={false}
                             axisLine={false}
                             tickMargin={10}
-                            tickFormatter={(value) => `${value}`}
                         />
                         <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
                         <ChartLegend content={<ChartLegendContent />} />

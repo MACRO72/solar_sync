@@ -11,7 +11,7 @@ export function HistoricalDataChart({ metric }: { metric: string }) {
     const data = historicalData[metric as keyof typeof historicalData] || [];
     return (
         <ChartContainer config={chartConfig} className="h-[400px] w-full">
-            <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+            <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis
                     dataKey="day"
