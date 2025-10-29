@@ -136,16 +136,23 @@ body {
     }
   }
 
-  .animate-pulse-bg {
-    animation: pulse-bg 4s infinite;
+  .animate-energy-wave {
+    background: linear-gradient(
+      110deg,
+      hsl(var(--card) / 0.6) 40%,
+      hsl(var(--card) / 0.8) 50%,
+      hsl(var(--card) / 0.6) 60%
+    );
+    background-size: 200% 100%;
+    animation: energy-wave 3s ease-in-out infinite;
   }
 
-  @keyframes pulse-bg {
-    0%, 100% {
-      background-color: hsl(var(--card) / 0.6);
+  @keyframes energy-wave {
+    from {
+      background-position: 200% 0;
     }
-    50% {
-      background-color: hsl(var(--card) / 0.7);
+    to {
+      background-position: -200% 0;
     }
   }
 }
