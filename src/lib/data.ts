@@ -36,7 +36,7 @@ export const performanceData: PerformanceData[] = [
   { month: 'Sep', actual: 540, predicted: 550 },
   { month: 'Oct', actual: 480, predicted: 470 },
   { month: 'Nov', actual: 410, predicted: 400 },
-  { month: 'Dec', a: 360, b: 350 },
+  { month: 'Dec', actual: 360, predicted: 350 },
 ];
 
 const generateHistoricalData = (base: number, volatility: number, days = 30) => {
