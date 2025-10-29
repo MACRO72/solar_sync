@@ -6,12 +6,12 @@ import { CheckCircle, XCircle, Wifi, WifiOff, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const panels = [
-  { name: "North Wing Panel A1", connected: true },
-  { name: "North Wing Panel A2", connected: true },
-  { name: "South Wing Panel B1", connected: false },
-  { name: "South Wing Panel B2", connected: true },
-  { name: "East Wing Panel C1", connected: true },
-  { name: "East Wing Panel C2", connected: false },
+  { id: "north-wing-panel-a1", name: "North Wing Panel A1", connected: true },
+  { id: "north-wing-panel-a2", name: "North Wing Panel A2", connected: true },
+  { id: "south-wing-panel-b1", name: "South Wing Panel B1", connected: false },
+  { id: "south-wing-panel-b2", name: "South Wing Panel B2", connected: true },
+  { id: "east-wing-panel-c1", name: "East Wing Panel C1", connected: true },
+  { id: "east-wing-panel-c2", name: "East Wing Panel C2", connected: false },
 ];
 
 export default function ConnectivityPage() {
@@ -41,26 +41,28 @@ export default function ConnectivityPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {panels.map((panel, index) => (
-              <div key={index} 
-                   className={cn(
-                       "flex items-center gap-4 rounded-lg border p-4 transition-colors",
-                       panel.connected 
-                         ? "border-status-positive/30 bg-status-positive/10" 
-                         : "border-destructive/30 bg-destructive/10"
-                   )}>
-                {panel.connected ? (
-                  <CheckCircle className="h-6 w-6 text-status-positive" />
-                ) : (
-                  <XCircle className="h-6 w-6 text-destructive" />
-                )}
-                <div>
-                  <p className="font-semibold text-foreground">{panel.name}</p>
-                  <p className={cn("text-sm", panel.connected ? "text-status-positive" : "text-destructive")}>
-                    {panel.connected ? "Connected" : "Disconnected"}
-                  </p>
-                </div>
-              </div>
+            {panels.map((panel) => (
+                <Link href={`/dashboard/devices/${panel.id}`} key={panel.id}>
+                    <div 
+                        className={cn(
+                            "flex items-center gap-4 rounded-lg border p-4 transition-colors h-full",
+                            panel.connected 
+                                ? "border-status-positive/30 bg-status-positive/10 hover:bg-status-positive/20" 
+                                : "border-destructive/30 bg-destructive/10 hover:bg-destructive/20"
+                        )}>
+                        {panel.connected ? (
+                        <CheckCircle className="h-6 w-6 text-status-positive" />
+                        ) : (
+                        <XCircle className="h-6 w-6 text-destructive" />
+                        )}
+                        <div>
+                        <p className="font-semibold text-foreground">{panel.name}</p>
+                        <p className={cn("text-sm", panel.connected ? "text-status-positive" : "text-destructive")}>
+                            {panel.connected ? "Connected" : "Disconnected"}
+                        </p>
+                        </div>
+                    </div>
+              </Link>
             ))}
           </div>
         </CardContent>
