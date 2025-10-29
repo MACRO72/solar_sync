@@ -1,3 +1,4 @@
+'use client';
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
@@ -6,16 +7,44 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 const GlassCard = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <Card
-    ref={ref}
-    className={cn(
-      "rounded-xl bg-card/60 backdrop-blur-sm border border-border/20 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, ...props }, ref) => {
+  const createRipple = (event: React.MouseEvent<HTMLDivElement>) => {
+    const card = event.currentTarget;
+    
+    // Remove any existing ripples
+    const existingRipple = card.querySelector(".ripple");
+    if (existingRipple) {
+      existingRipple.remove();
+    }
+
+    const circle = document.createElement("span");
+    const diameter = Math.max(card.clientWidth, card.clientHeight);
+    const radius = diameter / 2;
+
+    circle.style.width = circle.style.height = `${diameter}px`;
+    circle.style.left = `${event.clientX - card.getBoundingClientRect().left - radius}px`;
+    circle.style.top = `${event.clientY - card.getBoundingClientRect().top - radius}px`;
+    circle.classList.add("ripple");
+
+    card.appendChild(circle);
+    
+    setTimeout(() => {
+        circle.remove()
+    }, 600)
+  };
+
+  return (
+    <Card
+      ref={ref}
+      className={cn(
+        "ripple-effect rounded-xl bg-card/60 backdrop-blur-sm border border-border/20 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02]",
+        className
+      )}
+      onMouseDown={createRipple}
+      {...props}
+    />
+  )
+})
 GlassCard.displayName = "GlassCard"
 
 export { GlassCard, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
