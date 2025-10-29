@@ -35,7 +35,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '12m' }: 
     const data = performanceData[timePeriod];
 
     return (
-        <Card>
+        <Card className="animate-energy-wave">
             <CardHeader className="flex flex-col items-stretch justify-between gap-4 sm:flex-row">
                 <div>
                     <CardTitle>Performance Overview</CardTitle>
