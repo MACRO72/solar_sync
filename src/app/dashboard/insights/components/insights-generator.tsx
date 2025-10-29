@@ -64,7 +64,7 @@ export function InsightsGenerator() {
           <>
             <GlassCard>
                 <CardHeader className="flex-row items-center gap-4 space-y-0">
-                  <CheckCircle className="h-8 w-8 text-status-positive" />
+                  <CheckCircle className="h-10 w-10 text-status-positive" />
                    <div>
                     <CardTitle>Confidence Score</CardTitle>
                     <CardDescription>AI confidence in this prediction.</CardDescription>
@@ -77,7 +77,7 @@ export function InsightsGenerator() {
             </GlassCard>
             <GlassCard>
               <CardHeader className="flex-row items-center gap-4 space-y-0">
-                  <ShieldAlert className="h-8 w-8 text-destructive" />
+                  <ShieldAlert className="h-10 w-10 text-destructive" />
                   <div>
                     <CardTitle>Predicted Failures</CardTitle>
                     <CardDescription>Potential issues detected by the AI.</CardDescription>
@@ -89,7 +89,7 @@ export function InsightsGenerator() {
             </GlassCard>
             <GlassCard>
                <CardHeader className="flex-row items-center gap-4 space-y-0">
-                  <Wrench className="h-8 w-8 text-primary" />
+                  <Wrench className="h-10 w-10 text-primary" />
                   <div>
                     <CardTitle>Maintenance Schedule</CardTitle>
                     <CardDescription>Recommended actions to take.</CardDescription>
@@ -108,7 +108,7 @@ export function InsightsGenerator() {
           <GlassCard className="flex h-full min-h-[400px] flex-col items-center justify-center text-center">
             <CardContent className="space-y-2">
               <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-primary/10">
-                <Lightbulb className="h-8 w-8 text-primary" />
+                <Lightbulb className="h-10 w-10 text-primary" />
               </div>
               <h3 className="text-lg font-semibold">Awaiting Data</h3>
               <p className="text-muted-foreground">Your AI insights will appear here once generated.</p>

@@ -4,9 +4,9 @@ import { AlertTriangle, Bell, Info } from 'lucide-react'
 
 const getIcon = (severity: 'High' | 'Medium' | 'Low') => {
     switch (severity) {
-        case 'High': return <AlertTriangle className="h-5 w-5 text-destructive" />;
-        case 'Medium': return <Bell className="h-5 w-5 text-accent" />;
-        case 'Low': return <Info className="h-5 w-5 text-primary" />;
+        case 'High': return <AlertTriangle className="h-6 w-6 text-destructive" />;
+        case 'Medium': return <Bell className="h-6 w-6 text-accent" />;
+        case 'Low': return <Info className="h-6 w-6 text-primary" />;
     }
 }
 
