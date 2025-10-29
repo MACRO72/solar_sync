@@ -4,7 +4,7 @@ import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { GlassCard, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/glass-card"
 import { performanceData } from "@/lib/data"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import type { PerformanceData } from '@/lib/types';
 
 
@@ -21,6 +21,14 @@ type ChartData = {
 
 type TimePeriod = '24h' | '7d' | '30d' | '12m';
 
+const timePeriodOptions: {value: TimePeriod, label: string}[] = [
+    { value: '24h', label: '24h' },
+    { value: '7d', label: '7d' },
+    { value: '30d', label: '30d' },
+    { value: '12m', label: '12m' },
+];
+
+
 export function PerformanceChart({ fullHeight = false, defaultPeriod = '12m' }: { fullHeight?: boolean, defaultPeriod?: TimePeriod }) {
     const [timePeriod, setTimePeriod] = React.useState<TimePeriod>(defaultPeriod);
     
@@ -33,21 +41,22 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '12m' }: 
                     <CardTitle>Performance Overview</CardTitle>
                     <CardDescription>Actual vs. Predicted Energy Output (kWh)</CardDescription>
                 </div>
-                <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
-                    <SelectTrigger className="w-full sm:w-[160px]">
-                        <SelectValue placeholder="Select period" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="24h">Last 24 Hours</SelectItem>
-                        <SelectItem value="7d">Last 7 Days</SelectItem>
-                        <SelectItem value="30d">Last 30 Days</SelectItem>
-                        <SelectItem value="12m">Last 12 Months</SelectItem>
-                    </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                    {timePeriodOptions.map(option => (
+                        <Button 
+                            key={option.value}
+                            variant={timePeriod === option.value ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setTimePeriod(option.value)}
+                        >
+                            {option.label}
+                        </Button>
+                    ))}
+                </div>
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig} className={fullHeight ? "h-[400px] w-full" : "h-[300px] w-full"}>
-                    <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+                    <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 0, bottom: 0, left: -20 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" />
                         <XAxis
                             dataKey="time"

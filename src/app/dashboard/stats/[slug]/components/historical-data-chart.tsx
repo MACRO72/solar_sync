@@ -3,13 +3,19 @@ import * as React from 'react'
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig } from "@/components/ui/chart"
 import { historicalData } from "@/lib/data"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 
 const chartConfig = {
     value: { label: "Value", color: "hsl(var(--primary))" },
 } satisfies ChartConfig
 
 type TimePeriod = '7d' | '30d';
+
+const timePeriodOptions: {value: TimePeriod, label: string}[] = [
+    { value: '7d', label: '7d' },
+    { value: '30d', label: '30d' },
+];
+
 
 export function HistoricalDataChart({ metric }: { metric: string }) {
     const [timePeriod, setTimePeriod] = React.useState<TimePeriod>('30d');
@@ -19,17 +25,20 @@ export function HistoricalDataChart({ metric }: { metric: string }) {
 
     return (
         <div className="space-y-4">
-            <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
-                <SelectTrigger className="w-full sm:w-[160px] ml-auto">
-                    <SelectValue placeholder="Select period" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="7d">Last 7 Days</SelectItem>
-                    <SelectItem value="30d">Last 30 Days</SelectItem>
-                </SelectContent>
-            </Select>
+            <div className="flex justify-end gap-2">
+                 {timePeriodOptions.map(option => (
+                    <Button 
+                        key={option.value}
+                        variant={timePeriod === option.value ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setTimePeriod(option.value)}
+                    >
+                        {option.label}
+                    </Button>
+                ))}
+            </div>
             <ChartContainer config={chartConfig} className="h-[400px] w-full">
-                <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 10, bottom: 0, left: 0 }}>
+                <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 0, bottom: 0, left: -20 }}>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
                     <XAxis
                         dataKey="day"
