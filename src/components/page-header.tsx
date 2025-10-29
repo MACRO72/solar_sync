@@ -1,6 +1,7 @@
 
 "use client";
 import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut } from 'lucide-react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -48,14 +49,19 @@ const getSeverityBadgeClass = (severity: 'High' | 'Medium' | 'Low') => {
 
 
 export function PageHeader() {
+  const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const highPriorityAlerts = alerts.filter(a => a.severity === 'High').length;
   const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
   const pathname = usePathname();
 
+  const handleLinkClick = () => {
+    setIsSheetOpen(false);
+  };
+
   return (
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background/80 px-4 md:px-6 z-10 backdrop-blur-sm">
       <div className="flex items-center gap-4">
-          <Sheet>
+          <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button
                 variant="outline"
@@ -70,6 +76,7 @@ export function PageHeader() {
               <nav className="grid gap-6 text-lg font-medium">
                  <Link
                     href="/dashboard"
+                    onClick={handleLinkClick}
                     className="flex items-center gap-2 text-lg font-semibold"
                  >
                     <Logo className="size-8 text-primary animate-logo-spin" />
@@ -79,6 +86,7 @@ export function PageHeader() {
                     <Link
                       key={item.path}
                       href={item.path}
+                      onClick={handleLinkClick}
                       className={cn(
                           'flex items-center gap-4 px-2.5 transition-colors hover:text-foreground',
                           pathname === item.path
