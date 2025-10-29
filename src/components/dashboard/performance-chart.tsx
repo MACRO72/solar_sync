@@ -5,7 +5,7 @@ import { GlassCard, CardHeader, CardTitle, CardDescription, CardContent } from "
 import { performanceData } from "@/lib/data"
 
 const chartConfig = {
-    actual: { label: "Actual", color: "hsl(var(--chart-1))" },
+    actual: { label: "Actual", color: "hsl(var(--primary))" },
     predicted: { label: "Predicted", color: "hsl(var(--chart-4))" },
 } satisfies ChartConfig
 
