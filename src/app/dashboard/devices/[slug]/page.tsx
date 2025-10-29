@@ -10,14 +10,40 @@ import { cn } from "@/lib/utils";
 
 
 export default function DeviceDetailPage({ params }: { params: { slug: string } }) {
-    const slugToId = (slug: string) => {
-        return slug.toUpperCase().replace(/-/g, '_');
-    }
     const device = devices.find(d => d.id.toLowerCase().replace(/_/g, '-') === params.slug);
 
     if (!device) {
         // For panels that are not in the main device list
         const panelName = params.slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        // Let's create a mock device object for panels not in the main list for demonstration
+        const isConnected = !panelName.includes("B1") && !panelName.includes("C2");
+        const mockDevice = {
+            name: panelName,
+            id: params.slug.replace(/-/g, '_'),
+            status: isConnected ? 'Online' : 'Offline' as 'Online' | 'Offline' | 'Error',
+            lastSeen: isConnected ? 'A few seconds ago' : '2 days ago',
+            temperature: isConnected ? 42 : 25,
+            energyOutput: isConnected ? 1.1 : 0,
+        };
+
+        const getStatusBadge = (status: 'Online' | 'Offline' | 'Error') => {
+            return (
+                <Badge variant="outline" className={cn('text-sm', {
+                    "bg-status-positive/10 border-status-positive/30 text-status-positive": status === 'Online',
+                    "bg-destructive/10 border-destructive/30 text-destructive": status === 'Error',
+                    "bg-status-neutral/10 border-status-neutral/30 text-status-neutral": status === 'Offline',
+                })}>
+                    <div className={cn("w-2 h-2 rounded-full mr-2", {
+                        "bg-status-positive": status === 'Online',
+                        "bg-destructive": status === 'Error',
+                        "bg-status-neutral": status === 'Offline',
+                    })} />
+                    {status}
+                </Badge>
+            )
+        }
+
         return (
              <div className="space-y-6">
                 <Link href="/dashboard/connectivity">
@@ -28,11 +54,36 @@ export default function DeviceDetailPage({ params }: { params: { slug: string } 
                 </Link>
                 <GlassCard>
                     <CardHeader>
-                        <CardTitle>{panelName}</CardTitle>
-                        <CardDescription>Status and details for this panel.</CardDescription>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <CardTitle>{mockDevice.name}</CardTitle>
+                                <CardDescription>ID: {mockDevice.id}</CardDescription>
+                            </div>
+                            {getStatusBadge(mockDevice.status)}
+                        </div>
                     </CardHeader>
-                    <CardContent>
-                        <p>Detailed information for this panel is not yet available.</p>
+                    <CardContent className="grid md:grid-cols-3 gap-4">
+                       <div className="flex items-center gap-4 rounded-lg border border-border/20 p-4">
+                            <Wifi className="h-8 w-8 text-primary" />
+                            <div>
+                                <p className="text-muted-foreground">Last Seen</p>
+                                <p className="font-semibold text-foreground">{mockDevice.lastSeen}</p>
+                            </div>
+                       </div>
+                        <div className="flex items-center gap-4 rounded-lg border border-border/20 p-4">
+                            <Thermometer className="h-8 w-8 text-destructive" />
+                            <div>
+                                <p className="text-muted-foreground">Temperature</p>
+                                <p className="font-semibold text-foreground">{mockDevice.temperature}°C</p>
+                            </div>
+                       </div>
+                        <div className="flex items-center gap-4 rounded-lg border border-border/20 p-4">
+                            <Zap className="h-8 w-8 text-orange-500" />
+                            <div>
+                                <p className="text-muted-foreground">Energy Output</p>
+                                <p className="font-semibold text-foreground">{mockDevice.energyOutput} kWh</p>
+                            </div>
+                       </div>
                     </CardContent>
                 </GlassCard>
             </div>
