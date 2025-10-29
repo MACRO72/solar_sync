@@ -1,6 +1,6 @@
 
 "use client";
-import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut } from 'lucide-react';
+import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut, Wifi } from 'lucide-react';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -110,6 +110,10 @@ export function PageHeader() {
         </Link>
       </div>
       <div className="ml-auto flex items-center gap-4">
+        <Button variant="ghost" size="icon" className="relative rounded-full">
+            <Wifi className="text-status-positive" />
+            <span className="sr-only">Sensor Status</span>
+        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative rounded-full">
