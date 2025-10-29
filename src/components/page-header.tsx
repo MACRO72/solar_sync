@@ -1,6 +1,6 @@
+
 "use client";
-import { Bell, Menu } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -11,16 +11,16 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { SidebarTrigger } from '@/components/ui/sidebar';
 import { alerts } from '@/lib/data';
 import { cn } from '@/lib/utils';
-
-const menuItems = [
-  { path: '/dashboard', label: 'Overview' },
-  { path: '/dashboard/analytics', label: 'Analytics' },
-  { path: '/dashboard/devices', label: 'Devices' },
-  { path: '/dashboard/insights', label: 'Insights' },
-];
+import { Navbar } from '@/components/navbar';
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from '@/components/ui/avatar';
+import { User, Settings, LogOut } from 'lucide-react';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const getSeverityBadgeClass = (severity: 'High' | 'Medium' | 'Low') => {
   switch (severity) {
@@ -35,16 +35,13 @@ const getSeverityBadgeClass = (severity: 'High' | 'Medium' | 'Low') => {
 
 
 export function PageHeader() {
-  const pathname = usePathname();
-  const currentPage = menuItems.find(item => pathname.startsWith(item.path));
   const highPriorityAlerts = alerts.filter(a => a.severity === 'High').length;
+  const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
-      <SidebarTrigger />
-      <h1 className="text-xl font-semibold">{currentPage?.label}</h1>
-
-      <div className="ml-auto flex items-center gap-2">
+    <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background/80 px-4 md:px-6 z-10 backdrop-blur-sm">
+      <Navbar />
+      <div className="ml-auto flex items-center gap-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative rounded-full">
@@ -78,6 +75,33 @@ export function PageHeader() {
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
+         <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+               <button className="flex items-center gap-2 rounded-full text-left text-sm outline-none ring-ring transition-colors focus-visible:ring-2">
+                <Avatar className="h-8 w-8">
+                  {userAvatar && <AvatarImage src={userAvatar.imageUrl} alt="User Avatar" />}
+                  <AvatarFallback>AU</AvatarFallback>
+                </Avatar>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="bottom" align="end" className="w-56">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
       </div>
     </header>
   );
