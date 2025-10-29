@@ -8,7 +8,7 @@ export default function DashboardOverviewPage() {
       <OverviewStats />
       <div className="grid gap-6 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <PerformanceChart />
+          <PerformanceChart defaultPeriod="7d"/>
         </div>
         <div className="lg:col-span-2">
           <RecentAlerts />

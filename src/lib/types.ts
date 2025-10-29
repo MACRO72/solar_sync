@@ -22,7 +22,7 @@ export type Alert = {
 };
 
 export type PerformanceData = {
-  month: string;
+  time: string;
   actual: number;
   predicted: number;
 };

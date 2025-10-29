@@ -24,20 +24,41 @@ export const alerts: Alert[] = [
   { id: '3', title: 'Routine Checkup', description: 'System health check completed. All systems nominal.', timestamp: '1 hour ago', severity: 'Low' },
 ];
 
-export const performanceData: PerformanceData[] = [
-  { month: 'Jan', actual: 320, predicted: 300 },
-  { month: 'Feb', actual: 350, predicted: 340 },
-  { month: 'Mar', actual: 450, predicted: 460 },
-  { month: 'Apr', actual: 510, predicted: 500 },
-  { month: 'May', actual: 550, predicted: 560 },
-  { month: 'Jun', actual: 580, predicted: 600 },
-  { month: 'Jul', actual: 610, predicted: 620 },
-  { month: 'Aug', actual: 590, predicted: 600 },
-  { month: 'Sep', actual: 540, predicted: 550 },
-  { month: 'Oct', actual: 480, predicted: 470 },
-  { month: 'Nov', actual: 410, predicted: 400 },
-  { month: 'Dec', actual: 360, predicted: 350 },
-];
+const generatePerformanceData = (points: number, period: 'hour' | 'day' | 'month') => {
+  let data = [];
+  const now = new Date();
+
+  for (let i = 0; i < points; i++) {
+    let label = '';
+    const date = new Date(now);
+    
+    if (period === 'hour') {
+      date.setHours(now.getHours() - (points - 1 - i));
+      label = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (period === 'day') {
+      date.setDate(now.getDate() - (points - 1 - i));
+      label = date.toLocaleDateString([], { day: '2-digit', month: 'short' });
+    } else if (period === 'month') {
+      date.setMonth(now.getMonth() - (points - 1 - i));
+      label = date.toLocaleDateString([], { month: 'short', year: '2-digit'});
+    }
+
+    const baseActual = 300 + Math.sin(i / 5) * 50 + Math.random() * 50;
+    const actual = Math.max(0, baseActual + Math.random() * 30);
+    const predicted = Math.max(0, baseActual + (Math.random() - 0.5) * 40);
+
+    data.push({ time: label, actual: Math.round(actual), predicted: Math.round(predicted) });
+  }
+  return data;
+};
+
+
+export const performanceData = {
+    '24h': generatePerformanceData(24, 'hour'),
+    '7d': generatePerformanceData(7, 'day'),
+    '30d': generatePerformanceData(30, 'day'),
+    '12m': generatePerformanceData(12, 'month'),
+};
 
 const generateHistoricalData = (base: number, volatility: number, days = 30) => {
     return Array.from({ length: days }, (_, i) => ({
