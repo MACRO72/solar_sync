@@ -45,7 +45,7 @@ body {
     --status-neutral: 210 10% 60%;
   }
   .dark {
-    --background: 223 71% 11%;
+    --background: 222 78% 11%;
     --foreground: 0 0% 98%;
     --card: 200 19% 22%;
     --card-foreground: 0 0% 98%;
@@ -69,7 +69,7 @@ body {
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-    --sidebar-background: 223 71% 11%;
+    --sidebar-background: 222 78% 11%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 231 48% 48%;
     --sidebar-primary-foreground: 0 0% 98%;
@@ -87,6 +87,15 @@ body {
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    background-color: hsl(var(--background));
+    background-image: linear-gradient(to bottom right, hsl(var(--background)), hsl(222, 78%, 21%));
+  }
+}
+
+@layer components {
+  .dark [data-sidebar="sidebar"] {
+     background-color: hsl(var(--sidebar-background));
+     background-image: linear-gradient(to bottom right, hsl(var(--sidebar-background)), hsl(222, 78%, 21%));
   }
 }
