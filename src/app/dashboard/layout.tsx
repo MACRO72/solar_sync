@@ -62,7 +62,7 @@ export default function DashboardLayout({
         <SidebarHeader>
           <div className="flex items-center gap-2">
             <Logo className="size-7 text-primary" />
-            <h1 className="text-xl font-semibold">SolarIntel</h1>
+            <h1 className="text-xl font-semibold">solarsync</h1>
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -93,7 +93,7 @@ export default function DashboardLayout({
                 <div className="flex grow flex-col overflow-hidden">
                   <span className="truncate font-medium">Admin User</span>
                   <span className="truncate text-xs text-sidebar-foreground/70">
-                    admin@solarintel.com
+                    admin@solarsync.com
                   </span>
                 </div>
               </button>
