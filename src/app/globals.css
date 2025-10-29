@@ -88,13 +88,13 @@ body {
   body {
     @apply text-foreground;
     background-color: hsl(var(--background));
-    background-image: linear-gradient(to bottom right, hsl(var(--background)), hsl(222, 78%, 21%));
+    background-image: linear-gradient(to bottom right, hsl(var(--background)), hsl(223, 59%, 11%));
   }
 }
 
 @layer components {
   .dark [data-sidebar="sidebar"] {
      background-color: hsl(var(--sidebar-background));
-     background-image: linear-gradient(to bottom right, hsl(var(--sidebar-background)), hsl(222, 78%, 21%));
+     background-image: linear-gradient(to bottom right, hsl(var(--sidebar-background)), hsl(223, 59%, 11%));
   }
 }
