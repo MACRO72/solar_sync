@@ -2,7 +2,7 @@
 import * as React from 'react';
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
-import { GlassCard, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/glass-card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { performanceData } from "@/lib/data"
 import { Button } from "@/components/ui/button";
 import type { PerformanceData } from '@/lib/types';
@@ -35,7 +35,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '12m' }: 
     const data = performanceData[timePeriod];
 
     return (
-        <GlassCard>
+        <Card>
             <CardHeader className="flex flex-col items-stretch justify-between gap-4 sm:flex-row">
                 <div>
                     <CardTitle>Performance Overview</CardTitle>
@@ -81,6 +81,6 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '12m' }: 
                     </LineChart>
                 </ChartContainer>
             </CardContent>
-        </GlassCard>
+        </Card>
     )
 }

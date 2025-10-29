@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { GlassCard, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/glass-card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { HistoricalDataChart } from "./components/historical-data-chart";
 import { stats as statDetails } from '@/lib/data';
 import { notFound } from "next/navigation";
@@ -26,7 +26,7 @@ export default function StatDetailPage({ params }: { params: { slug: string } })
                     Back to Dashboard
                 </Button>
             </Link>
-            <GlassCard>
+            <Card>
                 <CardHeader>
                     <CardTitle>{stat.title} - Historical Data</CardTitle>
                     <CardDescription>Data from the previous 30 days.</CardDescription>
@@ -34,7 +34,7 @@ export default function StatDetailPage({ params }: { params: { slug: string } })
                 <CardContent>
                     <HistoricalDataChart metric={stat.title} />
                 </CardContent>
-            </GlassCard>
+            </Card>
         </div>
     );
 }
