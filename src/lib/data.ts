@@ -3,7 +3,7 @@ import { Gauge, Zap, Wind, Thermometer, HeartPulse } from "lucide-react";
 
 export const stats: Stat[] = [
     { title: "System Efficiency", value: "98.7%", icon: Gauge, change: "+0.2%", color: "text-primary" },
-    { title: "Energy Output", value: "3,450 kWh", icon: Zap, change: "+5%", color: "text-yellow-400" },
+    { title: "Energy Output", value: "3,450 kWh", icon: Zap, change: "+5%", color: "text-orange-500" },
     { title: "Dust Index", value: "Low", icon: Wind, change: "Stable", color: "text-status-neutral" },
     { title: "Avg. Temperature", value: "48°C", icon: Thermometer, change: "-1°C", color: "text-destructive" },
     { title: "System Health", value: "99.5%", icon: HeartPulse, change: "Excellent", color: "text-status-positive" },
