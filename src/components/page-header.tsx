@@ -80,7 +80,7 @@ export function PageHeader() {
                     className="flex items-center gap-2 text-lg font-semibold"
                  >
                     <Logo className="size-8 text-primary animate-logo-spin" />
-                    <span className="text-xl font-semibold">SolarSync</span>
+                    <span className="text-xl font-semibold animate-logo-text">SolarSync</span>
                 </Link>
                  {menuItems.map((item) => (
                     <Link
@@ -106,7 +106,7 @@ export function PageHeader() {
             className="hidden md:flex items-center gap-2 text-lg font-semibold"
           >
             <Logo className="size-8 text-primary animate-logo-spin" />
-            <span className="text-xl font-semibold">SolarSync</span>
+            <span className="text-xl font-semibold animate-logo-text">SolarSync</span>
         </Link>
       </div>
       <div className="ml-auto flex items-center gap-4">

@@ -98,3 +98,21 @@ body {
      background-image: linear-gradient(to bottom right, hsl(var(--sidebar-background)), hsl(223, 59%, 11%));
   }
 }
+
+@layer utilities {
+  .animate-logo-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(90deg, hsl(var(--sidebar-primary)), hsl(var(--primary)), hsl(var(--sidebar-primary)));
+    background-size: 200% auto;
+    animation: logo-text-pan 4s linear infinite;
+  }
+
+  @keyframes logo-text-pan {
+    from {
+      background-position: 200% center;
+    }
+    to {
+      background-position: 0% center;
+    }
+  }
+}
