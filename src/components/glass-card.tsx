@@ -37,7 +37,7 @@ const GlassCard = React.forwardRef<
     <Card
       ref={ref}
       className={cn(
-        "ripple-effect rounded-xl backdrop-blur-sm border border-border/20 shadow-lg transition-all duration-300 hover:shadow-xl hover:scale-[1.02] animate-energy-wave",
+        "ripple-effect rounded-xl backdrop-blur-sm border border-border/20 shadow-lg transition-all duration-300 hover:shadow-2xl hover:shadow-primary/20 hover:scale-[1.02] animate-energy-wave",
         className
       )}
       onMouseDown={createRipple}
