@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { GlassCard, CardHeader, CardTitle, CardContent } from "@/components/glass-card"
 import { stats } from "@/lib/data";
+import { cn } from "@/lib/utils";
 
 const titleToSlug = (title: string) => {
     return title.toLowerCase().replace(/ /g, '-');
@@ -13,7 +14,7 @@ export function OverviewStats() {
                 <Link key={index} href={`/dashboard/stats/${titleToSlug(stat.title)}`}>
                     <GlassCard className="h-full">
                         <CardHeader className="flex flex-row items-center justify-start gap-4 space-y-0 pb-2">
-                            <stat.icon className="h-6 w-6 text-muted-foreground" />
+                            <stat.icon className={cn("h-6 w-6 text-muted-foreground", stat.color)} />
                             <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
                         </CardHeader>
                         <CardContent>

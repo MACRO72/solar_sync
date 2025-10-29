@@ -32,6 +32,7 @@ export type Stat = {
     value: string;
     icon: LucideIcon;
     change: string;
+    color?: string;
 }
 
 export type HistoricalDataPoint = {
