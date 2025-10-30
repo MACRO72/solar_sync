@@ -1,72 +1,47 @@
+
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
-import { login, loginWithGoogle } from '@/app/auth/actions';
+import { useFormStatus } from 'react-dom';
+import { loginWithGoogle } from '@/app/auth/actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Chrome } from 'lucide-react';
 import Link from 'next/link';
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? 'Logging in...' : 'Log in'}
-    </Button>
-  );
-}
-
 function GoogleButton() {
     const { pending } = useFormStatus();
     return (
-        <Button
-        variant="outline"
-        className="w-full"
-        onClick={() => loginWithGoogle()}
-        disabled={pending}
-        >
-        <Chrome className="mr-2 h-4 w-4" />
-        Log in with Google
-        </Button>
+        <form action={loginWithGoogle} className="w-full">
+            <Button
+                variant="outline"
+                className="w-full"
+                type="submit"
+                disabled={pending}
+            >
+                <Chrome className="mr-2 h-4 w-4" />
+                Sign in with Google
+            </Button>
+        </form>
     );
 }
 
 export default function LoginPage() {
-  const [state, formAction] = useFormState(login, undefined);
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
+      <Card className="w-full max-w-sm animate-energy-wave">
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
-          <CardDescription>Enter your email below to login to your account.</CardDescription>
+          <CardTitle className="text-2xl">Welcome to SolarSync</CardTitle>
+          <CardDescription>Sign in to access your solar dashboard.</CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={formAction} className="space-y-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" name="email" placeholder="m@example.com" required />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" name="password" required />
-            </div>
-            {state?.message && <p className="text-sm text-destructive">{state.message}</p>}
-            <SubmitButton />
-          </form>
-          <Separator className="my-4" />
           <div className="space-y-4">
-            <GoogleButton />
-            <div className="text-center text-sm">
-              Don&apos;t have an account?{' '}
-              <Link href="/signup" className="underline">
-                Sign up
-              </Link>
-            </div>
+             <GoogleButton />
           </div>
+          <Separator className="my-4" />
+           <div className="text-center text-sm text-muted-foreground">
+              By signing in, you agree to our Terms of Service.
+            </div>
         </CardContent>
       </Card>
     </div>
