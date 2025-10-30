@@ -60,6 +60,8 @@ export function PageHeader() {
   const handleSignOut = async () => {
     const auth = getAuth();
     await signOut(auth);
+    // Also hit the server endpoint to clear the session cookie
+    await fetch('/api/auth/logout');
     router.push('/login');
   };
 
