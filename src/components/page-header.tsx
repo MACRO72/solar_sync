@@ -15,6 +15,8 @@ import {
   Sheet,
   SheetContent,
   SheetTrigger,
+  SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet"
 import { Badge } from '@/components/ui/badge';
 import { alerts } from '@/lib/data';
@@ -74,6 +76,8 @@ export function PageHeader() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left">
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
+                <SheetDescription className="sr-only">Main navigation links for the application.</SheetDescription>
               <nav className="grid gap-6 text-lg font-medium">
                  <Link
                     href="/dashboard"
