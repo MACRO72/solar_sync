@@ -165,7 +165,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                                 />
                                 <Tooltip content={<ChartTooltipContent />} />
                                 <ChartLegend content={<ChartLegendContent />} />
-                                <Bar dataKey="dust" fill="var(--color-dust)" radius={4} />
+                                <Bar dataKey="dust" fill="var(--color-dust)" radius={4} barSize={20} />
                             </BarChart>
                         ) : ( // Temperature Impact
                              <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
