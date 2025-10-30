@@ -27,6 +27,11 @@ export type PerformanceData = {
   predicted: number;
 };
 
+export type PVData = {
+  voltage: number;
+  power: number;
+};
+
 export type Stat = {
     title: string;
     value: string;
