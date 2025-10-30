@@ -57,7 +57,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
     }
     
     return (
-        <Card className="animate-energy-wave">
+        <Card className="animate-energy-wave rounded-2xl">
             <CardHeader className="flex flex-col items-stretch justify-between gap-4 md:flex-row">
                 <div>
                     <CardTitle>Performance Overview</CardTitle>
