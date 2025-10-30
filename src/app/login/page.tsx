@@ -1,17 +1,19 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   getAuth,
   GoogleAuthProvider,
   signInWithRedirect,
   getRedirectResult,
+  onAuthStateChanged,
+  User,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
-import { useUser } from '@/firebase/auth/use-user';
+import { app } from '@/firebase/config';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import { Loader2 } from 'lucide-react';
@@ -41,26 +43,34 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, loading } = useUser();
   const firestore = useFirestore();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    if (!loading && user) {
-      router.push('/dashboard');
-    }
-  }, [user, loading, router]);
+    const auth = getAuth(app);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUser(user);
+        router.push('/dashboard');
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [router]);
 
   useEffect(() => {
-    const processRedirectResult = async () => {
-      const auth = getAuth();
-      try {
-        const result = await getRedirectResult(auth);
+    const auth = getAuth(app);
+    setLoading(true);
+    getRedirectResult(auth)
+      .then(async (result) => {
         if (result && result.user) {
           const user = result.user;
           const userRef = doc(firestore, 'users', user.uid);
           const userDoc = await getDoc(userRef);
           if (!userDoc.exists()) {
-            // Create user profile if it doesn't exist
             await setDoc(userRef, {
               name: user.displayName,
               email: user.email,
@@ -68,19 +78,20 @@ export default function LoginPage() {
               phone: user.phoneNumber,
             });
           }
-          router.push('/dashboard');
+          // The onAuthStateChanged listener will handle the redirect to dashboard.
+        } else {
+          // No user from redirect, probably the initial load of the login page.
+          setLoading(false);
         }
-      } catch (error) {
+      })
+      .catch((error) => {
         console.error('Login failed:', error);
-      }
-    };
-    if (!loading && !user) {
-      processRedirectResult();
-    }
-  }, [loading, user, firestore, router]);
+        setLoading(false);
+      });
+  }, [firestore]);
   
   const handleGoogleSignIn = async () => {
-    const auth = getAuth();
+    const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);
   };
@@ -106,6 +117,7 @@ export default function LoginPage() {
           </p>
         </div>
         <div className="mt-8">
+          {/* This button click now triggers the redirect flow */}
           <Button
             onClick={handleGoogleSignIn}
             className="w-full"

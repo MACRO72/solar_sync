@@ -1,20 +1,25 @@
 
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp, getApps, getApp, cert, App } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
+
+const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT
+  ? JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)
+  : undefined;
 
 const firebaseConfig = {
-    apiKey: "AIzaSyBfN7SSZaUfb4tNiBwWhKgZaOruq7umjhw",
-    authDomain: "studio-8872529932-4d3a4.firebaseapp.com",
+    credential: cert(serviceAccount),
     databaseURL: "https://studio-8872529932-4d3a4-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "studio-8872529932-4d3a4",
-    storageBucket: "studio-8872529932-4d3a4.appspot.com",
-    messagingSenderId: "127215110217",
-    appId: "1:127215110217:web:383d55b0fccd5382c95798"
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const firestore = getFirestore(app);
+function getAdminApp(): App {
+    if (getApps().length > 0) {
+        return getApp();
+    } else {
+        return initializeApp(firebaseConfig);
+    }
+}
 
-export { app, auth, firestore };
+export const adminApp = getAdminApp();
+export const adminAuth = getAuth(adminApp);
+export const adminFirestore = getFirestore(adminApp);
