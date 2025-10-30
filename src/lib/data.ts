@@ -1,4 +1,4 @@
-import type { Device, Alert, PerformanceData, Stat, HistoricalData, PVData, PowerData, DustData, TempData } from './types';
+import type { Device, Alert, PerformanceData, Stat, HistoricalData, PowerData, DustData, TempData } from './types';
 import { Gauge, Zap, Wind, Thermometer, HeartPulse, Wrench } from "lucide-react";
 
 export const stats: Stat[] = [
@@ -98,21 +98,6 @@ export const powerData = {
     '30d': generatePowerData(30, 'day'),
 };
 
-
-const generatePVData = () => {
-    const data = [];
-    for (let v = 0; v <= 50; v += 0.5) {
-        // Simplified I-V curve model
-        const I = 8 - 0.1 * Math.exp(0.12 * v);
-        const P = v * I;
-        if (P > 0) {
-            data.push({ voltage: v, power: parseFloat(P.toFixed(2)) });
-        }
-    }
-    return data;
-};
-
-export const pvData: PVData[] = generatePVData();
 
 const generateDustData = (points: number) => {
     const data = [];

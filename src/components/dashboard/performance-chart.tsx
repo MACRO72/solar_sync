@@ -3,7 +3,7 @@ import * as React from 'react';
 import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { performanceData, powerData, pvData, dustData, tempData } from "@/lib/data"
+import { performanceData, powerData, dustData, tempData } from "@/lib/data"
 import { Button } from "@/components/ui/button";
 
 
@@ -18,7 +18,7 @@ const chartConfig = {
 } satisfies ChartConfig
 
 type TimePeriod = '24h' | '7d' | '30d';
-type ChartView = 'performance' | 'power' | 'p_vs_v' | 'dust' | 'temperature';
+type ChartView = 'performance' | 'power' | 'dust' | 'temperature';
 
 const timePeriodOptions: {value: TimePeriod, label: string}[] = [
     { value: '24h', label: '24h' },
@@ -29,7 +29,6 @@ const timePeriodOptions: {value: TimePeriod, label: string}[] = [
 const chartViewOptions: {value: ChartView, label: string}[] = [
     { value: 'performance', label: 'Performance' },
     { value: 'power', label: 'Power vs. Time' },
-    { value: 'p_vs_v', label: 'P vs. V' },
     { value: 'dust', label: 'Dust vs Efficiency' },
     { value: 'temperature', label: 'Temperature Impact' },
 ];
@@ -41,7 +40,6 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
     
     const data = chartView === 'performance' ? performanceData[timePeriod] 
         : chartView === 'power' ? powerData[timePeriod] 
-        : chartView === 'p_vs_v' ? pvData
         : chartView === 'dust' ? dustData[timePeriod]
         : tempData[timePeriod];
 
@@ -51,8 +49,6 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                 return 'Actual vs. Predicted Energy Output (kWh)';
             case 'power':
                 return 'Power Output (W) vs. Time';
-            case 'p_vs_v':
-                return 'Power vs. Voltage Curve';
             case 'dust':
                 return 'Dust Level vs. System Efficiency';
             case 'temperature':
@@ -141,30 +137,6 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                                     unit="W"
                                 />
                                 <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                                <ChartLegend content={<ChartLegendContent />} />
-                                <Line dataKey="power" type="monotone" stroke="var(--color-power)" strokeWidth={2} dot={false} name="Power" unit="W" />
-                            </LineChart>
-                        ) : chartView === 'p_vs_v' ? (
-                             <LineChart accessibilityLayer data={data as any[]} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                                <XAxis
-                                    dataKey="voltage"
-                                    type="number"
-                                    tickLine={false}
-                                    tickMargin={10}
-                                    axisLine={false}
-                                    unit="V"
-                                    domain={['dataMin', 'dataMax']}
-                                    label={{ value: "Voltage (V)", position: "insideBottom", offset: -5 }}
-                                />
-                                <YAxis
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={10}
-                                    unit="W"
-                                    label={{ value: 'Power (W)', angle: -90, position: 'insideLeft' }}
-                                />
-                                <Tooltip content={<ChartTooltipContent />} />
                                 <ChartLegend content={<ChartLegendContent />} />
                                 <Line dataKey="power" type="monotone" stroke="var(--color-power)" strokeWidth={2} dot={false} name="Power" unit="W" />
                             </LineChart>
