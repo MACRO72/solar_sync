@@ -1,15 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { useFirestore } from '@/firebase/provider';
-import { app } from '@/firebase/config';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import { Loader2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 
 function GoogleIcon() {
   return (
@@ -35,96 +29,7 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const router = useRouter();
-  const firestore = useFirestore();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
   const [isSigningIn, setIsSigningIn] = useState(false);
-
-  const handleUser = useCallback(async (user: User | null) => {
-    if (user && firestore) {
-      const userRef = doc(firestore, 'users', user.uid);
-      const userDoc = await getDoc(userRef);
-      if (!userDoc.exists()) {
-        await setDoc(userRef, {
-          name: user.displayName,
-          email: user.email,
-          photoURL: user.photoURL,
-          phone: user.phoneNumber,
-        }, { merge: true });
-      }
-
-      const idToken = await user.getIdToken();
-      try {
-        const response = await fetch('/api/auth/callback', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ idToken }),
-        });
-        
-        if (response.ok) {
-          router.push('/dashboard');
-        } else {
-          const errorData = await response.json();
-          toast({
-            variant: 'destructive',
-            title: 'Login Failed',
-            description: errorData.message || 'Could not create a server session.',
-          });
-          setLoading(false);
-          setIsSigningIn(false);
-        }
-      } catch (error) {
-        console.error('Error calling auth callback:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Login Error',
-          description: 'Failed to communicate with the server.',
-        });
-        setLoading(false);
-        setIsSigningIn(false);
-      }
-    } else {
-      setLoading(false);
-      setIsSigningIn(false);
-    }
-  }, [firestore, router, toast]);
-
-  useEffect(() => {
-    const auth = getAuth(app);
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setIsSigningIn(true);
-        handleUser(user);
-      } else {
-        setLoading(false);
-        setIsSigningIn(false);
-      }
-    }, (error) => {
-        console.error("Auth state error:", error);
-        setLoading(false);
-        setIsSigningIn(false);
-    });
-
-    return () => unsubscribe();
-  }, [handleUser]);
-
-  
-  const handleGoogleSignIn = () => {
-    setIsSigningIn(true);
-    // This forces the redirect to happen in the top-level window, breaking out of the iframe.
-    window.top!.location.href = '/auth/start';
-  };
-
-  if (loading || isSigningIn) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -139,23 +44,22 @@ export default function LoginPage() {
           </p>
         </div>
         <div className="mt-8">
-          <Button
-            onClick={handleGoogleSignIn}
-            className="w-full"
-            variant="outline"
-            disabled={isSigningIn}
-          >
-            {isSigningIn ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <GoogleIcon />
-            )}
-            Sign in with Google
-          </Button>
+           <a href="/auth/start" target="_top" onClick={() => setIsSigningIn(true)}>
+             <Button
+                className="w-full"
+                variant="outline"
+                disabled={isSigningIn}
+              >
+                {isSigningIn ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <GoogleIcon />
+                )}
+                Sign in with Google
+              </Button>
+            </a>
         </div>
       </div>
     </div>
   );
 }
-
-    
