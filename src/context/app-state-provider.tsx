@@ -23,31 +23,12 @@ interface AppState extends UserProfile {
 const AppStateContext = createContext<AppState | undefined>(undefined);
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
-  const { user } = useUser();
-  const firestore = useFirestore();
   const [profile, setProfile] = useState<UserProfile>({
     name: 'Solar Admin',
     email: 'admin@solarintel.com',
     avatar: '',
     phone: '+1 (123) 456-7890',
   });
-
-  useEffect(() => {
-    if (user && firestore) {
-      const unsub = onSnapshot(doc(firestore, "users", user.uid), (doc) => {
-        if (doc.exists()) {
-          const data = doc.data();
-          setProfile({
-            name: data.name || user.displayName || 'Solar Admin',
-            email: data.email || user.email || 'admin@solarintel.com',
-            avatar: data.photoURL || user.photoURL || '',
-            phone: data.phone || '+1 (123) 456-7890',
-          });
-        }
-      });
-      return () => unsub();
-    }
-  }, [user, firestore]);
   
   const setName = (name: string) => setProfile(p => ({...p, name}));
   const setEmail = (email: string) => setProfile(p => ({...p, email}));

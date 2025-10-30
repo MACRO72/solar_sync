@@ -27,12 +27,8 @@ import {
   AvatarImage,
 } from '@/components/ui/avatar';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { Logo } from './icons';
-import { useUser } from '@/firebase/auth/use-user';
-import { useAuth } from '@/firebase/provider';
-import { signOut } from 'firebase/auth';
-import { useToast } from '@/hooks/use-toast';
 
 const menuItems = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -56,28 +52,6 @@ export function PageHeader() {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const highPriorityAlerts = alerts.filter(a => a.severity === 'High').length;
   const pathname = usePathname();
-  const { user } = useUser();
-  const auth = useAuth();
-  const router = useRouter();
-  const { toast } = useToast();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      toast({
-        title: 'Signed out',
-        description: 'You have been successfully signed out.',
-      });
-      router.push('/login');
-    } catch (error) {
-      console.error('Sign out error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Sign out failed',
-        description: 'An error occurred while signing out.',
-      });
-    }
-  };
 
   const handleLinkClick = () => {
     setIsSheetOpen(false);
@@ -125,6 +99,19 @@ export function PageHeader() {
                       {item.label}
                     </Link>
                 ))}
+                 <Link
+                      href={'/dashboard/settings'}
+                      onClick={handleLinkClick}
+                      className={cn(
+                          'flex items-center gap-4 px-2.5 transition-colors hover:text-foreground',
+                          pathname === '/dashboard/settings'
+                          ? 'text-foreground'
+                          : 'text-muted-foreground'
+                      )}
+                      >
+                      <Settings className="h-5 w-5" />
+                      Settings
+                    </Link>
               </nav>
             </SheetContent>
           </Sheet>
@@ -170,37 +157,6 @@ export function PageHeader() {
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
-         <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="rounded-full">
-                <Avatar>
-                  <AvatarImage src={user?.photoURL || ''} alt={user?.displayName || ''} />
-                  <AvatarFallback>{user?.displayName?.charAt(0).toUpperCase()}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="bottom" align="end" className="w-56">
-              <DropdownMenuLabel>{user?.displayName}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/profile">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                 <Link href="/dashboard/settings">
-                    <Settings className="mr-2 h-4 w-4" />
-                    <span>Settings</span>
-                 </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
       </div>
     </header>
   );
