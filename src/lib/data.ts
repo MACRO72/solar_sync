@@ -147,11 +147,32 @@ export const tempData = {
 };
 
 
-const generateHistoricalData = (base: number, volatility: number, days = 30) => {
-    return Array.from({ length: days }, (_, i) => ({
-        day: i + 1,
+const generateHistoricalData = (base: number, volatility: number) => {
+    const now = new Date();
+    const data24h = Array.from({ length: 24 }, (_, i) => {
+        const date = new Date(now);
+        date.setHours(now.getHours() - (23 - i));
+        return {
+            time: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            value: Math.round(base + (Math.random() - 0.5) * volatility * base),
+        };
+    });
+
+    const data7d = Array.from({ length: 7 }, (_, i) => ({
+        time: i + 1,
         value: Math.round(base + (Math.random() - 0.5) * volatility * base),
     }));
+
+    const data30d = Array.from({ length: 30 }, (_, i) => ({
+        time: i + 1,
+        value: Math.round(base + (Math.random() - 0.5) * volatility * base),
+    }));
+
+    return {
+        '24h': data24h,
+        '7d': data7d,
+        '30d': data30d,
+    };
 };
 
 export const historicalData: HistoricalData = {

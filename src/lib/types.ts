@@ -53,10 +53,16 @@ export type Stat = {
 }
 
 export type HistoricalDataPoint = {
-    day: number;
+    time: string | number;
     value: number;
 }
 
+export type HistoricalDataPeriod = {
+    '24h': HistoricalDataPoint[];
+    '7d': HistoricalDataPoint[];
+    '30d': HistoricalDataPoint[];
+}
+
 export type HistoricalData = {
-    [key: string]: HistoricalDataPoint[];
+    [key: string]: HistoricalDataPeriod;
 }

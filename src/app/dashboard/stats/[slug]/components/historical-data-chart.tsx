@@ -9,9 +9,10 @@ const chartConfig = {
     value: { label: "Value", color: "hsl(var(--primary))" },
 } satisfies ChartConfig
 
-type TimePeriod = '7d' | '30d';
+type TimePeriod = '24h' | '7d' | '30d';
 
 const timePeriodOptions: {value: TimePeriod, label: string}[] = [
+    { value: '24h', label: '24h' },
     { value: '7d', label: '7d' },
     { value: '30d', label: '30d' },
 ];
@@ -20,8 +21,14 @@ const timePeriodOptions: {value: TimePeriod, label: string}[] = [
 export function HistoricalDataChart({ metric }: { metric: string }) {
     const [timePeriod, setTimePeriod] = React.useState<TimePeriod>('30d');
     
-    const allData = historicalData[metric as keyof typeof historicalData] || [];
-    const data = timePeriod === '7d' ? allData.slice(-7) : allData;
+    const allData = historicalData[metric as keyof typeof historicalData]?.[timePeriod] || [];
+
+    const formatTick = (value: any) => {
+        if (timePeriod === '24h') {
+            return value; // Already formatted as HH:mm
+        }
+        return `Day ${value}`;
+    };
 
     return (
         <div className="space-y-4">
@@ -39,14 +46,14 @@ export function HistoricalDataChart({ metric }: { metric: string }) {
                 ))}
             </div>
             <ChartContainer config={chartConfig} className="h-[400px] w-full">
-                <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 0, bottom: 0, left: -20 }}>
+                <LineChart accessibilityLayer data={allData} margin={{ top: 5, right: 0, bottom: 0, left: -20 }}>
                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
                     <XAxis
-                        dataKey="day"
+                        dataKey="time"
                         tickLine={false}
                         tickMargin={10}
                         axisLine={false}
-                         tickFormatter={(value) => `Day ${value}`}
+                         tickFormatter={formatTick}
                     />
                      <YAxis
                         tickLine={false}
