@@ -29,7 +29,3 @@ export async function loginWithGoogle() {
   // We will redirect to a client page that handles the sign-in.
   redirect('/auth/google');
 }
-
-export async function signOut() {
-  // This will be called from a client component
-}
