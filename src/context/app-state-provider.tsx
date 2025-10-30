@@ -11,6 +11,8 @@ interface AppState {
   setEmail: (email: string) => void;
   avatar: string;
   setAvatar: (avatar: string) => void;
+  phone: string;
+  setPhone: (phone: string) => void;
 }
 
 const AppStateContext = createContext<AppState | undefined>(undefined);
@@ -21,6 +23,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [name, setName] = useState('Solar Admin');
   const [email, setEmail] = useState('admin@solarintel.com');
   const [avatar, setAvatar] = useState(originalUserAvatar?.imageUrl || '');
+  const [phone, setPhone] = useState('+1 (123) 456-7890');
+
 
   const value = {
     name,
@@ -29,6 +33,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setEmail,
     avatar,
     setAvatar,
+    phone,
+    setPhone,
   };
 
   return (
