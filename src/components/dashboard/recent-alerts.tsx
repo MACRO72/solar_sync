@@ -13,7 +13,7 @@ const getIcon = (severity: 'High' | 'Medium' | 'Low') => {
 
 export function RecentAlerts() {
     return (
-        <GlassCard className="h-full">
+        <GlassCard className="h-full animate-energy-wave">
             <CardHeader>
                 <CardTitle>Recent Alerts</CardTitle>
                 <CardDescription>AI-detected events and system notifications.</CardDescription>

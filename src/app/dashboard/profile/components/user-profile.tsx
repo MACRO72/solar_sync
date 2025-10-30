@@ -54,7 +54,7 @@ export function UserProfile() {
   };
 
   return (
-    <Card>
+    <Card className="animate-energy-wave">
       <CardHeader>
         <CardTitle>My Profile</CardTitle>
         <CardDescription>Update your personal information and avatar.</CardDescription>

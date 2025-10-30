@@ -13,7 +13,7 @@ export function OverviewStats() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
             {stats.map((stat, index) => (
                 <Link key={index} href={`/dashboard/stats/${titleToSlug(stat.title)}`}>
-                    <GlassCard className="h-full">
+                    <GlassCard className="h-full animate-energy-wave">
                         <CardHeader className="flex flex-row items-center justify-start gap-4 space-y-0 pb-2">
                             <stat.icon className={cn("h-6 w-6 text-muted-foreground", stat.color)} />
                             <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>

@@ -3,7 +3,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/com
 
 export function AppInformation() {
     return (
-        <Card>
+        <Card className="animate-energy-wave">
             <CardHeader>
                 <CardTitle>App Information</CardTitle>
                 <CardDescription>Details about the current application build.</CardDescription>

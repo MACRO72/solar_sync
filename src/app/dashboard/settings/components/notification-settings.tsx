@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 
 export function NotificationSettings() {
     return (
-        <Card>
+        <Card className="animate-energy-wave">
             <CardHeader>
                 <CardTitle>Notification Settings</CardTitle>
                 <CardDescription>Manage how you receive alerts and updates.</CardDescription>

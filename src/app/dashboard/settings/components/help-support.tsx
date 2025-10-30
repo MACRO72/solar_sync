@@ -6,7 +6,7 @@ import Link from "next/link";
 
 export function HelpAndSupport() {
     return (
-        <Card>
+        <Card className="animate-energy-wave">
             <CardHeader>
                 <CardTitle>Help & Support</CardTitle>
                 <CardDescription>Get help with using the dashboard.</CardDescription>

@@ -52,7 +52,7 @@ export default function DeviceDetailPage({ params }: { params: { slug: string } 
                         Back to Connectivity
                     </Button>
                 </Link>
-                <GlassCard>
+                <GlassCard className="animate-energy-wave">
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <div>
@@ -115,7 +115,7 @@ export default function DeviceDetailPage({ params }: { params: { slug: string } 
                     Back to Devices
                 </Button>
             </Link>
-            <GlassCard>
+            <GlassCard className="animate-energy-wave">
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <div>
