@@ -27,8 +27,10 @@ import {
   AvatarImage,
 } from '@/components/ui/avatar';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from './icons';
+import { useUser } from '@/firebase/auth/use-user';
+import { getAuth, signOut } from 'firebase/auth';
 
 const menuItems = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -52,6 +54,19 @@ export function PageHeader() {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const highPriorityAlerts = alerts.filter(a => a.severity === 'High').length;
   const pathname = usePathname();
+  const { user } = useUser();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    const auth = getAuth();
+    await signOut(auth);
+    router.push('/login');
+  };
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  }
 
   const handleLinkClick = () => {
     setIsSheetOpen(false);
@@ -157,6 +172,39 @@ export function PageHeader() {
             </div>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                    <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || "User"} />
+                        <AvatarFallback>{getInitials(user?.displayName)}</AvatarFallback>
+                    </Avatar>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/profile">
+                    <User className="mr-2" />
+                    Profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dashboard/settings">
+                    <Settings className="mr-2" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2" />
+                    Sign Out
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+
       </div>
     </header>
   );

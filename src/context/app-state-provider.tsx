@@ -24,11 +24,35 @@ const AppStateContext = createContext<AppState | undefined>(undefined);
 
 export function AppStateProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile>({
-    name: 'Solar Admin',
-    email: 'admin@solarintel.com',
+    name: '',
+    email: '',
     avatar: '',
-    phone: '+1 (123) 456-7890',
+    phone: '',
   });
+
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  useEffect(() => {
+    if (user && firestore) {
+      const userDocRef = doc(firestore, 'users', user.uid);
+      const unsubscribe = onSnapshot(userDocRef, (doc) => {
+        if (doc.exists()) {
+          const data = doc.data();
+          setProfile({
+            name: data.name || user.displayName || '',
+            email: data.email || user.email || '',
+            avatar: data.photoURL || user.photoURL || '',
+            phone: data.phone || '',
+          });
+        }
+      });
+
+      return () => unsubscribe();
+    } else if (!user) {
+        setProfile({ name: '', email: '', avatar: '', phone: ''});
+    }
+  }, [user, firestore]);
   
   const setName = (name: string) => setProfile(p => ({...p, name}));
   const setEmail = (email: string) => setProfile(p => ({...p, email}));

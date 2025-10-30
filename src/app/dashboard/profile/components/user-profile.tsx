@@ -31,11 +31,12 @@ export function UserProfile() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setCurrentName(name);
-    setCurrentEmail(email);
-    setCurrentAvatar(avatar);
-    setCurrentPhone(phone);
-  }, [name, email, avatar, phone]);
+    if (user) {
+        setCurrentName(user.displayName || name);
+        setCurrentEmail(user.email || email);
+        setCurrentAvatar(user.photoURL || avatar);
+    }
+  }, [user, name, email, avatar]);
 
   const handleSave = async () => {
     if (!user) {
@@ -109,6 +110,11 @@ export function UserProfile() {
     fileInputRef.current?.click();
   };
 
+  const getInitials = (name: string) => {
+    if (!name) return '';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  }
+
   return (
     <Card className="animate-energy-wave">
       <CardHeader>
@@ -119,7 +125,7 @@ export function UserProfile() {
         <div className="flex items-center gap-6">
           <Avatar className="h-20 w-20">
             <AvatarImage src={currentAvatar} alt="User Avatar" />
-            <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
+            <AvatarFallback>{getInitials(currentName)}</AvatarFallback>
           </Avatar>
            <div className="space-y-2">
              <input
