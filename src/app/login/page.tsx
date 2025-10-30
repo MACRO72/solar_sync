@@ -20,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Logo } from '@/components/icons';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -65,8 +65,9 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(true);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -74,7 +75,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     const processRedirectResult = async () => {
-      setIsProcessing(true);
       try {
         const result = await getRedirectResult(auth);
         if (result) {
@@ -209,14 +209,30 @@ export default function LoginPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="••••••••"
-                        {...field}
+                    <div className="relative">
+                      <FormControl>
+                        <Input
+                          type={showPassword ? 'text' : 'password'}
+                          placeholder="••••••••"
+                          {...field}
+                          disabled={isProcessing}
+                          className="pr-10"
+                        />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute inset-y-0 right-0 h-full px-3"
+                        onClick={() => setShowPassword((prev) => !prev)}
                         disabled={isProcessing}
-                      />
-                    </FormControl>
+                      >
+                        {showPassword ? <EyeOff /> : <Eye />}
+                        <span className="sr-only">
+                          {showPassword ? 'Hide password' : 'Show password'}
+                        </span>
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
