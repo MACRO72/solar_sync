@@ -4,3 +4,4 @@ config();
 import '@/ai/flows/generate-maintenance-schedule.ts';
 import '@/ai/flows/summarize-performance-anomalies.ts';
 import '@/ai/flows/generate-alert-notifications.ts';
+import '@/ai/flows/get-device-location.ts';
