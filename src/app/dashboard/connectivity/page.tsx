@@ -99,7 +99,7 @@ export default function ConnectivityPage() {
 
       <GlassCard>
         <CardHeader>
-            <CardTitle>Manual ESP32 Connection</CardTitle>
+            <CardTitle>Connection to the IP</CardTitle>
             <CardDescription>
                 Enter the IP address of the ESP32 device to fetch data manually.
             </CardDescription>
