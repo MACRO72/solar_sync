@@ -25,7 +25,7 @@ async function createUserProfile(user: any) {
 }
 
 export async function loginWithGoogle() {
-  // This function is tricky to implement on the server side with the client SDK.
-  // We will redirect to a client page that handles the sign-in.
-  redirect('/auth/google');
+  // This is now handled client-side on the login page.
+  // This server action is no longer used but kept to prevent build errors if referenced elsewhere.
+  redirect('/login');
 }
