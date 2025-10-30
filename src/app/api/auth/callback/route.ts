@@ -16,15 +16,14 @@ export async function GET(request: Request) {
   }
 
   try {
-    const decodedToken = await auth.verifyIdToken(idToken);
-    
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await auth.createSessionCookie(idToken, { expiresIn });
 
     cookies().set('session', sessionCookie, {
       maxAge: expiresIn,
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
     });
 
     return new Response(JSON.stringify({ status: 'success' }), { status: 200 });

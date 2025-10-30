@@ -46,6 +46,39 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
 
+  // Effect to handle redirect result after coming back from Google
+  useEffect(() => {
+    const auth = getAuth(app);
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result && result.user && firestore) {
+          // This means a user has successfully signed in.
+          const user = result.user;
+          const userRef = doc(firestore, 'users', user.uid);
+          const userDoc = await getDoc(userRef);
+          if (!userDoc.exists()) {
+            await setDoc(userRef, {
+              name: user.displayName,
+              email: user.email,
+              photoURL: user.photoURL,
+              phone: user.phoneNumber,
+            });
+          }
+        }
+        // No user from redirect, probably the initial load of the login page.
+        // The onAuthStateChanged listener below will handle the redirect to dashboard if user is already logged in.
+      })
+      .catch((error) => {
+        console.error('Error getting redirect result:', error);
+      })
+      .finally(() => {
+        // Set loading to false after we've checked for a redirect result
+        setLoading(false);
+      });
+  }, [firestore]);
+
+
+  // Effect to listen for auth state changes
   useEffect(() => {
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -62,40 +95,14 @@ export default function LoginPage() {
           router.push('/dashboard');
         });
       } else {
-        setLoading(false);
+        // Only set loading to false here if we didn't just handle a redirect
+        if(loading) setLoading(false);
       }
     });
 
     return () => unsubscribe();
-  }, [router]);
+  }, [router, loading]);
 
-  useEffect(() => {
-    const auth = getAuth(app);
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result && result.user) {
-          const user = result.user;
-          const userRef = doc(firestore, 'users', user.uid);
-          const userDoc = await getDoc(userRef);
-          if (!userDoc.exists()) {
-            await setDoc(userRef, {
-              name: user.displayName,
-              email: user.email,
-              photoURL: user.photoURL,
-              phone: user.phoneNumber,
-            });
-          }
-          // The onAuthStateChanged listener will handle the redirect.
-        } else {
-          // No user from redirect, probably the initial load of the login page.
-          setLoading(false);
-        }
-      })
-      .catch((error) => {
-        console.error('Login failed:', error);
-        setLoading(false);
-      });
-  }, [firestore]);
   
   const handleGoogleSignIn = async () => {
     const auth = getAuth(app);
