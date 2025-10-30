@@ -1,9 +1,25 @@
 
+'use client';
+import { useState } from 'react';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GlassCard, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/glass-card";
-import { CheckCircle, XCircle, Wifi, WifiOff, ArrowLeft } from "lucide-react";
+import { CheckCircle, XCircle, Wifi, WifiOff, ArrowLeft, Plug } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { 
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
 
 const panels = [
   { id: "north-wing-panel-a1", name: "North Wing Panel A1", connected: true },
@@ -16,6 +32,30 @@ const panels = [
 
 export default function ConnectivityPage() {
   const isConnected = panels.some(p => p.connected);
+  const [ipAddress, setIpAddress] = useState("");
+  const { toast } = useToast();
+
+  const handleConnect = () => {
+    if (ipAddress) {
+        toast({
+            title: "Connecting...",
+            description: `Attempting to connect to ${ipAddress}`,
+        });
+        // Simulate connection attempt
+        setTimeout(() => {
+             toast({
+                title: "Connection Successful",
+                description: `Successfully fetched data from ${ipAddress}`,
+            });
+        }, 2000);
+    } else {
+        toast({
+            variant: "destructive",
+            title: "Invalid IP Address",
+            description: "Please enter a valid IP address.",
+        });
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -32,9 +72,40 @@ export default function ConnectivityPage() {
                 {isConnected ? <Wifi className="text-status-positive" /> : <WifiOff className="text-destructive" />}
                 Sensor Connectivity Status
             </CardTitle>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                {isConnected ? <CheckCircle className="h-5 w-5 text-status-positive" /> : <XCircle className="h-5 w-5 text-destructive" />}
-                <span>{isConnected ? "All Systems Operational" : "Some Sensors Offline"}</span>
+            <div className="flex items-center gap-4">
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="outline">
+                            <Plug className="mr-2 h-4 w-4" />
+                            Manual Connection
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Manual ESP32 Connection</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Enter the IP address of the ESP32 device to fetch data manually.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <div className="space-y-2">
+                            <Label htmlFor="ip-address">IP Address</Label>
+                            <Input 
+                                id="ip-address" 
+                                placeholder="e.g., 192.168.1.100" 
+                                value={ipAddress}
+                                onChange={(e) => setIpAddress(e.target.value)}
+                            />
+                        </div>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleConnect}>Connect</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    {isConnected ? <CheckCircle className="h-5 w-5 text-status-positive" /> : <XCircle className="h-5 w-5 text-destructive" />}
+                    <span>{isConnected ? "All Systems Operational" : "Some Sensors Offline"}</span>
+                </div>
             </div>
           </div>
           <CardDescription>Real-time status of all solar panel sensor connections.</CardDescription>
