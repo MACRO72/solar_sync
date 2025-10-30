@@ -67,21 +67,19 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                         </Button>
                     ))}
                 </div>
-                 {chartView === 'performance' && (
-                    <div className="flex items-center gap-2">
-                        {timePeriodOptions.map(option => (
-                            <Button 
-                                key={option.value}
-                                variant={timePeriod === option.value ? 'default' : 'outline'}
-                                size="sm"
-                                className="rounded-full"
-                                onClick={() => setTimePeriod(option.value)}
-                            >
-                                {option.label}
-                            </Button>
-                        ))}
-                    </div>
-                )}
+                 <div className="flex items-center gap-2">
+                    {timePeriodOptions.map(option => (
+                        <Button 
+                            key={option.value}
+                            variant={timePeriod === option.value ? 'default' : 'outline'}
+                            size="sm"
+                            className="rounded-full"
+                            onClick={() => setTimePeriod(option.value)}
+                        >
+                            {option.label}
+                        </Button>
+                    ))}
+                </div>
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig} className={fullHeight ? "h-[400px] w-full" : "h-[300px] w-full"}>
