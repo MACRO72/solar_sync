@@ -16,6 +16,39 @@
         }
       },
       "required": ["name", "email"]
+    },
+    "DeviceData": {
+      "title": "Device Data",
+      "description": "Represents real-time data from a device like an ESP32.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique ID of the device."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the device."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Online", "Offline", "Error"],
+          "description": "The current status of the device."
+        },
+        "temperature": {
+          "type": "number",
+          "description": "The temperature reading from the device."
+        },
+        "energyOutput": {
+          "type": "number",
+          "description": "The energy output from the device."
+        },
+        "lastSeen": {
+          "type": "string",
+          "description": "Timestamp of the last update."
+        }
+      },
+      "required": ["id", "name", "status", "lastSeen"]
     }
   },
   "auth": {
@@ -27,6 +60,12 @@
         "$ref": "#/entities/UserProfile"
       },
       "description": "Stores user profile information, keyed by user ID."
+    },
+    "/device-data/{deviceId}": {
+      "schema": {
+        "$ref": "#/entities/DeviceData"
+      },
+      "description": "Stores real-time data from devices."
     }
   }
 }

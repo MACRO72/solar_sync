@@ -2,10 +2,13 @@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { GlassCard, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/glass-card"
 import { Badge } from "@/components/ui/badge"
-import { devices } from "@/lib/data"
 import { cn } from "@/lib/utils"
+import { useRealtimeData } from "@/firebase/firestore/use-realtime-data";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export function DevicesTable() {
+    const { data: devices, loading } = useRealtimeData();
+
     const getStatusBadge = (status: 'Online' | 'Offline' | 'Error') => {
         return (
             <Badge variant="outline" className={cn('text-xs', {
@@ -43,16 +46,35 @@ export function DevicesTable() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {devices.map(device => (
-                                <TableRow key={device.id}>
-                                    <TableCell className="font-medium">{device.id}</TableCell>
-                                    <TableCell>{device.name}</TableCell>
-                                    <TableCell>{getStatusBadge(device.status)}</TableCell>
-                                    <TableCell>{device.temperature}</TableCell>
-                                    <TableCell>{device.energyOutput}</TableCell>
-                                    <TableCell>{device.lastSeen}</TableCell>
+                            {loading ? (
+                                Array.from({ length: 5 }).map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-40" /></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                                        <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : devices.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center h-24">
+                                        Waiting for data from your ESP32...
+                                    </TableCell>
                                 </TableRow>
-                            ))}
+                            ) : (
+                                devices.map(device => (
+                                    <TableRow key={device.id}>
+                                        <TableCell className="font-medium">{device.id}</TableCell>
+                                        <TableCell>{device.name}</TableCell>
+                                        <TableCell>{getStatusBadge(device.status)}</TableCell>
+                                        <TableCell>{device.temperature ?? 'N/A'}</TableCell>
+                                        <TableCell>{device.energyOutput ?? 'N/A'}</TableCell>
+                                        <TableCell>{device.lastSeen}</TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </div>

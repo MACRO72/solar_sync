@@ -5,9 +5,9 @@ export type Device = {
   name: string;
   status: 'Online' | 'Offline' | 'Error';
   lastSeen: string;
-  temperature: number;
-  energyOutput: number;
-  location: {
+  temperature?: number;
+  energyOutput?: number;
+  location?: {
     lat: number;
     lng: number;
   };
