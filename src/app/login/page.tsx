@@ -1,9 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useFirestore } from '@/firebase/provider';
+import { app } from '@/firebase/config';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 function GoogleIcon() {
   return (
@@ -30,6 +36,84 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start in loading state to process redirect
+  const router = useRouter();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const auth = getAuth(app);
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result && result.user && firestore) {
+          setIsSigningIn(true); // Show loading spinner while we process
+          const user = result.user;
+          const userRef = doc(firestore, 'users', user.uid);
+          const userDoc = await getDoc(userRef);
+
+          if (!userDoc.exists()) {
+            await setDoc(userRef, {
+              name: user.displayName,
+              email: user.email,
+              photoURL: user.photoURL,
+            }, { merge: true });
+          }
+
+          const idToken = await user.getIdToken();
+          const response = await fetch('/api/auth/callback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken }),
+          });
+
+          if (response.ok) {
+            router.push('/dashboard');
+          } else {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Could not create a server session.');
+          }
+        } else {
+          // No redirect result, so we are on the login page to sign in.
+          setIsLoading(false);
+        }
+      })
+      .catch((error) => {
+        console.error('Authentication error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Sign-in Failed',
+          description: error.message || 'An unknown error occurred during sign-in.',
+        });
+        setIsLoading(false);
+        setIsSigningIn(false);
+      });
+  }, [firestore, router, toast]);
+
+  const handleSignIn = () => {
+    setIsSigningIn(true);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+    signInWithRedirect(auth, provider).catch((error) => {
+        console.error("Redirect sign-in error", error);
+        toast({
+            variant: "destructive",
+            title: "Sign-In Error",
+            description: "Could not start the sign-in process. Please try again."
+        });
+        setIsSigningIn(false);
+    });
+  };
+
+  if (isLoading || isSigningIn) {
+      return (
+         <div className="flex min-h-screen items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <p className="text-muted-foreground">{isLoading ? 'Processing authentication...' : 'Signing in...'}</p>
+            </div>
+        </div>
+      )
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
@@ -44,20 +128,15 @@ export default function LoginPage() {
           </p>
         </div>
         <div className="mt-8">
-           <a href="/auth/start" target="_top" onClick={() => setIsSigningIn(true)}>
-             <Button
-                className="w-full"
-                variant="outline"
-                disabled={isSigningIn}
-              >
-                {isSigningIn ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <GoogleIcon />
-                )}
+           <Button
+              className="w-full"
+              variant="outline"
+              onClick={handleSignIn}
+              disabled={isSigningIn}
+            >
+                <GoogleIcon />
                 Sign in with Google
-              </Button>
-            </a>
+            </Button>
         </div>
       </div>
     </div>
