@@ -14,6 +14,7 @@ export default function AuthCallbackPage() {
   const firestore = useFirestore();
   const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
+  const [message, setMessage] = useState('Finalizing authentication...');
 
   useEffect(() => {
     const processAuth = async () => {
@@ -21,8 +22,7 @@ export default function AuthCallbackPage() {
         
         try {
             const result = await getRedirectResult(auth);
-            sessionStorage.removeItem('auth-in-progress');
-
+            
             if (result && result.user && firestore) {
                 const user = result.user;
                 const userRef = doc(firestore, 'users', user.uid);
@@ -49,14 +49,16 @@ export default function AuthCallbackPage() {
                     const errorData = await response.json();
                     throw new Error(errorData.message || 'Could not create a server session.');
                 }
-            } else if (!result) {
-                // This can happen if the page is reloaded or visited directly.
+            } else if (!auth.currentUser) {
+                // This can happen if the page is reloaded or visited directly without a pending redirect.
                 // If there's no user session, go to login.
-                if (!auth.currentUser) {
-                    router.push('/login');
-                } else {
-                    router.push('/dashboard');
-                }
+                setMessage('No active sign-in attempt. Redirecting to login...');
+                setTimeout(() => router.push('/login'), 2000);
+            } else {
+                // A user is already logged in, but there was no redirect result.
+                // This means they are authenticated. Send them to the dashboard.
+                setMessage('Already authenticated. Redirecting to dashboard...');
+                setTimeout(() => router.push('/dashboard'), 2000);
             }
         } catch (e: any) {
             console.error('Authentication callback error:', e);
@@ -86,7 +88,7 @@ export default function AuthCallbackPage() {
     <div className="flex min-h-screen items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-muted-foreground">Finalizing authentication...</p>
+        <p className="text-muted-foreground">{message}</p>
       </div>
     </div>
   );

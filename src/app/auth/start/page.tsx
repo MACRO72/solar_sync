@@ -12,30 +12,14 @@ export default function AuthStartPage() {
   useEffect(() => {
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
-    // After sign-in, Firebase will redirect to the page it was initiated from.
-    // In our case, this page. The logic to handle the result is on the callback page.
-    // So we add a flag to sessionStorage to let the callback page know we've started.
-    sessionStorage.setItem('auth-in-progress', 'true');
+    
+    // We don't need a session flag. signInWithRedirect handles the return trip.
     signInWithRedirect(auth, provider).catch(error => {
       console.error("Redirect sign-in error", error);
       // If there's an immediate error, redirect to login
       router.push('/login');
     });
   }, [router]);
-
-  // This page will redirect to Google. If the user comes back to it,
-  // we check if they are being redirected back from Google.
-  // The actual result handling is done on the callback page.
-  useEffect(() => {
-    const auth = getAuth(app);
-    const inProgress = sessionStorage.getItem('auth-in-progress');
-    if (inProgress) {
-        // We are likely on the return trip from Google.
-        // Let's go to the callback page to handle the result.
-        router.replace('/auth/callback');
-    }
-  }, [router]);
-
 
   return (
     <div className="flex min-h-screen items-center justify-center">
