@@ -11,18 +11,18 @@ export function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Note: This logic is currently bypassed in dashboard/layout.tsx
-    // To re-enable auth protection, wrap the content in `RouteGuard` again.
     if (!loading && !user) {
       router.push('/login');
     }
   }, [user, loading, router]);
 
   if (loading || !user) {
-    // This part is also bypassed. If re-enabled, it will show a loader.
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading Dashboard...</p>
+        </div>
       </div>
     );
   }

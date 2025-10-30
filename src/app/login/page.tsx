@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { app } from '@/firebase/config';
@@ -42,62 +42,51 @@ export default function LoginPage() {
   const auth = getAuth(app);
 
   useEffect(() => {
-    // This effect runs once to handle the redirect result from Google.
-    getRedirectResult(auth)
-      .then(async (result) => {
-        setIsProcessing(true);
-        if (result && result.user && firestore) {
-          const user = result.user;
-          const userRef = doc(firestore, 'users', user.uid);
-          const userDoc = await getDoc(userRef);
-
-          if (!userDoc.exists()) {
-            await setDoc(userRef, {
-              name: user.displayName,
-              email: user.email,
-              photoURL: user.photoURL,
-            }, { merge: true });
-          }
-          // The onAuthStateChanged listener below will handle the redirect to dashboard.
-        } else {
-           setIsProcessing(false);
-        }
-      })
-      .catch((error) => {
-        console.error('Authentication error:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Sign-in Failed',
-          description: `Error: ${error.code}. Please check your Google Cloud project configuration.`,
-        });
-        setIsProcessing(false);
-      });
-      
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
+        setIsProcessing(true); // Set processing while we redirect
         router.push('/dashboard');
       } else {
-        setIsProcessing(false);
+        setIsProcessing(false); // No user, stop loading
       }
     });
 
     return () => unsubscribe();
-  }, [auth, firestore, router, toast]);
+  }, [auth, router]);
+  
+  const handleUserSetup = async (user: User) => {
+      if (!firestore) return;
+      const userRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          name: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+        }, { merge: true });
+      }
+  }
 
 
-  const handleSignIn = () => {
+  const handleSignIn = async () => {
     if (isProcessing) return;
     setIsProcessing(true);
     const provider = new GoogleAuthProvider();
-    signInWithRedirect(auth, provider).catch((error) => {
-        console.error("Redirect sign-in error", error);
+    
+    try {
+        const result = await signInWithPopup(auth, provider);
+        await handleUserSetup(result.user);
+        // The onAuthStateChanged listener will handle the redirect.
+    } catch (error: any) {
+        console.error('Sign-in error:', error);
         toast({
-            variant: "destructive",
-            title: "Sign-In Error",
-            description: "Could not start the sign-in process. Please try again."
+          variant: 'destructive',
+          title: 'Sign-in Failed',
+          description: error.message || 'Could not sign in with Google. Please try again.',
         });
         setIsProcessing(false);
-    });
+    }
   };
 
   if (isProcessing) {
@@ -105,7 +94,7 @@ export default function LoginPage() {
          <div className="flex min-h-screen items-center justify-center">
             <div className="flex flex-col items-center gap-4">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="text-muted-foreground">Connecting to Google...</p>
+                <p className="text-muted-foreground">Initializing...</p>
             </div>
         </div>
       )
@@ -130,7 +119,10 @@ export default function LoginPage() {
               onClick={handleSignIn}
               disabled={isProcessing}
             >
-                <GoogleIcon />
+                {isProcessing ? 
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 
+                    <GoogleIcon />
+                }
                 Sign in with Google
             </Button>
         </div>
