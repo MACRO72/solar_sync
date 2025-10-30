@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   getAuth,
@@ -16,10 +16,11 @@ import { app } from '@/firebase/config';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/icons';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 function GoogleIcon() {
   return (
-    <svg className="h-5 w-5" viewBox="0 0 48 48">
+    <svg className="h-5 w-5 mr-2" viewBox="0 0 48 48">
       <path
         fill="#FFC107"
         d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
@@ -43,74 +44,103 @@ function GoogleIcon() {
 export default function LoginPage() {
   const router = useRouter();
   const firestore = useFirestore();
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
-  // Effect to handle redirect result after coming back from Google
+  const handleUser = useCallback(async (user: User | null) => {
+    if (user && firestore) {
+      // Ensure user profile exists in Firestore
+      const userRef = doc(firestore, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) {
+        await setDoc(userRef, {
+          name: user.displayName,
+          email: user.email,
+          photoURL: user.photoURL,
+          phone: user.phoneNumber,
+        }, { merge: true });
+      }
+
+      // Create server-side session
+      const idToken = await user.getIdToken();
+      const response = await fetch('/api/auth/callback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ idToken }),
+      });
+      
+      if (response.ok) {
+        router.push('/dashboard');
+      } else {
+         toast({
+          variant: 'destructive',
+          title: 'Login Failed',
+          description: 'Could not create a server session. Please try again.',
+        });
+        setLoading(false);
+        setIsSigningIn(false);
+      }
+    } else {
+        setLoading(false);
+        setIsSigningIn(false);
+    }
+  }, [firestore, router, toast]);
+
+  // Effect to handle redirect result
   useEffect(() => {
     const auth = getAuth(app);
+    setIsSigningIn(true); // Assume a sign-in process is happening
     getRedirectResult(auth)
-      .then(async (result) => {
-        if (result && result.user && firestore) {
-          // This means a user has successfully signed in.
-          const user = result.user;
-          const userRef = doc(firestore, 'users', user.uid);
-          const userDoc = await getDoc(userRef);
-          if (!userDoc.exists()) {
-            await setDoc(userRef, {
-              name: user.displayName,
-              email: user.email,
-              photoURL: user.photoURL,
-              phone: user.phoneNumber,
-            });
-          }
+      .then((result) => {
+        if (result) {
+          // User is coming back from a successful redirect.
+          // handleUser will be called by onAuthStateChanged.
+        } else {
+          // No redirect result, could be initial load or user is already logged in.
+          // Let onAuthStateChanged handle it.
+           setIsSigningIn(false); // No redirect result, so not actively signing in
         }
-        // No user from redirect, probably the initial load of the login page.
-        // The onAuthStateChanged listener below will handle the redirect to dashboard if user is already logged in.
       })
       .catch((error) => {
         console.error('Error getting redirect result:', error);
-      })
-      .finally(() => {
-        // Set loading to false after we've checked for a redirect result
-        setLoading(false);
+        toast({
+          variant: 'destructive',
+          title: 'Authentication Error',
+          description: `Error during sign-in: ${error.message}`,
+        });
+        setIsSigningIn(false);
       });
-  }, [firestore]);
-
-
-  // Effect to listen for auth state changes
+  }, [toast]);
+  
+  // Master effect to listen for any auth state change
   useEffect(() => {
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        setUser(user);
-        // After user is confirmed, fetch id token and send to server to create session
-        user.getIdToken().then(async (idToken) => {
-          await fetch('/api/auth/callback', {
-            method: 'GET',
-            headers: {
-              Authorization: `Bearer ${idToken}`,
-            },
-          });
-          router.push('/dashboard');
-        });
+        // A user is detected. Handle them.
+        handleUser(user);
       } else {
-        // Only set loading to false here if we didn't just handle a redirect
-        if(loading) setLoading(false);
+        // No user is signed in. Stop loading.
+        setLoading(false);
+        setIsSigningIn(false);
       }
     });
 
     return () => unsubscribe();
-  }, [router, loading]);
+  }, [handleUser]);
 
   
   const handleGoogleSignIn = async () => {
+    setIsSigningIn(true);
     const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);
   };
 
-  if (loading || user) {
+  if (loading || isSigningIn) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -135,6 +165,7 @@ export default function LoginPage() {
             onClick={handleGoogleSignIn}
             className="w-full"
             variant="outline"
+            disabled={isSigningIn}
           >
             <GoogleIcon />
             Sign in with Google

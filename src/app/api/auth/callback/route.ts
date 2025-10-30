@@ -5,14 +5,14 @@ import { getAuth } from 'firebase-admin/auth';
 import { adminApp } from '@/firebase/server-init';
 import { cookies } from 'next/headers';
 
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   const auth = getAuth(adminApp);
 
-  const idToken = request.headers.get('Authorization')?.split('Bearer ')[1] || '';
+  const { idToken } = await request.json();
 
   if (!idToken) {
-    console.error('No ID token found in Authorization header');
-    return redirect('/login');
+    console.error('No ID token found in request body');
+    return new Response(JSON.stringify({ status: 'error', message: 'No ID token provided.' }), { status: 400 });
   }
 
   try {
@@ -30,6 +30,6 @@ export async function GET(request: Request) {
 
   } catch (error) {
     console.error('Error creating session cookie:', error);
-    return redirect('/login');
+     return new Response(JSON.stringify({ status: 'error', message: 'Could not create session cookie.' }), { status: 500 });
   }
 }
