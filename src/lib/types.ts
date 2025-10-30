@@ -33,8 +33,8 @@ export type PowerData = {
 };
 
 export type DustData = {
+    time: string;
     dust: number;
-    efficiency: number;
 };
 
 export type TempData = {

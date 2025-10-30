@@ -1,6 +1,6 @@
 'use client'
 import * as React from 'react';
-import { Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import { Bar, BarChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { performanceData, powerData, dustData, tempData } from "@/lib/data"
@@ -29,7 +29,7 @@ const timePeriodOptions: {value: TimePeriod, label: string}[] = [
 const chartViewOptions: {value: ChartView, label: string}[] = [
     { value: 'performance', label: 'Performance' },
     { value: 'power', label: 'Power vs. Time' },
-    { value: 'dust', label: 'Dust vs Efficiency' },
+    { value: 'dust', label: 'Dust Index' },
     { value: 'temperature', label: 'Temperature Impact' },
 ];
 
@@ -50,7 +50,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
             case 'power':
                 return 'Power Output (W) vs. Time';
             case 'dust':
-                return 'Dust Level vs. System Efficiency';
+                return 'Average dust accumulation level';
             case 'temperature':
                 return 'Temperature vs. Power Output';
         }
@@ -58,36 +58,40 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
     
     return (
         <Card className="animate-energy-wave">
-            <CardHeader className="flex flex-col items-stretch justify-between gap-4 sm:flex-row">
+            <CardHeader className="flex flex-col items-stretch justify-between gap-4 md:flex-row">
                 <div>
                     <CardTitle>Performance Overview</CardTitle>
                     <CardDescription>
                        {getChartDescription()}
                     </CardDescription>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                    {chartViewOptions.map(option => (
-                        <Button 
-                            key={option.value}
-                            variant={chartView === option.value ? 'default' : 'outline'}
-                            size="sm"
-                            className="rounded-full"
-                            onClick={() => setChartView(option.value)}
-                        >
-                            {option.label}
-                        </Button>
-                    ))}
-                     {timePeriodOptions.map(option => (
-                        <Button 
-                            key={option.value}
-                            variant={timePeriod === option.value ? 'default' : 'outline'}
-                            size="sm"
-                            className="rounded-full"
-                            onClick={() => setTimePeriod(option.value)}
-                        >
-                            {option.label}
-                        </Button>
-                    ))}
+                <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {chartViewOptions.map(option => (
+                            <Button 
+                                key={option.value}
+                                variant={chartView === option.value ? 'default' : 'outline'}
+                                size="sm"
+                                className="rounded-full"
+                                onClick={() => setChartView(option.value)}
+                            >
+                                {option.label}
+                            </Button>
+                        ))}
+                    </div>
+                     <div className="flex items-center gap-2">
+                        {timePeriodOptions.map(option => (
+                            <Button 
+                                key={option.value}
+                                variant={timePeriod === option.value ? 'default' : 'outline'}
+                                size="sm"
+                                className="rounded-full"
+                                onClick={() => setTimePeriod(option.value)}
+                            >
+                                {option.label}
+                            </Button>
+                        ))}
+                    </div>
                 </div>
             </CardHeader>
             <CardContent>
@@ -141,28 +145,28 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                                 <Line dataKey="power" type="monotone" stroke="var(--color-power)" strokeWidth={2} dot={false} name="Power" unit="W" />
                             </LineChart>
                         ) : chartView === 'dust' ? (
-                           <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                           <BarChart accessibilityLayer data={data} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
                                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                                 <XAxis
-                                    dataKey="dust"
-                                    type="number"
-                                    label={{ value: "Dust Level", position: "insideBottom", offset: -5 }}
+                                    dataKey="time"
                                     tickLine={false}
                                     tickMargin={10}
                                     axisLine={false}
+                                     tickFormatter={(value) => {
+                                        if (timePeriod === '24h') return value;
+                                        return value.split(' ')[0];
+                                    }}
                                 />
                                 <YAxis
-                                    yAxisId="left"
                                     tickLine={false}
                                     axisLine={false}
                                     tickMargin={10}
-                                    unit="%"
-                                    label={{ value: 'Efficiency (%)', angle: -90, position: 'insideLeft' }}
+                                    unit="µg/m³"
                                 />
                                 <Tooltip content={<ChartTooltipContent />} />
                                 <ChartLegend content={<ChartLegendContent />} />
-                                <Line yAxisId="left" dataKey="efficiency" type="monotone" stroke="var(--color-efficiency)" strokeWidth={2} name="Efficiency" unit="%" />
-                            </LineChart>
+                                <Bar dataKey="dust" fill="var(--color-dust)" radius={4} />
+                            </BarChart>
                         ) : ( // Temperature Impact
                              <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
                                 <CartesianGrid vertical={false} strokeDasharray="3 3" />

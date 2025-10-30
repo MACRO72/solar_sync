@@ -99,20 +99,35 @@ export const powerData = {
 };
 
 
-const generateDustData = (points: number) => {
-    const data = [];
+const generateDustData = (points: number, period: 'hour' | 'day' | 'month') => {
+    let data = [];
+    const now = new Date();
+
     for (let i = 0; i < points; i++) {
-        const dust = i * (100 / points);
-        const efficiency = 100 - (dust / 10) - (Math.random() * 5);
-        data.push({ dust: parseFloat(dust.toFixed(2)), efficiency: parseFloat(Math.max(0, efficiency).toFixed(2)) });
+        let label = '';
+        const date = new Date(now);
+        
+        if (period === 'hour') {
+            date.setHours(now.getHours() - (points - 1 - i));
+            label = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (period === 'day') {
+            date.setDate(now.getDate() - (points - 1 - i));
+            label = date.toLocaleDateString([], { day: '2-digit', month: 'short' });
+        } else if (period === 'month') {
+            date.setMonth(now.getMonth() - (points - 1 - i));
+            label = date.toLocaleDateString([], { month: 'short', year: '2-digit'});
+        }
+
+        const dust = 5 + Math.random() * 20; // Random dust level
+        data.push({ time: label, dust: parseFloat(dust.toFixed(2)) });
     }
     return data;
 }
 
 export const dustData = {
-    '24h': generateDustData(24),
-    '7d': generateDustData(7),
-    '30d': generateDustData(30),
+    '24h': generateDustData(24, 'hour'),
+    '7d': generateDustData(7, 'day'),
+    '30d': generateDustData(30, 'day'),
 };
 
 const generateTempData = (points: number) => {
