@@ -29,6 +29,7 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from './icons';
+import { useAppState } from '@/context/app-state-provider';
 
 const menuItems = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -53,6 +54,8 @@ export function PageHeader() {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const highPriorityAlerts = alerts.filter(a => a.severity === 'High').length;
   const pathname = usePathname();
+  const { name, avatar } = useAppState();
+
 
   const handleLinkClick = () => {
     setIsSheetOpen(false);
@@ -149,17 +152,19 @@ export function PageHeader() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar>
-                  <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-                  <AvatarFallback>SA</AvatarFallback>
+                  <AvatarImage src={avatar} alt={name} />
+                  <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="bottom" align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/profile">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                  <Link href="/dashboard/settings">
@@ -168,9 +173,11 @@ export function PageHeader() {
                  </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
+              <DropdownMenuItem asChild>
+                <Link href="/login">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

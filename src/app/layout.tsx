@@ -2,6 +2,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
+import { AppStateProvider } from '@/context/app-state-provider';
 
 export const metadata: Metadata = {
   title: 'SolarSync',
@@ -28,7 +29,9 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased">
-        {children}
+        <AppStateProvider>
+          {children}
+        </AppStateProvider>
         <Toaster />
       </body>
     </html>
