@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, User } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { app } from '@/firebase/config';
@@ -35,7 +35,7 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const [isSigningIn, setIsSigningIn] = useState(true); // Start with true to handle redirect
+  const [isProcessing, setIsProcessing] = useState(true);
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -45,8 +45,8 @@ export default function LoginPage() {
     // This effect runs once to handle the redirect result from Google.
     getRedirectResult(auth)
       .then(async (result) => {
+        setIsProcessing(true);
         if (result && result.user && firestore) {
-          // User has successfully signed in via redirect.
           const user = result.user;
           const userRef = doc(firestore, 'users', user.uid);
           const userDoc = await getDoc(userRef);
@@ -58,11 +58,9 @@ export default function LoginPage() {
               photoURL: user.photoURL,
             }, { merge: true });
           }
-          // The onAuthStateChanged listener will handle the redirect to dashboard.
+          // The onAuthStateChanged listener below will handle the redirect to dashboard.
         } else {
-           // No redirect result, so we are on the login page to sign in.
-           // We can stop the loading spinner for the redirect check.
-           setIsSigningIn(false);
+           setIsProcessing(false);
         }
       })
       .catch((error) => {
@@ -70,19 +68,16 @@ export default function LoginPage() {
         toast({
           variant: 'destructive',
           title: 'Sign-in Failed',
-          description: error.message || 'An unknown error occurred during sign-in.',
+          description: `Error: ${error.code}. Please check your Google Cloud project configuration.`,
         });
-        setIsSigningIn(false);
+        setIsProcessing(false);
       });
       
-    // This listener handles both initial auth state and changes.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // User is logged in, redirect to the dashboard.
         router.push('/dashboard');
       } else {
-        // User is not logged in, stop loading.
-        setIsSigningIn(false);
+        setIsProcessing(false);
       }
     });
 
@@ -91,10 +86,9 @@ export default function LoginPage() {
 
 
   const handleSignIn = () => {
-    if (isSigningIn) return;
-    setIsSigningIn(true);
+    if (isProcessing) return;
+    setIsProcessing(true);
     const provider = new GoogleAuthProvider();
-    // Use signInWithRedirect. The result is handled by getRedirectResult in the useEffect.
     signInWithRedirect(auth, provider).catch((error) => {
         console.error("Redirect sign-in error", error);
         toast({
@@ -102,16 +96,16 @@ export default function LoginPage() {
             title: "Sign-In Error",
             description: "Could not start the sign-in process. Please try again."
         });
-        setIsSigningIn(false);
+        setIsProcessing(false);
     });
   };
 
-  if (isSigningIn) {
+  if (isProcessing) {
       return (
          <div className="flex min-h-screen items-center justify-center">
             <div className="flex flex-col items-center gap-4">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="text-muted-foreground">Loading...</p>
+                <p className="text-muted-foreground">Connecting to Google...</p>
             </div>
         </div>
       )
@@ -134,7 +128,7 @@ export default function LoginPage() {
               className="w-full"
               variant="outline"
               onClick={handleSignIn}
-              disabled={isSigningIn}
+              disabled={isProcessing}
             >
                 <GoogleIcon />
                 Sign in with Google

@@ -5,6 +5,7 @@ import * as React from 'react';
 import { PageHeader } from '@/components/page-header';
 import { PageTransition } from '@/components/page-transition';
 import { AppStateProvider } from '@/context/app-state-provider';
+import { RouteGuard } from '@/components/auth/route-guard';
 
 export default function DashboardLayout({
   children,
@@ -13,12 +14,14 @@ export default function DashboardLayout({
 }) {
   return (
     <AppStateProvider>
+      <RouteGuard>
         <div className="flex min-h-screen w-full flex-col">
           <PageHeader />
           <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
             <PageTransition>{children}</PageTransition>
           </main>
         </div>
+      </RouteGuard>
     </AppStateProvider>
   );
 }
