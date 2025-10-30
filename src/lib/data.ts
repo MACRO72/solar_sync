@@ -1,4 +1,4 @@
-import type { Device, Alert, PerformanceData, Stat, HistoricalData, PVData, PowerData } from './types';
+import type { Device, Alert, PerformanceData, Stat, HistoricalData, PVData, PowerData, DustData, TempData } from './types';
 import { Gauge, Zap, Wind, Thermometer, HeartPulse, Wrench } from "lucide-react";
 
 export const stats: Stat[] = [
@@ -113,6 +113,38 @@ const generatePVData = () => {
 };
 
 export const pvData: PVData[] = generatePVData();
+
+const generateDustData = (points: number) => {
+    const data = [];
+    for (let i = 0; i < points; i++) {
+        const dust = i * (100 / points);
+        const efficiency = 100 - (dust / 10) - (Math.random() * 5);
+        data.push({ dust: parseFloat(dust.toFixed(2)), efficiency: parseFloat(Math.max(0, efficiency).toFixed(2)) });
+    }
+    return data;
+}
+
+export const dustData = {
+    '24h': generateDustData(24),
+    '7d': generateDustData(7),
+    '30d': generateDustData(30),
+};
+
+const generateTempData = (points: number) => {
+    const data = [];
+    for (let i = 0; i < points; i++) {
+        const temperature = 25 + i * (40 / points); // Temp from 25 to 65
+        const power = 4000 - (temperature - 25) * 50 - Math.random() * 200;
+        data.push({ temperature: parseFloat(temperature.toFixed(2)), power: parseFloat(Math.max(0, power).toFixed(2)) });
+    }
+    return data;
+}
+
+export const tempData = {
+    '24h': generateTempData(24),
+    '7d': generateTempData(7),
+    '30d': generateTempData(30),
+};
 
 
 const generateHistoricalData = (base: number, volatility: number, days = 30) => {

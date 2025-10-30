@@ -37,6 +37,16 @@ export type PowerData = {
   power: number;
 };
 
+export type DustData = {
+    dust: number;
+    efficiency: number;
+};
+
+export type TempData = {
+    temperature: number;
+    power: number;
+};
+
 export type Stat = {
     title: string;
     value: string;
