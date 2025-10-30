@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Chrome, Loader2 } from 'lucide-react';
@@ -68,8 +67,17 @@ export default function LoginPage() {
       }
     };
 
-    processRedirect();
-  }, [auth, firestore, router, toast]);
+    if (searchParams.get('error')) {
+      toast({
+        variant: 'destructive',
+        title: 'Sign in failed',
+        description: 'Could not initiate Google Sign-in. Please try again.',
+      });
+      setIsProcessing(false);
+    } else {
+      processRedirect();
+    }
+  }, [auth, firestore, router, toast, searchParams]);
 
   if (isProcessing) {
      return (
@@ -93,7 +101,7 @@ export default function LoginPage() {
           <div className="space-y-4">
              {/* This is now a link styled as a button to force a top-level navigation */}
              <a
-                href="/auth/redirect"
+                href="/auth/google"
                 target="_top"
                 className={cn(
                     "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",

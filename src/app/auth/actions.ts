@@ -2,9 +2,6 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
-import { auth } from '@/firebase/server-init';
-import { revalidatePath } from 'next/cache';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { firestore } from '@/firebase/server-init';
 
@@ -25,7 +22,5 @@ async function createUserProfile(user: any) {
 }
 
 export async function loginWithGoogle() {
-  // This is now handled client-side on the login page.
-  // This server action is no longer used but kept to prevent build errors if referenced elsewhere.
-  redirect('/auth/redirect');
+  redirect('/auth/google');
 }
