@@ -60,8 +60,7 @@ export function PageHeader() {
   const handleSignOut = async () => {
     const auth = getAuth();
     await signOut(auth);
-    // Also hit the server endpoint to clear the session cookie
-    await fetch('/api/auth/logout');
+    // After signOut, onAuthStateChanged in useUser will trigger, and the RouteGuard will redirect to login.
     router.push('/login');
   };
 

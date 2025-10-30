@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { app } from '@/firebase/config';
@@ -36,17 +36,18 @@ function GoogleIcon() {
 
 export default function LoginPage() {
   const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true); // Start in loading state to process redirect
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const auth = getAuth(app);
 
   useEffect(() => {
-    const auth = getAuth(app);
+    // This effect runs once to handle the redirect result from Google.
     getRedirectResult(auth)
       .then(async (result) => {
         if (result && result.user && firestore) {
-          setIsSigningIn(true); // Show loading spinner while we process
+          setIsLoading(true); // Show loading spinner while we process
           const user = result.user;
           const userRef = doc(firestore, 'users', user.uid);
           const userDoc = await getDoc(userRef);
@@ -58,23 +59,18 @@ export default function LoginPage() {
               photoURL: user.photoURL,
             }, { merge: true });
           }
-
-          const idToken = await user.getIdToken();
-          const response = await fetch('/api/auth/callback', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ idToken }),
-          });
-
-          if (response.ok) {
-            router.push('/dashboard');
-          } else {
-            const errorData = await response.json();
-            throw new Error(errorData.message || 'Could not create a server session.');
-          }
+          // The onAuthStateChanged listener below will handle the redirect to dashboard.
         } else {
-          // No redirect result, so we are on the login page to sign in.
-          setIsLoading(false);
+           // No redirect result, so we are on the login page to sign in.
+           // We also check if user is already logged in from a previous session.
+           const unsubscribe = onAuthStateChanged(auth, (user) => {
+             if (user) {
+               router.push('/dashboard');
+             } else {
+               setIsLoading(false);
+             }
+           });
+           return () => unsubscribe();
         }
       })
       .catch((error) => {
@@ -87,11 +83,23 @@ export default function LoginPage() {
         setIsLoading(false);
         setIsSigningIn(false);
       });
-  }, [firestore, router, toast]);
+  }, [auth, firestore, router, toast]);
+
+   useEffect(() => {
+    // This effect listens for any auth changes and redirects to dashboard if user is found
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsLoading(true);
+        router.push('/dashboard');
+      }
+    });
+
+    return () => unsubscribe();
+  }, [auth, router]);
 
   const handleSignIn = () => {
+    if (isSigningIn) return;
     setIsSigningIn(true);
-    const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
     signInWithRedirect(auth, provider).catch((error) => {
         console.error("Redirect sign-in error", error);
@@ -109,7 +117,7 @@ export default function LoginPage() {
          <div className="flex min-h-screen items-center justify-center">
             <div className="flex flex-col items-center gap-4">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="text-muted-foreground">{isLoading ? 'Processing authentication...' : 'Signing in...'}</p>
+                <p className="text-muted-foreground">{isLoading ? 'Loading...' : 'Redirecting to Google...'}</p>
             </div>
         </div>
       )
