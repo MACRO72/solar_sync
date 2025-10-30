@@ -37,6 +37,7 @@ const menuItems = [
   { path: '/dashboard/devices', label: 'Devices', icon: PanelTop },
   { path: '/dashboard/connectivity', label: 'Connectivity', icon: Cable },
   { path: '/dashboard/insights', label: 'Insights', icon: Lightbulb },
+  { path: '/dashboard/profile', label: 'Profile', icon: User },
 ];
 
 const getSeverityBadgeClass = (severity: 'High' | 'Medium' | 'Low') => {
@@ -167,7 +168,7 @@ export function PageHeader() {
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings">
+                <Link href="/dashboard/profile">
                   <User className="mr-2 h-4 w-4" />
                   <span>Profile</span>
                 </Link>
