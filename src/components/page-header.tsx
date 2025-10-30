@@ -1,6 +1,6 @@
 
 "use client";
-import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut, Wifi, Cable } from 'lucide-react';
+import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut } from 'lucide-react';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -29,15 +29,12 @@ import {
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Logo } from './icons';
-import { useAppState } from '@/context/app-state-provider';
 
 const menuItems = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { path: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/dashboard/devices', label: 'Devices', icon: PanelTop },
-  { path: '/dashboard/connectivity', label: 'Connectivity', icon: Cable },
   { path: '/dashboard/insights', label: 'Insights', icon: Lightbulb },
-  { path: '/dashboard/profile', label: 'Profile', icon: User },
 ];
 
 const getSeverityBadgeClass = (severity: 'High' | 'Medium' | 'Low') => {
@@ -55,7 +52,6 @@ const getSeverityBadgeClass = (severity: 'High' | 'Medium' | 'Low') => {
 export function PageHeader() {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
   const highPriorityAlerts = alerts.filter(a => a.severity === 'High').length;
-  const { avatar } = useAppState();
   const pathname = usePathname();
 
   const handleLinkClick = () => {
@@ -116,12 +112,6 @@ export function PageHeader() {
         </Link>
       </div>
       <div className="ml-auto flex items-center gap-4">
-        <Link href="/dashboard/connectivity">
-          <Button variant="ghost" size="icon" className="relative rounded-full transition-transform duration-300 ease-in-out hover:scale-125 hover:bg-transparent">
-              <Wifi className="text-status-positive" />
-              <span className="sr-only">Sensor Status</span>
-          </Button>
-        </Link>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative rounded-full">
@@ -157,21 +147,19 @@ export function PageHeader() {
         </DropdownMenu>
          <DropdownMenu>
             <DropdownMenuTrigger asChild>
-               <button className="flex items-center gap-2 rounded-full text-left text-sm outline-none ring-ring transition-colors focus-visible:ring-2">
-                <Avatar className="h-8 w-8">
-                  {avatar && <AvatarImage src={avatar} alt="User Avatar" />}
-                  <AvatarFallback>AU</AvatarFallback>
+              <Button variant="ghost" size="icon" className="rounded-full">
+                <Avatar>
+                  <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+                  <AvatarFallback>SA</AvatarFallback>
                 </Avatar>
-              </button>
+              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="bottom" align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/profile">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </Link>
+              <DropdownMenuItem>
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                  <Link href="/dashboard/settings">
