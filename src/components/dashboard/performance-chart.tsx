@@ -46,6 +46,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                             key={option.value}
                             variant={timePeriod === option.value ? 'default' : 'outline'}
                             size="sm"
+                            className="rounded-full"
                             onClick={() => setTimePeriod(option.value)}
                         >
                             {option.label}

@@ -31,6 +31,7 @@ export function HistoricalDataChart({ metric }: { metric: string }) {
                         key={option.value}
                         variant={timePeriod === option.value ? 'default' : 'outline'}
                         size="sm"
+                        className="rounded-full"
                         onClick={() => setTimePeriod(option.value)}
                     >
                         {option.label}
