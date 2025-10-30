@@ -39,7 +39,7 @@ export function UserProfile() {
   }, [user, name, email, avatar]);
 
   const handleSave = async () => {
-    if (!user) {
+    if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to update your profile.' });
       return;
     }
@@ -67,7 +67,7 @@ export function UserProfile() {
   };
   
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!user) {
+    if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to upload an image.' });
       return;
     }

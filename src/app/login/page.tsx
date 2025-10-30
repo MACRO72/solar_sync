@@ -35,8 +35,7 @@ function GoogleIcon() {
 }
 
 export default function LoginPage() {
-  const [isSigningIn, setIsSigningIn] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isSigningIn, setIsSigningIn] = useState(true); // Start with true to handle redirect
   const router = useRouter();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -47,7 +46,7 @@ export default function LoginPage() {
     getRedirectResult(auth)
       .then(async (result) => {
         if (result && result.user && firestore) {
-          setIsLoading(true); // Show loading spinner while we process
+          // User has successfully signed in via redirect.
           const user = result.user;
           const userRef = doc(firestore, 'users', user.uid);
           const userDoc = await getDoc(userRef);
@@ -59,18 +58,11 @@ export default function LoginPage() {
               photoURL: user.photoURL,
             }, { merge: true });
           }
-          // The onAuthStateChanged listener below will handle the redirect to dashboard.
+          // The onAuthStateChanged listener will handle the redirect to dashboard.
         } else {
            // No redirect result, so we are on the login page to sign in.
-           // We also check if user is already logged in from a previous session.
-           const unsubscribe = onAuthStateChanged(auth, (user) => {
-             if (user) {
-               router.push('/dashboard');
-             } else {
-               setIsLoading(false);
-             }
-           });
-           return () => unsubscribe();
+           // We can stop the loading spinner for the redirect check.
+           setIsSigningIn(false);
         }
       })
       .catch((error) => {
@@ -80,27 +72,29 @@ export default function LoginPage() {
           title: 'Sign-in Failed',
           description: error.message || 'An unknown error occurred during sign-in.',
         });
-        setIsLoading(false);
         setIsSigningIn(false);
       });
-  }, [auth, firestore, router, toast]);
-
-   useEffect(() => {
-    // This effect listens for any auth changes and redirects to dashboard if user is found
+      
+    // This listener handles both initial auth state and changes.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        setIsLoading(true);
+        // User is logged in, redirect to the dashboard.
         router.push('/dashboard');
+      } else {
+        // User is not logged in, stop loading.
+        setIsSigningIn(false);
       }
     });
 
     return () => unsubscribe();
-  }, [auth, router]);
+  }, [auth, firestore, router, toast]);
+
 
   const handleSignIn = () => {
     if (isSigningIn) return;
     setIsSigningIn(true);
     const provider = new GoogleAuthProvider();
+    // Use signInWithRedirect. The result is handled by getRedirectResult in the useEffect.
     signInWithRedirect(auth, provider).catch((error) => {
         console.error("Redirect sign-in error", error);
         toast({
@@ -112,12 +106,12 @@ export default function LoginPage() {
     });
   };
 
-  if (isLoading || isSigningIn) {
+  if (isSigningIn) {
       return (
          <div className="flex min-h-screen items-center justify-center">
             <div className="flex flex-col items-center gap-4">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <p className="text-muted-foreground">{isLoading ? 'Loading...' : 'Redirecting to Google...'}</p>
+                <p className="text-muted-foreground">Loading...</p>
             </div>
         </div>
       )
