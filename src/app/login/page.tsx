@@ -2,14 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  getAuth,
-  GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
-  onAuthStateChanged,
-  User,
-} from 'firebase/auth';
+import { getAuth, onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { app } from '@/firebase/config';
@@ -50,7 +43,6 @@ export default function LoginPage() {
 
   const handleUser = useCallback(async (user: User | null) => {
     if (user && firestore) {
-      // Ensure user profile exists in Firestore
       const userRef = doc(firestore, 'users', user.uid);
       const userDoc = await getDoc(userRef);
       if (!userDoc.exists()) {
@@ -62,82 +54,68 @@ export default function LoginPage() {
         }, { merge: true });
       }
 
-      // Create server-side session
       const idToken = await user.getIdToken();
-      const response = await fetch('/api/auth/callback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ idToken }),
-      });
-      
-      if (response.ok) {
-        router.push('/dashboard');
-      } else {
-         toast({
+      try {
+        const response = await fetch('/api/auth/callback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ idToken }),
+        });
+        
+        if (response.ok) {
+          router.push('/dashboard');
+        } else {
+          const errorData = await response.json();
+          toast({
+            variant: 'destructive',
+            title: 'Login Failed',
+            description: errorData.message || 'Could not create a server session.',
+          });
+          setLoading(false);
+          setIsSigningIn(false);
+        }
+      } catch (error) {
+        console.error('Error calling auth callback:', error);
+        toast({
           variant: 'destructive',
-          title: 'Login Failed',
-          description: 'Could not create a server session. Please try again.',
+          title: 'Login Error',
+          description: 'Failed to communicate with the server.',
         });
         setLoading(false);
         setIsSigningIn(false);
       }
     } else {
-        setLoading(false);
-        setIsSigningIn(false);
+      setLoading(false);
+      setIsSigningIn(false);
     }
   }, [firestore, router, toast]);
 
-  // Effect to handle redirect result
-  useEffect(() => {
-    const auth = getAuth(app);
-    setIsSigningIn(true); // Assume a sign-in process is happening
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          // User is coming back from a successful redirect.
-          // handleUser will be called by onAuthStateChanged.
-        } else {
-          // No redirect result, could be initial load or user is already logged in.
-          // Let onAuthStateChanged handle it.
-           setIsSigningIn(false); // No redirect result, so not actively signing in
-        }
-      })
-      .catch((error) => {
-        console.error('Error getting redirect result:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Authentication Error',
-          description: `Error during sign-in: ${error.message}`,
-        });
-        setIsSigningIn(false);
-      });
-  }, [toast]);
-  
-  // Master effect to listen for any auth state change
   useEffect(() => {
     const auth = getAuth(app);
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // A user is detected. Handle them.
+        setIsSigningIn(true);
         handleUser(user);
       } else {
-        // No user is signed in. Stop loading.
         setLoading(false);
         setIsSigningIn(false);
       }
+    }, (error) => {
+        console.error("Auth state error:", error);
+        setLoading(false);
+        setIsSigningIn(false);
     });
 
     return () => unsubscribe();
   }, [handleUser]);
 
   
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = () => {
     setIsSigningIn(true);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider);
+    // This forces the redirect to happen in the top-level window, breaking out of the iframe.
+    window.top!.location.href = '/auth/start';
   };
 
   if (loading || isSigningIn) {
@@ -167,7 +145,11 @@ export default function LoginPage() {
             variant="outline"
             disabled={isSigningIn}
           >
-            <GoogleIcon />
+            {isSigningIn ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <GoogleIcon />
+            )}
             Sign in with Google
           </Button>
         </div>
@@ -175,3 +157,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
