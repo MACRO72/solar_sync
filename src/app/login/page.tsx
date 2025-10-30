@@ -1,11 +1,13 @@
+
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   type User,
@@ -70,6 +72,32 @@ export default function LoginPage() {
   const { toast } = useToast();
   const auth = getAuth(app);
 
+  useEffect(() => {
+    const processRedirectResult = async () => {
+      setIsProcessing(true);
+      try {
+        const result = await getRedirectResult(auth);
+        if (result) {
+          // User successfully signed in.
+          await handleUserSetup(result.user);
+          router.push('/dashboard');
+        } else {
+          // No user signed in (e.g., page loaded directly).
+          setIsProcessing(false);
+        }
+      } catch (error: any) {
+        toast({
+          variant: 'destructive',
+          title: 'Sign-in Failed',
+          description: error.message || 'Could not sign in with Google. Please try again.',
+        });
+        setIsProcessing(false);
+      }
+    };
+
+    processRedirectResult();
+  }, [auth, router, toast]);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -100,23 +128,7 @@ export default function LoginPage() {
     if (isProcessing) return;
     setIsProcessing(true);
     const provider = new GoogleAuthProvider();
-
-    try {
-      const result = await signInWithPopup(auth, provider);
-      await handleUserSetup(result.user);
-      router.push('/dashboard');
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Sign-in Failed',
-        description:
-          error.code === 'auth/popup-closed-by-user'
-            ? 'Sign-in cancelled.'
-            : error.message ||
-              'Could not sign in with Google. Please try again.',
-      });
-      setIsProcessing(false);
-    }
+    await signInWithRedirect(auth, provider);
   };
 
   const handleEmailAuth = async (values: z.infer<typeof formSchema>) => {
@@ -150,6 +162,12 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center p-4">
+      {isProcessing ? (
+          <div className="flex flex-col items-center gap-4">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <p className="text-muted-foreground">Signing in...</p>
+          </div>
+      ) : (
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center text-center">
           <Logo className="size-16 text-primary" />
@@ -229,11 +247,7 @@ export default function LoginPage() {
             onClick={handleGoogleSignIn}
             disabled={isProcessing}
           >
-            {isProcessing ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <GoogleIcon />
-            )}
+            <GoogleIcon />
             Sign in with Google
           </Button>
         </div>
@@ -264,6 +278,7 @@ export default function LoginPage() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
