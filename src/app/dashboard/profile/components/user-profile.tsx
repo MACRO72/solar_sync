@@ -76,7 +76,7 @@ export function UserProfile() {
               />
             <Button variant="outline" onClick={handleUploadClick}>
                 <Upload className="mr-2 h-4 w-4" />
-                Upload PNG
+                Upload your profile picture
             </Button>
            </div>
         </div>
