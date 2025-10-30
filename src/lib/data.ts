@@ -1,4 +1,4 @@
-import type { Device, Alert, PerformanceData, Stat, HistoricalData, PVData } from './types';
+import type { Device, Alert, PerformanceData, Stat, HistoricalData, PVData, PowerData } from './types';
 import { Gauge, Zap, Wind, Thermometer, HeartPulse, Wrench } from "lucide-react";
 
 export const stats: Stat[] = [
@@ -60,6 +60,44 @@ export const performanceData = {
     '30d': generatePerformanceData(30, 'day'),
     '12m': generatePerformanceData(12, 'month'),
 };
+
+const generatePowerData = (points: number, period: 'hour' | 'day' | 'month') => {
+  let data = [];
+  const now = new Date();
+  
+  for (let i = 0; i < points; i++) {
+    let label = '';
+    const date = new Date(now);
+    let cyclePos = 0;
+    
+    if (period === 'hour') {
+      date.setHours(now.getHours() - (points - 1 - i));
+      label = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      cyclePos = (date.getHours() + date.getMinutes() / 60) / 24;
+    } else if (period === 'day') {
+      date.setDate(now.getDate() - (points - 1 - i));
+      label = date.toLocaleDateString([], { day: '2-digit', month: 'short' });
+      cyclePos = i / (points -1);
+    } else if (period === 'month') {
+      date.setMonth(now.getMonth() - (points - 1 - i));
+      label = date.toLocaleDateString([], { month: 'short', year: '2-digit'});
+      cyclePos = i / (points -1);
+    }
+
+    // Simulate daily solar power curve
+    const power = Math.max(0, Math.sin(cyclePos * Math.PI) * 4000 + (Math.random() - 0.5) * 300);
+
+    data.push({ time: label, power: Math.round(power) });
+  }
+  return data;
+};
+
+export const powerData = {
+    '24h': generatePowerData(24, 'hour'),
+    '7d': generatePowerData(7, 'day'),
+    '30d': generatePowerData(30, 'day'),
+};
+
 
 const generatePVData = () => {
     const data = [];

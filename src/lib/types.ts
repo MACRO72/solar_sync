@@ -32,6 +32,11 @@ export type PVData = {
   power: number;
 };
 
+export type PowerData = {
+  time: string;
+  power: number;
+};
+
 export type Stat = {
     title: string;
     value: string;
