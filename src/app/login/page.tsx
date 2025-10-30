@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -52,7 +51,16 @@ export default function LoginPage() {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         setUser(user);
-        router.push('/dashboard');
+        // After user is confirmed, fetch id token and send to server to create session
+        user.getIdToken().then(async (idToken) => {
+          await fetch('/api/auth/callback', {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${idToken}`,
+            },
+          });
+          router.push('/dashboard');
+        });
       } else {
         setLoading(false);
       }
@@ -63,7 +71,6 @@ export default function LoginPage() {
 
   useEffect(() => {
     const auth = getAuth(app);
-    setLoading(true);
     getRedirectResult(auth)
       .then(async (result) => {
         if (result && result.user) {
@@ -78,7 +85,7 @@ export default function LoginPage() {
               phone: user.phoneNumber,
             });
           }
-          // The onAuthStateChanged listener will handle the redirect to dashboard.
+          // The onAuthStateChanged listener will handle the redirect.
         } else {
           // No user from redirect, probably the initial load of the login page.
           setLoading(false);
@@ -117,7 +124,6 @@ export default function LoginPage() {
           </p>
         </div>
         <div className="mt-8">
-          {/* This button click now triggers the redirect flow */}
           <Button
             onClick={handleGoogleSignIn}
             className="w-full"

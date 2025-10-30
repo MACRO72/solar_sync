@@ -10,6 +10,11 @@ export async function GET(request: Request) {
 
   const idToken = request.headers.get('Authorization')?.split('Bearer ')[1] || '';
 
+  if (!idToken) {
+    console.error('No ID token found in Authorization header');
+    return redirect('/login');
+  }
+
   try {
     const decodedToken = await auth.verifyIdToken(idToken);
     
