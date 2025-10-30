@@ -66,7 +66,6 @@ export function UserProfile() {
             <AvatarFallback>{name.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
            <div className="space-y-2">
-             <Label>Avatar</Label>
              <input
                 type="file"
                 ref={fileInputRef}
