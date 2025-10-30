@@ -1,26 +1,27 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useFormStatus } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { Chrome, Loader2 } from 'lucide-react';
-import Link from 'next/link';
 import { useAuth, useFirestore } from '@/firebase/provider';
-import { GoogleAuthProvider, getRedirectResult, signInWithRedirect } from 'firebase/auth';
-import { useRouter } from 'next/navigation';
+import { getRedirectResult } from 'firebase/auth';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 export default function LoginPage() {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  
   const [isProcessing, setIsProcessing] = useState(true);
-  const [isSigningIn, setIsSigningIn] = useState(false);
 
+  // This effect handles the result of the redirect from Google
   useEffect(() => {
     const processRedirect = async () => {
       if (!auth || !firestore) return;
@@ -54,31 +55,28 @@ export default function LoginPage() {
         }
       } catch (error: any) {
         console.error("Google sign-in error:", error);
-        toast({
-          variant: 'destructive',
-          title: 'Sign in failed',
-          description: error.message || 'An unexpected error occurred during sign-in.',
-        });
+        // Don't show a toast on page load if there's no user, it's confusing.
+        // Only show if there's an actual error from the redirect.
+        if (error.code && error.code !== 'auth/no-user-found') {
+            toast({
+              variant: 'destructive',
+              title: 'Sign in failed',
+              description: error.message || 'An unexpected error occurred during sign-in.',
+            });
+        }
         setIsProcessing(false);
       }
     };
 
     processRedirect();
   }, [auth, firestore, router, toast]);
-  
-  const handleGoogleSignIn = async () => {
-    if (!auth) return;
-    setIsSigningIn(true);
-    const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider);
-  };
 
   if (isProcessing) {
      return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-16 w-16 animate-spin text-primary" />
-          <p className="text-muted-foreground">Checking authentication status...</p>
+          <p className="text-muted-foreground">Finalizing authentication...</p>
         </div>
       </div>
     );
@@ -93,15 +91,19 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-             <Button
-                variant="outline"
-                className="w-full"
-                onClick={handleGoogleSignIn}
-                disabled={isSigningIn}
+             {/* This is now a link styled as a button to force a top-level navigation */}
+             <a
+                href="/auth/redirect"
+                target="_top"
+                className={cn(
+                    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+                    "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+                    "h-10 px-4 py-2 w-full"
+                )}
             >
-                {isSigningIn ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Chrome className="mr-2 h-4 w-4" />}
-                {isSigningIn ? 'Redirecting...' : 'Sign in with Google'}
-            </Button>
+                <Chrome className="mr-2 h-4 w-4" />
+                Sign in with Google
+            </a>
           </div>
           <Separator className="my-4" />
            <div className="text-center text-sm text-muted-foreground">

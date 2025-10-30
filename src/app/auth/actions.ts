@@ -27,5 +27,5 @@ async function createUserProfile(user: any) {
 export async function loginWithGoogle() {
   // This is now handled client-side on the login page.
   // This server action is no longer used but kept to prevent build errors if referenced elsewhere.
-  redirect('/login');
+  redirect('/auth/redirect');
 }
