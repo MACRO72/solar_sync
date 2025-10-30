@@ -92,6 +92,7 @@ body {
       repeating-linear-gradient(hsla(0,0%,100%,.05), hsla(0,0%,100%,.05) 1px, transparent 1px, transparent 40px),
       repeating-linear-gradient(90deg, hsla(0,0%,100%,.05), hsla(0,0%,100%,.05) 1px, transparent 1px, transparent 40px),
       linear-gradient(to bottom right, hsl(var(--background)), hsl(223, 59%, 15%));
+    background-attachment: fixed;
   }
 }
 
@@ -142,9 +143,9 @@ body {
   .animate-energy-wave {
     background: linear-gradient(
       135deg,
-      hsl(var(--card) / 0.6) 45%,
-      hsl(var(--card) / 0.9) 50%,
-      hsl(var(--card) / 0.6) 55%
+      hsl(var(--card) / 0.8) 45%,
+      hsl(var(--card) / 1) 50%,
+      hsl(var(--card) / 0.8) 55%
     );
     background-size: 400% 400%;
     animation: energy-wave 3s ease-in-out infinite;
@@ -152,10 +153,10 @@ body {
 
   @keyframes energy-wave {
     from {
-      background-position: 0% 100%;
+      background-position: 50% 100%;
     }
     to {
-      background-position: 100% 0%;
+      background-position: 50% 0%;
     }
   }
 }
