@@ -15,7 +15,6 @@ export default function DashboardOverviewPage() {
           <thead>
             <tr>
               <th className="border-b border-[#3a506b] p-3 text-left bg-[#3a506b] text-[#00d9ff]">Time</th>
-              <th className="border-b border-[#3a506b] p-3 text-left bg-[#3a506b] text-[#00d9ff]">Voltage (V)</th>
               <th className="border-b border-[#3a506b] p-3 text-left bg-[#3a506b] text-[#00d9ff]">Current (A)</th>
               <th className="border-b border-[#3a506b] p-3 text-left bg-[#3a506b] text-[#00d9ff]">Power (W)</th>
               <th className="border-b border-[#3a506b] p-3 text-left bg-[#3a506b] text-[#00d9ff]">Temp (°C)</th>
@@ -27,13 +26,12 @@ export default function DashboardOverviewPage() {
           <tbody>
             {loading && devices.length === 0 && (
               <tr>
-                <td colSpan={8} className="p-4 text-center text-gray-400">Listening for live data from your device...</td>
+                <td colSpan={7} className="p-4 text-center text-gray-400">Listening for live data from your device...</td>
               </tr>
             )}
             {devices.map((device) => (
               <tr key={device.id} className="hover:bg-[#1f2a44]">
                 <td className="border-b border-[#3a506b] p-3">{device.lastSeen}</td>
-                <td className="border-b border-[#3a506b] p-3">{device.voltage ?? '--'}</td>
                 <td className="border-b border-[#3a506b] p-3">{device.current ?? '--'}</td>
                 <td className="border-b border-[#3a506b] p-3">{device.power ?? '--'}</td>
                 <td className="border-b border-[#3a506b] p-3">{device.temperature ?? '--'}</td>
@@ -44,7 +42,7 @@ export default function DashboardOverviewPage() {
             ))}
              {!loading && devices.length === 0 && (
               <tr>
-                <td colSpan={8} className="p-4 text-center text-gray-400">No data received yet. Make sure your ESP32 is sending data.</td>
+                <td colSpan={7} className="p-4 text-center text-gray-400">No data received yet. Make sure your ESP32 is sending data.</td>
               </tr>
             )}
           </tbody>
