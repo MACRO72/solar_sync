@@ -20,7 +20,7 @@ const timePeriodOptions: {value: TimePeriod, label: string}[] = [
 
 
 const metricToKeyMap: Record<string, keyof import('@/lib/types').Device> = {
-    "Avg. Efficiency": "efficiency",
+    "Voltage": "voltage",
     "Total Power": "power",
     "Irradiance": "irradiance",
     "Avg. Temperature": "temperature",

@@ -8,14 +8,17 @@ import { stats as statDetails } from '@/lib/data';
 import { notFound } from "next/navigation";
 import { cn } from "@/lib/utils";
 
+const statTitles = ["Voltage", "Total Power", "Irradiance", "Avg. Temperature", "Dust Index", "System Health"];
+
+
 export default function StatDetailPage({ params }: { params: { slug: string } }) {
     const titleToSlug = (title: string) => {
         return title.toLowerCase().replace(/\. /g, '-').replace(/ /g, '-');
     }
 
-    const stat = statDetails.find(s => titleToSlug(s.title) === params.slug);
+    const statTitle = statTitles.find(s => titleToSlug(s) === params.slug);
 
-    if (!stat) {
+    if (!statTitle) {
         notFound();
     }
 
@@ -29,11 +32,11 @@ export default function StatDetailPage({ params }: { params: { slug: string } })
             </Link>
             <Card className="animate-energy-wave">
                 <CardHeader>
-                    <CardTitle>{stat.title} - Historical Data</CardTitle>
+                    <CardTitle>{statTitle} - Historical Data</CardTitle>
                     <CardDescription>Data from the previous 30 days.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <HistoricalDataChart metric={stat.title} />
+                    <HistoricalDataChart metric={statTitle} />
                 </CardContent>
             </Card>
         </div>

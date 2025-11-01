@@ -4,7 +4,7 @@ import { GlassCard, CardHeader, CardTitle, CardContent } from "@/components/glas
 import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { useRealtimeData } from "@/firebase/firestore/use-realtime-data";
-import { Gauge, Zap, Wind, Thermometer, Sun, Percent } from "lucide-react";
+import { Gauge, Zap, Wind, Thermometer, Sun, Percent, Bolt } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Stat } from "@/lib/types";
 
@@ -14,7 +14,7 @@ const titleToSlug = (title: string) => {
 
 const getIcon = (title: string) => {
     switch (title) {
-        case "Avg. Efficiency": return Percent;
+        case "Voltage": return Bolt;
         case "Total Power": return Zap;
         case "Irradiance": return Sun;
         case "Avg. Temperature": return Thermometer;
@@ -26,7 +26,7 @@ const getIcon = (title: string) => {
 
 const getColor = (title: string) => {
      switch (title) {
-        case "Avg. Efficiency": return "text-primary";
+        case "Voltage": return "text-primary";
         case "Total Power": return "text-orange-500";
         case "Irradiance": return "text-yellow-400";
         case "Avg. Temperature": return "text-destructive";
@@ -61,7 +61,7 @@ export function OverviewStats() {
     const calculateStats = (): Stat[] => {
         if (devices.length === 0) {
             return [
-                { title: "Avg. Efficiency", value: "N/A", icon: Percent, change: "Waiting for data...", color: "text-primary"},
+                { title: "Voltage", value: "N/A", icon: Bolt, change: "Waiting for data...", color: "text-primary"},
                 { title: "Total Power", value: "N/A", icon: Zap, change: "Waiting for data...", color: "text-orange-500" },
                 { title: "Irradiance", value: "N/A", icon: Sun, change: "Waiting for data...", color: "text-yellow-400" },
                 { title: "Avg. Temperature", value: "N/A", icon: Thermometer, change: "Waiting for data...", color: "text-destructive" },
@@ -71,7 +71,7 @@ export function OverviewStats() {
         }
 
         const totalPower = devices.reduce((acc, dev) => acc + (dev.power || 0), 0);
-        const avgEfficiency = devices.reduce((acc, dev) => acc + (dev.efficiency || 0), 0) / devices.length;
+        const avgVoltage = devices.reduce((acc, dev) => acc + (dev.voltage || 0), 0) / devices.length;
         const avgTemp = devices.reduce((acc, dev) => acc + (dev.temperature || 0), 0) / devices.length;
         const totalIrradiance = devices.reduce((acc, dev) => acc + (dev.irradiance || 0), 0);
         const avgDust = devices.reduce((acc, dev) => acc + (dev.dustDensity || 0), 0) / devices.length;
@@ -81,7 +81,7 @@ export function OverviewStats() {
         const systemHealth = (onlineDevices / devices.length) * 100;
 
         return [
-            { title: "Avg. Efficiency", value: `${avgEfficiency.toFixed(1)}%`, icon: Percent, change: "Live", color: "text-primary", actual: avgEfficiency, expected: 100 },
+            { title: "Voltage", value: `${avgVoltage.toFixed(2)} V`, icon: Bolt, change: "Live", color: "text-primary", actual: avgVoltage, expected: 12 },
             { title: "Total Power", value: `${(totalPower / 1000).toFixed(2)} kW`, icon: Zap, change: "Live", color: "text-orange-500", actual: totalPower, expected: 4000 },
             { title: "Irradiance", value: `${totalIrradiance.toFixed(0)} W/m²`, icon: Sun, change: "Live", color: "text-yellow-400" },
             { title: "Avg. Temperature", value: `${avgTemp.toFixed(1)}°C`, icon: Thermometer, change: "Live", color: "text-destructive", actual: avgTemp, expected: 60 },
