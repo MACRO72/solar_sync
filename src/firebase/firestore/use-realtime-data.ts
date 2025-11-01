@@ -1,45 +1,66 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { getDatabase, ref, onValue } from 'firebase/database';
-import { useFirebase } from '@/firebase/provider';
 import type { Device } from '@/lib/types';
 import { app } from '@/firebase/config';
+import { format } from 'date-fns';
 
 export function useRealtimeData() {
   const [data, setData] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // We don't need the full context, just the app instance to get the DB
-  // This avoids dependency on the Firestore-specific provider context.
-  
   useEffect(() => {
-    setLoading(true);
     const db = getDatabase(app);
     const dataRef = ref(db, 'data');
 
     const unsubscribe = onValue(dataRef, (snapshot) => {
       if (snapshot.exists()) {
         const rawData = snapshot.val();
-        // Transform the object of objects into an array of devices
-        const devicesArray: Device[] = Object.keys(rawData).map(key => {
-          return {
-            id: key,
-            ...rawData[key]
-          }
-        });
+        
+        // Data is coming as a single CSV string: "253002,506322,0.00,-0.60,28.94,10.83,4095"
+        // We need to parse it.
+        const devicesArray: Device[] = [];
+
+        if (typeof rawData === 'string') {
+            const values = rawData.split(',');
+
+            if (values.length >= 7) {
+                const device: Device = {
+                    id: `Device_${values[0]}`,
+                    name: `Panel ${values[0]}`,
+                    status: 'Online',
+                    lastSeen: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
+                    power: parseFloat(values[2]),
+                    current: parseFloat(values[3]),
+                    temperature: parseFloat(values[4]),
+                    voltage: parseFloat(values[5]),
+                    irradiance: parseFloat(values[6]),
+                    // Calculate other values if possible
+                    efficiency: (parseFloat(values[2]) / parseFloat(values[6])) * 100, // Example efficiency calc
+                    humidity: 50, // Mock value
+                    dustDensity: 120, // Mock value
+                };
+                devicesArray.push(device);
+            }
+        } else if (typeof rawData === 'object' && rawData !== null) {
+            // Handle if data is structured JSON object (from previous attempts)
+            Object.keys(rawData).forEach(key => {
+                devicesArray.push({
+                    id: key,
+                    ...rawData[key]
+                });
+            });
+        }
         setData(devicesArray);
       } else {
-        // Handle the case where there's no data at the '/data' path
         setData([]);
       }
       setLoading(false);
     }, (error) => {
       console.error("Firebase Realtime Database read failed: ", error);
-      // In a real app, you would want to emit this to a proper error handler
       setLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
