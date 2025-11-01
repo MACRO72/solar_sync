@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -20,40 +19,41 @@ export function useRealtimeData() {
       (snapshot) => {
         if (snapshot.exists()) {
             const rawData = snapshot.val();
-            // Log the last piece of data that came to the db
             console.log("Last data from DB:", rawData);
 
             if (typeof rawData === "object" && rawData !== null) {
-                const deviceData = rawData;
-                const voltage = parseFloat(deviceData.voltage || 0);
-                const current = parseFloat(deviceData.current || 0);
-                const power = voltage * current;
-                const irradiance = parseFloat(deviceData.irradiance || 0);
+                const devices: Device[] = Object.keys(rawData).map((key, index) => {
+                    const deviceData = rawData[key];
+                    const voltage = parseFloat(deviceData.voltage || 0);
+                    const current = parseFloat(deviceData.current || 0);
+                    const power = voltage * current;
+                    const irradiance = parseFloat(deviceData.irradiance || 0);
 
-                let efficiency = 0;
-                const panelArea = 1.6; // m²
-                if (irradiance > 0 && panelArea > 0 && power > 0) {
-                  efficiency = (power / (irradiance * panelArea)) * 100;
-                }
+                    let efficiency = 0;
+                    const panelArea = 1.6; // m²
+                    if (irradiance > 0 && panelArea > 0 && power > 0) {
+                      efficiency = (power / (irradiance * panelArea)) * 100;
+                    }
 
-                efficiency = Math.max(0, Math.min(efficiency, 25));
+                    efficiency = Math.max(0, Math.min(efficiency, 25));
 
-                const device: Device = {
-                  id: deviceData.id || "ESP32_Device",
-                  name: `Solar Panel ${deviceData.id || "1"}`,
-                  status: "Online",
-                  lastSeen: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
-                  power: isNaN(power) ? 0 : parseFloat(power.toFixed(2)),
-                  current: isNaN(current) ? 0 : current,
-                  temperature: parseFloat(deviceData.temperature || 0),
-                  voltage: isNaN(voltage) ? 0 : voltage,
-                  irradiance: isNaN(irradiance) ? 0 : irradiance,
-                  efficiency: isNaN(efficiency) ? 0 : parseFloat(efficiency.toFixed(2)),
-                  humidity: parseFloat(deviceData.humidity || 0),
-                  dustDensity: parseFloat(deviceData.dustDensity || 0),
-                };
+                    return {
+                      id: deviceData.id || key,
+                      name: `Solar Panel ${deviceData.id || (index + 1)}`,
+                      status: "Online",
+                      lastSeen: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
+                      power: isNaN(power) ? 0 : parseFloat(power.toFixed(2)),
+                      current: isNaN(current) ? 0 : current,
+                      temperature: parseFloat(deviceData.temperature || 0),
+                      voltage: isNaN(voltage) ? 0 : voltage,
+                      irradiance: isNaN(irradiance) ? 0 : irradiance,
+                      efficiency: isNaN(efficiency) ? 0 : parseFloat(efficiency.toFixed(2)),
+                      humidity: parseFloat(deviceData.humidity || 0),
+                      dustDensity: parseFloat(deviceData.dustDensity || 0),
+                    };
+                });
 
-                setData([device]);
+                setData(devices);
             } else {
                  console.error("Invalid data format received from Firebase. Expected an object.", rawData);
             }
@@ -61,19 +61,18 @@ export function useRealtimeData() {
             console.warn("No data found in Realtime Database at path: /data. Holding last known data.");
         }
         
-        // Ensure loading is set to false after the first check, regardless of outcome.
         if (loading) {
             setLoading(false);
         }
       },
       (error) => {
         console.error("🔥 Firebase Realtime Database read failed:", error);
-        setLoading(false); // Also stop loading on error
+        setLoading(false);
       }
     );
 
     return () => unsubscribe();
-  }, [loading]); // Dependency array includes loading to manage initial load correctly
+  }, [loading]);
 
   return { data, loading };
 }
