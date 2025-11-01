@@ -31,8 +31,6 @@ export function useRealtimeData() {
       setData(devices);
       setLoading(false);
     }, (serverError) => {
-      console.error("Error fetching real-time data: ", serverError);
-      
       const permissionError = new FirestorePermissionError({
         path: deviceDataCollection.path,
         operation: 'list',
