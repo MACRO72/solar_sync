@@ -1,49 +1,47 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query } from 'firebase/firestore';
-import { useFirestore } from '@/firebase/provider';
+import { getDatabase, ref, onValue } from 'firebase/database';
+import { useFirebase } from '@/firebase/provider';
 import type { Device } from '@/lib/types';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
-import type { SecurityRuleContext } from '@/firebase/errors';
+import { app } from '@/firebase/config';
 
 export function useRealtimeData() {
   const [data, setData] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
-  const firestore = useFirestore();
-
+  
+  // We don't need the full context, just the app instance to get the DB
+  // This avoids dependency on the Firestore-specific provider context.
+  
   useEffect(() => {
-    if (!firestore) {
-        // Firestore might not be initialized yet
-        return;
-    };
-
     setLoading(true);
-    
-    const deviceDataCollection = collection(firestore, 'device-data');
-    const q = query(deviceDataCollection);
+    const db = getDatabase(app);
+    const dataRef = ref(db, 'data');
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const devices: Device[] = [];
-      querySnapshot.forEach((doc) => {
-        devices.push({ id: doc.id, ...doc.data() } as Device);
-      });
-      setData(devices);
+    const unsubscribe = onValue(dataRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const rawData = snapshot.val();
+        // Transform the object of objects into an array of devices
+        const devicesArray: Device[] = Object.keys(rawData).map(key => {
+          return {
+            id: key,
+            ...rawData[key]
+          }
+        });
+        setData(devicesArray);
+      } else {
+        // Handle the case where there's no data at the '/data' path
+        setData([]);
+      }
       setLoading(false);
-    }, (serverError) => {
-      const permissionError = new FirestorePermissionError({
-        path: deviceDataCollection.path,
-        operation: 'list',
-      } satisfies SecurityRuleContext);
-
-      errorEmitter.emit('permission-error', permissionError);
-
+    }, (error) => {
+      console.error("Firebase Realtime Database read failed: ", error);
+      // In a real app, you would want to emit this to a proper error handler
       setLoading(false);
     });
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [firestore]);
+  }, []);
 
   return { data, loading };
 }
