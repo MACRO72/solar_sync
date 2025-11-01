@@ -6,6 +6,81 @@ import type { Device } from '@/lib/types';
 import { app } from '@/firebase/config';
 import { format } from 'date-fns';
 
+/**
+ * Utility to safely parse a value into a number.
+ * Returns the number or a default value (0).
+ */
+function parseAsNumber(value: any): number {
+  if (value === null || value === undefined) return 0;
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  return 0;
+}
+
+/**
+ * Utility to find a value in an object using a list of possible keys.
+ */
+function pickValue(obj: Record<string, any>, candidates: string[]): any {
+  for (const key of candidates) {
+    if (obj && Object.prototype.hasOwnProperty.call(obj, key)) {
+      const val = obj[key];
+      if (val !== null && val !== undefined) return val;
+    }
+  }
+  return null;
+}
+
+/**
+ * Mapping of desired metric names to possible key names from the device.
+ */
+const KEY_MAP = {
+  temperature: ["Temperature", "temperature", "temp"],
+  humidity: ["Humidity", "humidity", "hum"],
+  dustDensity: ["dustDensity", "dust_density", "Dust", "dust"],
+  irradiance: ["Irradiance", "irradiance", "solar_irradiance"],
+  voltage: ["Voltage", "voltage", "volt", "V"],
+  current: ["Current", "current", "curr", "A"],
+};
+
+/**
+ * Normalizes a raw device object from Firebase into a structured Device type.
+ */
+function normalizeDeviceData(key: string, rawData: any, index: number): Device {
+    const voltage = parseAsNumber(pickValue(rawData, KEY_MAP.voltage));
+    const current = parseAsNumber(pickValue(rawData, KEY_MAP.current));
+    const irradiance = parseAsNumber(pickValue(rawData, KEY_MAP.irradiance));
+    
+    const power = voltage * current;
+    
+    let efficiency = 0;
+    const panelArea = 1.6; // Standard panel area in m²
+    if (irradiance > 0 && panelArea > 0 && power > 0) {
+        efficiency = (power / (irradiance * panelArea)) * 100;
+    }
+    // Clamp efficiency to a realistic range (e.g., 0-25%)
+    efficiency = Math.max(0, Math.min(efficiency, 25));
+
+    return {
+        id: key,
+        name: rawData.name || `Solar Panel ${index + 1}`,
+        status: 'Online',
+        lastSeen: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
+        temperature: parseAsNumber(pickValue(rawData, KEY_MAP.temperature)),
+        humidity: parseAsNumber(pickValue(rawData, KEY_MAP.humidity)),
+        dustDensity: parseAsNumber(pickValue(rawData, KEY_MAP.dustDensity)),
+        irradiance,
+        voltage,
+        current,
+        power: parseFloat(power.toFixed(2)),
+        efficiency: parseFloat(efficiency.toFixed(2)),
+        location: rawData.location,
+    };
+}
+
+
 export function useRealtimeData() {
   const [data, setData] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,50 +98,15 @@ export function useRealtimeData() {
 
           if (typeof rawData === 'object' && rawData !== null) {
             const devices: Device[] = Object.keys(rawData).map((key, index) => {
-              const deviceData = rawData[key];
-              const voltage = deviceData.voltage || 0;
-              const current = deviceData.current || 0;
-              const power = voltage * current;
-              const irradiance = deviceData.irradiance || 0;
-              const temperature = deviceData.temperature || 0;
-              const humidity = deviceData.humidity || 0;
-              const dustDensity = deviceData.dustDensity || 0;
-              
-              let efficiency = 0;
-              const panelArea = 1.6; // Standard panel area in m²
-              if (irradiance > 0 && panelArea > 0 && power > 0) {
-                efficiency = (power / (irradiance * panelArea)) * 100;
-              }
-              
-              efficiency = Math.max(0, Math.min(efficiency, 25));
-
-              return {
-                id: key,
-                name: `Solar Panel ${index + 1}`,
-                status: 'Online',
-                lastSeen: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
-                power: isNaN(power) ? 0 : parseFloat(power.toFixed(2)),
-                current: isNaN(current) ? 0 : current,
-                temperature: isNaN(temperature) ? 0 : temperature,
-                voltage: isNaN(voltage) ? 0 : voltage,
-                irradiance: isNaN(irradiance) ? 0 : irradiance,
-                efficiency: isNaN(efficiency) ? 0 : parseFloat(efficiency.toFixed(2)),
-                humidity: isNaN(humidity) ? 0 : humidity,
-                dustDensity: isNaN(dustDensity) ? 0 : dustDensity,
-                location: deviceData.location,
-              };
+               return normalizeDeviceData(key, rawData[key], index);
             });
             setData(devices);
           } else {
-            console.error(
-              'Invalid data format received from Firebase. Expected an object.',
-              rawData
-            );
+            console.error('Invalid data format received from Firebase. Expected an object of objects.', rawData);
           }
         } else {
-          console.warn(
-            'No data found in Realtime Database at path: /data. Holding last known data.'
-          );
+          // If no data exists, don't clear the last known good state.
+          console.warn('No data found in Realtime Database at path: /data. Holding last known data.');
         }
 
         if (loading) {
@@ -79,8 +119,9 @@ export function useRealtimeData() {
       }
     );
 
+    // Cleanup subscription on component unmount
     return () => unsubscribe();
-  }, []); 
+  }, []); // Empty dependency array ensures this effect runs only once
 
   return { data, loading };
 }
