@@ -57,8 +57,8 @@ export function useRealtimeData() {
                     current: current,
                     temperature: temperature,
                     voltage: voltage,
-                    irradiance: irradiance,
-                    efficiency: efficiency,
+                    irradiance: isNaN(irradiance) ? 0 : irradiance,
+                    efficiency: isNaN(efficiency) ? 0 : efficiency,
                     humidity: 50, // Mock value as it's not in the CSV
                     dustDensity: 120, // Mock value as it's not in the CSV
                 };
