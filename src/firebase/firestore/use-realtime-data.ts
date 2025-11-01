@@ -23,8 +23,22 @@ export function useRealtimeData() {
             const values = rawData.split(',');
 
             if (values.length >= 7) {
-                const power = parseFloat(values[2]);
+                // Correct mapping based on the provided CSV format:
+                // "253002,506322,0.00,-0.60,28.94,10.83,4095"
+                // index 0: part of ID
+                // index 1: part of ID
+                // index 2: current
+                // index 3: power
+                // index 4: temperature
+                // index 5: voltage
+                // index 6: irradiance
+
+                const current = parseFloat(values[2]);
+                const power = parseFloat(values[3]);
+                const temperature = parseFloat(values[4]);
+                const voltage = parseFloat(values[5]);
                 const irradiance = parseFloat(values[6]);
+
                 let efficiency = 0;
                 // Avoid division by zero if irradiance is 0
                 if (irradiance > 0) {
@@ -35,9 +49,7 @@ export function useRealtimeData() {
                     if (efficiency > 1) efficiency = efficiency / 100; // Heuristic to scale it
                     if (efficiency > 0.25) efficiency = 0.25; // Cap at a realistic 25%
                     efficiency = efficiency * 100;
-
                 }
-
 
                 const device: Device = {
                     id: `ESP32_${values[0]}`,
@@ -45,11 +57,11 @@ export function useRealtimeData() {
                     status: 'Online',
                     lastSeen: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
                     power: power,
-                    current: parseFloat(values[3]),
-                    temperature: parseFloat(values[4]),
-                    voltage: parseFloat(values[5]),
+                    current: current,
+                    temperature: temperature,
+                    voltage: voltage,
                     irradiance: irradiance,
-                    efficiency: efficiency,
+                    efficiency: efficiency > 0 ? efficiency : 0, // Ensure efficiency is not negative
                     humidity: 50, // Mock value, as it's not in the CSV
                     dustDensity: 120, // Mock value
                 };
