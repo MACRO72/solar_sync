@@ -3,6 +3,7 @@
 import { generateMaintenanceSchedule, type GenerateMaintenanceScheduleInput, type GenerateMaintenanceScheduleOutput } from "@/ai/flows/generate-maintenance-schedule";
 import { summarizePerformanceAnomalies, type SummarizePerformanceAnomaliesInput, type SummarizePerformanceAnomaliesOutput } from "@/ai/flows/summarize-performance-anomalies";
 import { analyzeCsvData, type AnalyzeCsvDataInput, type AnalyzeCsvDataOutput } from "@/ai/flows/analyze-csv-data";
+import { getEfficiencyPrediction, type GetEfficiencyPredictionInput, type GetEfficiencyPredictionOutput } from "@/ai/flows/get-efficiency-prediction";
 import { z } from "zod";
 
 // --- Maintenance Suggestion ---
@@ -134,6 +135,45 @@ export async function getCsvAnalysis(prevState: CsvFormState, formData: FormData
     console.error(error);
     return {
       errors: { _form: [error.message || 'Failed to analyze CSV. Please try again.'] },
+      data: null,
+    };
+  }
+}
+
+// --- Live Prediction ---
+const PredictionSchema = z.object({
+  temperature: z.number(),
+  humidity: z.number(),
+  solar_irradiance: z.number(),
+  dust_density: z.number(),
+});
+
+type PredictionFormState = {
+  errors?: {
+    _form?: string[];
+  };
+  data: GetEfficiencyPredictionOutput | null;
+}
+
+export async function getLivePrediction(input: GetEfficiencyPredictionInput): Promise<PredictionFormState> {
+  const validatedFields = PredictionSchema.safeParse(input);
+
+  if (!validatedFields.success) {
+    return {
+      errors: { _form: ['Invalid input data.'] },
+      data: null,
+    };
+  }
+  
+  try {
+    const result = await getEfficiencyPrediction(validatedFields.data);
+    return {
+      data: result,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      errors: { _form: ['Prediction failed. Check model server.'] },
       data: null,
     };
   }
