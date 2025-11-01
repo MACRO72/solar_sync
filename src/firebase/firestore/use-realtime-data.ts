@@ -23,46 +23,46 @@ export function useRealtimeData() {
             const values = rawData.split(',');
 
             if (values.length >= 7) {
-                // Correct mapping based on the provided CSV format:
-                // "253002,506322,0.00,-0.60,28.94,10.83,4095"
+                // Correct mapping for: "253002,506322,0.00,-0.60,28.94,10.83,4095"
                 // index 0: part of ID
                 // index 1: part of ID
-                // index 2: current
-                // index 3: power
-                // index 4: temperature
-                // index 5: voltage
-                // index 6: irradiance
+                // index 2: current (A)
+                // index 3: power (W)
+                // index 4: temperature (°C)
+                // index 5: voltage (V)
+                // index 6: irradiance (W/m²)
 
                 const current = parseFloat(values[2]);
                 const power = parseFloat(values[3]);
                 const temperature = parseFloat(values[4]);
                 const voltage = parseFloat(values[5]);
-                const irradiance = parseFloat(values[6]);
+                // The irradiance value seems to be an ADC reading, not W/m².
+                // We'll scale it to a more realistic range, e.g., 0-1200 W/m².
+                // Assuming 4095 is max reading.
+                const irradiance = (parseFloat(values[6]) / 4095) * 1200;
 
                 let efficiency = 0;
-                // Avoid division by zero if irradiance is 0
-                if (irradiance > 0) {
-                    // A more realistic efficiency calculation would need panel area,
-                    // but for a rough metric we'll use a simplified ratio.
-                    // This is likely not the true efficiency but serves as a placeholder.
-                    efficiency = (power / irradiance); 
-                    if (efficiency > 1) efficiency = efficiency / 100; // Heuristic to scale it
-                    if (efficiency > 0.25) efficiency = 0.25; // Cap at a realistic 25%
-                    efficiency = efficiency * 100;
+                // Efficiency = (Power Output / (Panel Area * Irradiance)) * 100
+                // Assuming a standard panel area of 1.6 m² for calculation.
+                const panelArea = 1.6;
+                if (irradiance > 0 && panelArea > 0) {
+                    efficiency = (power / (irradiance * panelArea)) * 100;
                 }
+                // Cap efficiency at a realistic 25% and ensure it's not negative.
+                efficiency = Math.max(0, Math.min(efficiency, 25));
 
                 const device: Device = {
                     id: `ESP32_${values[0]}`,
                     name: `Solar Panel ${values[0]}`,
                     status: 'Online',
                     lastSeen: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
-                    power: power,
+                    power: Math.abs(power), // Power should be positive
                     current: current,
                     temperature: temperature,
                     voltage: voltage,
                     irradiance: irradiance,
-                    efficiency: efficiency > 0 ? efficiency : 0, // Ensure efficiency is not negative
-                    humidity: 50, // Mock value, as it's not in the CSV
+                    efficiency: efficiency,
+                    humidity: 50, // Mock value
                     dustDensity: 120, // Mock value
                 };
                 devicesArray.push(device);
