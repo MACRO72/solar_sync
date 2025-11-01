@@ -12,8 +12,8 @@ export function useRealtimeData() {
   
   useEffect(() => {
     const db = getDatabase(app);
-    // The data is at the root 'data' path in the Realtime Database.
-    const dataRef = ref(db, 'data');
+    // Corrected the path to listen to where the ESP32 is sending data.
+    const dataRef = ref(db, 'SolarSync/sensor_data');
 
     const unsubscribe = onValue(dataRef, (snapshot) => {
       if (snapshot.exists()) {
