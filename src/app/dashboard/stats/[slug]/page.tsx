@@ -8,7 +8,7 @@ import { stats as statDetails } from '@/lib/data';
 import { notFound } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-const statTitles = ["Voltage", "Total Power", "Irradiance", "Avg. Temperature", "Dust Index", "System Health"];
+const statTitles = ["Voltage", "Total Power", "Irradiance", "Temperature", "Dust Index", "System Health"];
 
 
 export default function StatDetailPage({ params }: { params: { slug: string } }) {

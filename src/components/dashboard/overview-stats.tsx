@@ -17,7 +17,7 @@ const getIcon = (title: string) => {
         case "Voltage": return Bolt;
         case "Total Power": return Zap;
         case "Irradiance": return Sun;
-        case "Avg. Temperature": return Thermometer;
+        case "Temperature": return Thermometer;
         case "Dust Index": return Wind;
         case "System Health": return Gauge;
         default: return Zap;
@@ -29,7 +29,7 @@ const getColor = (title: string) => {
         case "Voltage": return "text-primary";
         case "Total Power": return "text-orange-500";
         case "Irradiance": return "text-yellow-400";
-        case "Avg. Temperature": return "text-destructive";
+        case "Temperature": return "text-destructive";
         case "Dust Index": return "text-status-neutral";
         case "System Health": return "text-status-positive";
         default: return "text-primary";
@@ -64,7 +64,7 @@ export function OverviewStats() {
                 { title: "Voltage", value: "N/A", icon: Bolt, change: "Waiting for data...", color: "text-primary"},
                 { title: "Total Power", value: "N/A", icon: Zap, change: "Waiting for data...", color: "text-orange-500" },
                 { title: "Irradiance", value: "N/A", icon: Sun, change: "Waiting for data...", color: "text-yellow-400" },
-                { title: "Avg. Temperature", value: "N/A", icon: Thermometer, change: "Waiting for data...", color: "text-destructive" },
+                { title: "Temperature", value: "N/A", icon: Thermometer, change: "Waiting for data...", color: "text-destructive" },
                 { title: "Dust Index", value: "N/A", icon: Wind, change: "Waiting for data...", color: "text-status-neutral" },
                 { title: "System Health", value: "N/A", icon: Gauge, change: "Waiting for data...", color: "text-status-positive" },
             ];
@@ -72,7 +72,7 @@ export function OverviewStats() {
 
         const totalPower = devices.reduce((acc, dev) => acc + (dev.power || 0), 0);
         const avgVoltage = devices.reduce((acc, dev) => acc + (dev.voltage || 0), 0) / devices.length;
-        const avgTemp = devices.reduce((acc, dev) => acc + (dev.temperature || 0), 0) / devices.length;
+        const currentTemp = devices[0]?.temperature ?? 0;
         const totalIrradiance = devices.reduce((acc, dev) => acc + (dev.irradiance || 0), 0);
         const avgDust = devices.reduce((acc, dev) => acc + (dev.dustDensity || 0), 0) / devices.length;
         
@@ -84,7 +84,7 @@ export function OverviewStats() {
             { title: "Voltage", value: `${avgVoltage.toFixed(2)} V`, icon: Bolt, change: "Live", color: "text-primary", actual: avgVoltage, expected: 12 },
             { title: "Total Power", value: `${(totalPower / 1000).toFixed(2)} kW`, icon: Zap, change: "Live", color: "text-orange-500", actual: totalPower, expected: 4000 },
             { title: "Irradiance", value: `${totalIrradiance.toFixed(0)} W/m²`, icon: Sun, change: "Live", color: "text-yellow-400" },
-            { title: "Avg. Temperature", value: `${avgTemp.toFixed(1)}°C`, icon: Thermometer, change: "Live", color: "text-destructive", actual: avgTemp, expected: 60 },
+            { title: "Temperature", value: `${currentTemp.toFixed(1)}°C`, icon: Thermometer, change: "Live", color: "text-destructive", actual: currentTemp, expected: 60 },
             { title: "Dust Index", value: `${avgDust.toFixed(1)} µg/m³`, icon: Wind, change: "Live", color: "text-status-neutral", actual: avgDust, expected: 100 },
             { title: "System Health", value: `${systemHealth.toFixed(1)}%`, icon: Gauge, change: `${onlineDevices}/${devices.length} Online`, color: "text-status-positive", actual: systemHealth, expected: 100 },
         ];

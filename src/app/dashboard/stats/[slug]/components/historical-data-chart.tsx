@@ -23,7 +23,7 @@ const metricToKeyMap: Record<string, keyof import('@/lib/types').Device> = {
     "Voltage": "voltage",
     "Total Power": "power",
     "Irradiance": "irradiance",
-    "Avg. Temperature": "temperature",
+    "Temperature": "temperature",
     "Dust Index": "dustDensity",
     "System Health": "efficiency", // Fallback for system health
 };
