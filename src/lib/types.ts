@@ -6,7 +6,14 @@ export type Device = {
   status: 'Online' | 'Offline' | 'Error';
   lastSeen: string;
   temperature?: number;
-  energyOutput?: number;
+  humidity?: number;
+  dustDensity?: number;
+  irradiance?: number;
+  voltage?: number;
+  current?: number;
+  power?: number;
+  efficiency?: number;
+  energyOutput?: number; // Kept for compatibility if needed
   location?: {
     lat: number;
     lng: number;

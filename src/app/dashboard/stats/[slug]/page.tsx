@@ -9,11 +9,11 @@ import { notFound } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 export default function StatDetailPage({ params }: { params: { slug: string } }) {
-    const slugToTitle = (slug: string) => {
-        return slug.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    };
+    const titleToSlug = (title: string) => {
+        return title.toLowerCase().replace(/\. /g, '-').replace(/ /g, '-');
+    }
 
-    const stat = statDetails.find(s => s.title.toLowerCase().replace(/ /g, '-') === params.slug);
+    const stat = statDetails.find(s => titleToSlug(s.title) === params.slug);
 
     if (!stat) {
         notFound();

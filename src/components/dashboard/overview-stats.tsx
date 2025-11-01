@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 
 const titleToSlug = (title: string) => {
-    return title.toLowerCase().replace(/ /g, '-');
+    return title.toLowerCase().replace(/\. /g, '-').replace(/ /g, '-');
 }
 
 export function OverviewStats() {

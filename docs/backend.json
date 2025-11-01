@@ -39,9 +39,33 @@
           "type": "number",
           "description": "The temperature reading from the device."
         },
-        "energyOutput": {
+        "humidity": {
           "type": "number",
-          "description": "The energy output from the device."
+          "description": "The humidity reading from the device."
+        },
+        "dustDensity": {
+            "type": "number",
+            "description": "The dust density in μg/m³."
+        },
+        "irradiance": {
+            "type": "number",
+            "description": "The solar irradiance in W/m²."
+        },
+        "voltage": {
+            "type": "number",
+            "description": "The panel voltage in V."
+        },
+        "current": {
+            "type": "number",
+            "description": "The current output in A."
+        },
+        "power": {
+            "type": "number",
+            "description": "The power output in W."
+        },
+        "efficiency": {
+            "type": "number",
+            "description": "The efficiency score as a percentage."
         },
         "lastSeen": {
           "type": "string",

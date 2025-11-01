@@ -1,13 +1,13 @@
 import type { Device, Alert, PerformanceData, Stat, HistoricalData, PowerData, DustData, TempData } from './types';
-import { Gauge, Zap, Wind, Thermometer, HeartPulse, Wrench } from "lucide-react";
+import { Gauge, Zap, Wind, Thermometer, Sun, Percent } from "lucide-react";
 
 export const stats: Stat[] = [
-    { title: "System Efficiency", value: "98.7%", icon: Gauge, change: "+0.2%", color: "text-primary", actual: 98.7, expected: 99 },
-    { title: "Energy Output", value: "3,450 kWh", icon: Zap, change: "+5%", color: "text-orange-500", actual: 3450, expected: 3300 },
-    { title: "Dust Index", value: "Low", icon: Wind, change: "Stable", color: "text-status-neutral", actual: 15, expected: 100 },
+    { title: "Avg. Efficiency", value: "98.7%", icon: Percent, change: "+0.2%", color: "text-primary", actual: 98.7, expected: 99 },
+    { title: "Total Power", value: "3.45 kW", icon: Zap, change: "+5%", color: "text-orange-500", actual: 3450, expected: 3300 },
+    { title: "Irradiance", value: "890 W/m²", icon: Sun, change: "Strong", color: "text-yellow-400" },
     { title: "Avg. Temperature", value: "48°C", icon: Thermometer, change: "-1°C", color: "text-destructive", actual: 48, expected: 60 },
-    { title: "System Health", value: "99.5%", icon: HeartPulse, change: "Excellent", color: "text-status-positive", actual: 99.5, expected: 100 },
-    { title: "Maintenance", value: "None Due", icon: Wrench, change: "All systems normal", color: "text-primary" },
+    { title: "Dust Index", value: "Low", icon: Wind, change: "Stable", color: "text-status-neutral", actual: 15, expected: 100 },
+    { title: "System Health", value: "99.5%", icon: Gauge, change: "Excellent", color: "text-status-positive", actual: 99.5, expected: 100 },
 ];
 
 export const devices: Device[] = [
@@ -176,9 +176,10 @@ const generateHistoricalData = (base: number, volatility: number) => {
 };
 
 export const historicalData: HistoricalData = {
-    "System Efficiency": generateHistoricalData(98, 0.05),
-    "Energy Output": generateHistoricalData(115, 0.2),
-    "Dust Index": generateHistoricalData(5, 0.5),
+    "Avg. Efficiency": generateHistoricalData(98, 0.05),
+    "Total Power": generateHistoricalData(3.45, 0.2), // in kW
+    "Irradiance": generateHistoricalData(890, 0.3),
     "Avg. Temperature": generateHistoricalData(48, 0.1),
+    "Dust Index": generateHistoricalData(5, 0.5),
     "System Health": generateHistoricalData(99, 0.02),
 }
