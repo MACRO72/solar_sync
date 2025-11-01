@@ -3,8 +3,9 @@ import * as React from 'react';
 import { Bar, BarChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { performanceData, powerData, dustData, tempData } from "@/lib/data"
 import { Button } from "@/components/ui/button";
+import { useRealtimeData } from '@/firebase/firestore/use-realtime-data';
+import { format } from 'date-fns';
 
 
 const chartConfig = {
@@ -21,38 +22,131 @@ type TimePeriod = '24h' | '7d' | '30d';
 type ChartView = 'performance' | 'power' | 'dust' | 'temperature';
 
 const timePeriodOptions: {value: TimePeriod, label: string}[] = [
-    { value: '24h', label: '24h' },
+    { value: '24h', label: 'Live' },
     { value: '7d', label: '7d' },
     { value: '30d', label: '30d' },
 ];
 
 const chartViewOptions: {value: ChartView, label: string}[] = [
-    { value: 'performance', label: 'Performance' },
-    { value: 'power', label: 'Power vs. Time' },
+    { value: 'performance', label: 'Efficiency' },
+    { value: 'power', label: 'Power' },
     { value: 'dust', label: 'Dust Index' },
-    { value: 'temperature', label: 'Temperature Impact' },
+    { value: 'temperature', label: 'Temp. Impact' },
 ];
 
 
 export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: { fullHeight?: boolean, defaultPeriod?: TimePeriod }) {
     const [timePeriod, setTimePeriod] = React.useState<TimePeriod>(defaultPeriod);
     const [chartView, setChartView] = React.useState<ChartView>('performance');
+    const { data: devices, loading } = useRealtimeData();
     
-    const data = chartView === 'performance' ? performanceData[timePeriod] 
-        : chartView === 'power' ? powerData[timePeriod] 
-        : chartView === 'dust' ? dustData[timePeriod]
-        : tempData[timePeriod];
+    const processedData = React.useMemo(() => {
+        if (!devices || devices.length === 0) return [];
+
+        // For simplicity, we'll use the 'lastSeen' timestamp for all views.
+        // In a real app, you might have more structured time-series data.
+        const now = new Date();
+        const filteredDevices = devices.filter(d => {
+            if (timePeriod === '24h') return true; // Show all live data
+            const deviceDate = new Date(d.lastSeen);
+            const diffDays = (now.getTime() - deviceDate.getTime()) / (1000 * 3600 * 24);
+            if (timePeriod === '7d') return diffDays <= 7;
+            if (timePeriod === '30d') return diffDays <= 30;
+            return true;
+        });
+
+        return filteredDevices.map(device => ({
+            time: format(new Date(device.lastSeen), 'HH:mm'),
+            efficiency: device.efficiency ?? 0,
+            power: device.power ?? 0,
+            dust: device.dustDensity ?? 0,
+            temperature: device.temperature ?? 0,
+        })).sort((a, b) => a.time.localeCompare(b.time));
+    }, [devices, timePeriod]);
+
 
     const getChartDescription = () => {
         switch (chartView) {
             case 'performance':
-                return 'Actual vs. Predicted Energy Output (kWh)';
+                return 'Real-time panel efficiency (%)';
             case 'power':
-                return 'Power Output (W) vs. Time';
+                return 'Real-time power output (W)';
             case 'dust':
-                return 'Average dust accumulation level';
+                return 'Average dust accumulation level (µg/m³)';
             case 'temperature':
                 return 'Temperature vs. Power Output';
+        }
+    }
+
+    const renderChart = () => {
+        if (loading) {
+            return <div className="flex h-full items-center justify-center text-muted-foreground">Loading chart data...</div>;
+        }
+        if (processedData.length === 0) {
+            return <div className="flex h-full items-center justify-center text-muted-foreground">Waiting for device data...</div>;
+        }
+
+        switch (chartView) {
+            case 'performance':
+                return (
+                    <LineChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                        <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
+                        <YAxis tickLine={false} axisLine={false} tickMargin={10} unit="%" />
+                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+                        <ChartLegend content={<ChartLegendContent />} />
+                        <Line dataKey="efficiency" type="monotone" stroke="var(--color-efficiency)" strokeWidth={2} dot={false} unit="%" />
+                    </LineChart>
+                );
+            case 'power':
+                 return (
+                    <LineChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                        <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
+                        <YAxis tickLine={false} axisLine={false} tickMargin={10} unit="W" />
+                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+                        <ChartLegend content={<ChartLegendContent />} />
+                        <Line dataKey="power" type="monotone" stroke="var(--color-power)" strokeWidth={2} dot={false} name="Power" unit="W" />
+                    </LineChart>
+                );
+            case 'dust':
+                return (
+                    <BarChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                        <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
+                        <YAxis tickLine={false} axisLine={false} tickMargin={10} unit="µg/m³" />
+                        <Tooltip content={<ChartTooltipContent />} />
+                        <ChartLegend content={<ChartLegendContent />} />
+                        <Bar dataKey="dust" fill="var(--color-dust)" radius={4} barSize={20} />
+                    </BarChart>
+                );
+             case 'temperature':
+                 return (
+                     <LineChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                        <XAxis
+                            dataKey="temperature"
+                            type="number"
+                            tickLine={false}
+                            tickMargin={10}
+                            axisLine={false}
+                            unit="°C"
+                            domain={['dataMin - 2', 'dataMax + 2']}
+                            label={{ value: "Temperature (°C)", position: "insideBottom", offset: -5 }}
+                        />
+                        <YAxis
+                            yAxisId="left"
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={10}
+                            unit="W"
+                            label={{ value: 'Power (W)', angle: -90, position: 'insideLeft' }}
+                        />
+                        <Tooltip content={<ChartTooltipContent />} />
+                        <ChartLegend content={<ChartLegendContent />} />
+                        <Line yAxisId="left" dataKey="power" type="monotone" stroke="var(--color-power)" strokeWidth={2} name="Power" unit="W" dot={false} />
+                    </LineChart>
+                );
         }
     }
     
@@ -97,101 +191,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
             <CardContent>
                 <ChartContainer config={chartConfig} className={fullHeight ? "h-[400px] w-full" : "h-[300px] w-full"}>
                    <ResponsiveContainer>
-                         {chartView === 'performance' ? (
-                            <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                                <XAxis
-                                    dataKey="time"
-                                    tickLine={false}
-                                    tickMargin={10}
-                                    axisLine={false}
-                                    tickFormatter={(value) => {
-                                        if (timePeriod === '24h') return value;
-                                        return value.split(' ')[0];
-                                    }}
-                                />
-                                <YAxis
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={10}
-                                    unit="kWh"
-                                />
-                                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                                <ChartLegend content={<ChartLegendContent />} />
-                                <Line dataKey="actual" type="monotone" stroke="var(--color-actual)" strokeWidth={2} dot={true} unit="kWh" />
-                                <Line dataKey="predicted" type="monotone" stroke="var(--color-predicted)" strokeWidth={2} dot={true} unit="kWh" />
-                            </LineChart>
-                        ) : chartView === 'power' ? (
-                            <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                                <XAxis
-                                    dataKey="time"
-                                    tickLine={false}
-                                    tickMargin={10}
-                                    axisLine={false}
-                                    tickFormatter={(value) => {
-                                        if (timePeriod === '24h') return value;
-                                        return value.split(' ')[0];
-                                    }}
-                                />
-                                <YAxis
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={10}
-                                    unit="W"
-                                />
-                                <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                                <ChartLegend content={<ChartLegendContent />} />
-                                <Line dataKey="power" type="monotone" stroke="var(--color-power)" strokeWidth={2} dot={false} name="Power" unit="W" />
-                            </LineChart>
-                        ) : chartView === 'dust' ? (
-                           <BarChart accessibilityLayer data={data} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                                <XAxis
-                                    dataKey="time"
-                                    tickLine={false}
-                                    tickMargin={10}
-                                    axisLine={false}
-                                     tickFormatter={(value) => {
-                                        if (timePeriod === '24h') return value;
-                                        return value.split(' ')[0];
-                                    }}
-                                />
-                                <YAxis
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={10}
-                                    unit="µg/m³"
-                                />
-                                <Tooltip content={<ChartTooltipContent />} />
-                                <ChartLegend content={<ChartLegendContent />} />
-                                <Bar dataKey="dust" fill="var(--color-dust)" radius={4} barSize={20} />
-                            </BarChart>
-                        ) : ( // Temperature Impact
-                             <LineChart accessibilityLayer data={data} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                                <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                                <XAxis
-                                    dataKey="temperature"
-                                    type="number"
-                                    tickLine={false}
-                                    tickMargin={10}
-                                    axisLine={false}
-                                    unit="°C"
-                                    label={{ value: "Temperature (°C)", position: "insideBottom", offset: -5 }}
-                                />
-                                <YAxis
-                                    yAxisId="left"
-                                    tickLine={false}
-                                    axisLine={false}
-                                    tickMargin={10}
-                                    unit="W"
-                                    label={{ value: 'Power (W)', angle: -90, position: 'insideLeft' }}
-                                />
-                                <Tooltip content={<ChartTooltipContent />} />
-                                <ChartLegend content={<ChartLegendContent />} />
-                                <Line yAxisId="left" dataKey="power" type="monotone" stroke="var(--color-power)" strokeWidth={2} name="Power" unit="W" />
-                            </LineChart>
-                        )}
+                        {renderChart()}
                     </ResponsiveContainer>
                 </ChartContainer>
             </CardContent>
