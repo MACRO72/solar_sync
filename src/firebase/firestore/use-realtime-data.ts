@@ -12,7 +12,7 @@ export function useRealtimeData() {
   
   useEffect(() => {
     const db = getDatabase(app);
-    // As per user feedback, the data is at the root 'data' path.
+    // The data is at the root 'data' path in the Realtime Database.
     const dataRef = ref(db, 'data');
 
     const unsubscribe = onValue(dataRef, (snapshot) => {
@@ -20,13 +20,12 @@ export function useRealtimeData() {
         const rawData = snapshot.val();
         const devicesArray: Device[] = [];
 
-        // The data is coming as a single string: "253002,506322,0.00,-0.60,28.94,10.83,4095"
+        // The data arrives as a single CSV string: "253002,506322,0.00,-0.60,28.94,10.83,4095"
         if (typeof rawData === 'string') {
             const values = rawData.split(',');
 
             if (values.length >= 7) {
-                // Correct mapping based on re-evaluation:
-                // "253002,506322,0.00,-0.60,28.94,10.83,4095"
+                // Correct mapping based on the CSV format:
                 // index 0: 253002 (ID part 1)
                 // index 1: 506322 (ID part 2)
                 // index 2: 0.00   (Current)
@@ -39,16 +38,17 @@ export function useRealtimeData() {
                 const power = parseFloat(values[3]);
                 const temperature = parseFloat(values[4]);
                 const voltage = parseFloat(values[5]);
-                // The irradiance value (4095) is a raw ADC reading.
-                // Scale it to a realistic range, e.g., 0-1200 W/m².
-                // Assuming 4095 is the max reading from the sensor.
+                
+                // The irradiance value (4095) is a raw ADC reading from the sensor.
+                // We need to scale it to a realistic range, like 0-1200 W/m².
+                // Assuming 4095 is the maximum possible reading.
                 const irradiance = (parseFloat(values[6]) / 4095) * 1200;
 
                 let efficiency = 0;
                 // Efficiency = (Power Output / (Panel Area * Irradiance)) * 100
-                // Assuming a standard panel area of 1.6 m² for calculation.
+                // We'll assume a standard panel area of 1.6 m² for the calculation.
                 const panelArea = 1.6;
-                // Power can be negative, but for efficiency calculation, we need its magnitude.
+                // Power might be negative, but for efficiency, we should use its magnitude.
                 const absolutePower = Math.abs(power);
                 if (irradiance > 0 && panelArea > 0 && absolutePower > 0) {
                     efficiency = (absolutePower / (irradiance * panelArea)) * 100;
@@ -61,20 +61,21 @@ export function useRealtimeData() {
                     name: `Solar Panel ${values[0]}`,
                     status: 'Online',
                     lastSeen: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
-                    // Ensure power is stored as a positive value for display
+                    // Ensure power is stored as a positive value for display.
                     power: absolutePower,
                     current: current,
                     temperature: temperature,
                     voltage: voltage,
                     irradiance: isNaN(irradiance) ? 0 : parseFloat(irradiance.toFixed(2)),
                     efficiency: isNaN(efficiency) ? 0 : parseFloat(efficiency.toFixed(2)),
-                    humidity: 50, // Mock value as it's not in the CSV
-                    dustDensity: 120, // Mock value as it's not in the CSV
+                    // These values are not in the CSV, so we provide mock data.
+                    humidity: 50, 
+                    dustDensity: 120,
                 };
                 devicesArray.push(device);
             }
         } else if (typeof rawData === 'object' && rawData !== null) {
-            // This handles cases where the database might have structured data from other sources
+            // This fallback handles cases where data might already be in a structured format.
             Object.keys(rawData).forEach(key => {
                 devicesArray.push({
                     id: key,
@@ -85,7 +86,7 @@ export function useRealtimeData() {
         
         setData(devicesArray);
       } else {
-        // If snapshot doesn't exist, clear data
+        // If snapshot doesn't exist, clear data to show "Waiting for data...".
         setData([]);
       }
       setLoading(false);
