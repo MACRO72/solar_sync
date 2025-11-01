@@ -14,6 +14,10 @@ import { useUser } from '@/firebase/auth/use-user';
 import { useFirestore } from '@/firebase/provider';
 import { doc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+import type { SecurityRuleContext } from '@/firebase/errors';
+
 
 export function UserProfile() {
   const { name, email, avatar, phone } = useAppState();
@@ -44,29 +48,36 @@ export function UserProfile() {
       return;
     }
     setIsSaving(true);
-    try {
-      const userRef = doc(firestore, 'users', user.uid);
-      await updateDoc(userRef, {
+    
+    const userRef = doc(firestore, 'users', user.uid);
+    const updatedData = {
         name: currentName,
         email: currentEmail,
         phone: currentPhone,
-      });
-      toast({
-        title: 'Profile Updated',
-        description: 'Your profile information has been successfully saved.',
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Update Failed',
-        description: error.message || 'Could not update profile.',
-      });
-    } finally {
-      setIsSaving(false);
-    }
+      };
+
+    updateDoc(userRef, updatedData)
+        .then(() => {
+            toast({
+                title: 'Profile Updated',
+                description: 'Your profile information has been successfully saved.',
+            });
+        })
+        .catch(async (serverError) => {
+             const permissionError = new FirestorePermissionError({
+                path: userRef.path,
+                operation: 'update',
+                requestResourceData: updatedData,
+            } satisfies SecurityRuleContext);
+
+            errorEmitter.emit('permission-error', permissionError);
+        })
+        .finally(() => {
+            setIsSaving(false);
+        });
   };
   
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user || !firestore) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to upload an image.' });
       return;
@@ -94,9 +105,22 @@ export function UserProfile() {
           setCurrentAvatar(downloadURL);
           
           const userRef = doc(firestore, 'users', user.uid);
-          await updateDoc(userRef, { photoURL: downloadURL });
+          const updatedData = { photoURL: downloadURL };
           
-          toast({ title: 'Avatar Updated', description: 'Your new avatar has been saved.' });
+          updateDoc(userRef, updatedData)
+            .then(() => {
+                toast({ title: 'Avatar Updated', description: 'Your new avatar has been saved.' });
+            })
+            .catch((serverError) => {
+                 const permissionError = new FirestorePermissionError({
+                    path: userRef.path,
+                    operation: 'update',
+                    requestResourceData: updatedData,
+                } satisfies SecurityRuleContext);
+
+                errorEmitter.emit('permission-error', permissionError);
+            });
+
         } catch (error: any) {
           toast({ variant: 'destructive', title: 'Upload Failed', description: error.message || 'Could not upload avatar.' });
         } finally {
