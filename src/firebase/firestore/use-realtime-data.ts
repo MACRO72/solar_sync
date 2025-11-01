@@ -26,6 +26,15 @@ export function useRealtimeData() {
 
             if (values.length >= 7) {
                 // Correct mapping based on re-evaluation:
+                // "253002,506322,0.00,-0.60,28.94,10.83,4095"
+                // index 0: 253002 (ID part 1)
+                // index 1: 506322 (ID part 2)
+                // index 2: 0.00   (Current)
+                // index 3: -0.60  (Power)
+                // index 4: 28.94  (Temperature)
+                // index 5: 10.83  (Voltage)
+                // index 6: 4095   (Raw Irradiance ADC)
+
                 const current = parseFloat(values[2]);
                 const power = parseFloat(values[3]);
                 const temperature = parseFloat(values[4]);
@@ -57,8 +66,8 @@ export function useRealtimeData() {
                     current: current,
                     temperature: temperature,
                     voltage: voltage,
-                    irradiance: isNaN(irradiance) ? 0 : irradiance,
-                    efficiency: isNaN(efficiency) ? 0 : efficiency,
+                    irradiance: isNaN(irradiance) ? 0 : parseFloat(irradiance.toFixed(2)),
+                    efficiency: isNaN(efficiency) ? 0 : parseFloat(efficiency.toFixed(2)),
                     humidity: 50, // Mock value as it's not in the CSV
                     dustDensity: 120, // Mock value as it's not in the CSV
                 };
