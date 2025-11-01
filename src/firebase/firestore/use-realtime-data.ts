@@ -58,11 +58,10 @@ export function useRealtimeData() {
                  console.error("Invalid data format received from Firebase. Expected an object.", rawData);
             }
         } else {
-            console.warn("No data found in Realtime Database at path: /data");
-            // Don't clear data, keep the last known state
+            console.warn("No data found in Realtime Database at path: /data. Holding last known data.");
         }
         
-        // Ensure loading is set to false after the first check.
+        // Ensure loading is set to false after the first check, regardless of outcome.
         if (loading) {
             setLoading(false);
         }
