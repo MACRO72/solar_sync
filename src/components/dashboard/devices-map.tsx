@@ -2,9 +2,9 @@
 'use client';
 
 import { GlassCard, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/glass-card";
-import { devices } from "@/lib/data";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useRealtimeData } from "@/firebase/firestore/use-realtime-data";
 
 // A simple normalization function to map lat/lng to a 0-100 scale
 // This is a mock conversion and not a true mercator projection.
@@ -26,6 +26,8 @@ const normalizeCoords = (lat: number, lng: number) => {
 };
 
 export function DevicesMap() {
+    const { data: devices, loading } = useRealtimeData();
+    
     return (
         <GlassCard className="overflow-hidden">
             <CardHeader>
@@ -38,7 +40,21 @@ export function DevicesMap() {
                         {/* Grid background */}
                         <div className="absolute inset-0 bg-grid-pattern opacity-20" />
 
+                        {loading && (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <p className="text-muted-foreground">Loading Map...</p>
+                            </div>
+                        )}
+
+                        {!loading && devices.length === 0 && (
+                             <div className="absolute inset-0 flex items-center justify-center">
+                                <p className="text-muted-foreground">Waiting for device location data...</p>
+                            </div>
+                        )}
+
                         {devices.map((device) => {
+                            if (!device.location) return null;
+
                             const { top, left } = normalizeCoords(device.location.lat, device.location.lng);
                             const statusColor = 
                                 device.status === 'Online' ? 'bg-status-positive' :
