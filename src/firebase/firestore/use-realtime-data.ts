@@ -12,6 +12,7 @@ export function useRealtimeData() {
   
   useEffect(() => {
     const db = getDatabase(app);
+    // As per user feedback, the data is at the root 'data' path.
     const dataRef = ref(db, 'data');
 
     const unsubscribe = onValue(dataRef, (snapshot) => {
@@ -19,33 +20,26 @@ export function useRealtimeData() {
         const rawData = snapshot.val();
         const devicesArray: Device[] = [];
 
-        // Check if rawData is a string (our CSV format)
+        // The data is coming as a single string: "253002,506322,0.00,-0.60,28.94,10.83,4095"
         if (typeof rawData === 'string') {
             const values = rawData.split(',');
 
             if (values.length >= 7) {
-                // Correct mapping for: "253002,506322,0.00,-0.60,28.94,10.83,4095"
-                // index 0: part of ID
-                // index 1: part of ID
-                // index 2: current (A)
-                // index 3: power (W)
-                // index 4: temperature (°C)
-                // index 5: voltage (V)
-                // index 6: irradiance raw value
-
+                // Correct mapping based on re-evaluation:
                 const current = parseFloat(values[2]);
                 const power = parseFloat(values[3]);
                 const temperature = parseFloat(values[4]);
                 const voltage = parseFloat(values[5]);
-                // The irradiance value seems to be an ADC reading, not W/m².
-                // We'll scale it to a more realistic range, e.g., 0-1200 W/m².
-                // Assuming 4095 is max reading.
+                // The irradiance value (4095) is a raw ADC reading.
+                // Scale it to a realistic range, e.g., 0-1200 W/m².
+                // Assuming 4095 is the max reading from the sensor.
                 const irradiance = (parseFloat(values[6]) / 4095) * 1200;
 
                 let efficiency = 0;
                 // Efficiency = (Power Output / (Panel Area * Irradiance)) * 100
                 // Assuming a standard panel area of 1.6 m² for calculation.
                 const panelArea = 1.6;
+                // Power can be negative, but for efficiency calculation, we need its magnitude.
                 const absolutePower = Math.abs(power);
                 if (irradiance > 0 && panelArea > 0 && absolutePower > 0) {
                     efficiency = (absolutePower / (irradiance * panelArea)) * 100;
@@ -58,19 +52,20 @@ export function useRealtimeData() {
                     name: `Solar Panel ${values[0]}`,
                     status: 'Online',
                     lastSeen: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
-                    power: absolutePower, // Power should be positive
+                    // Ensure power is stored as a positive value for display
+                    power: absolutePower,
                     current: current,
                     temperature: temperature,
                     voltage: voltage,
                     irradiance: irradiance,
                     efficiency: efficiency,
-                    humidity: 50, // Mock value
-                    dustDensity: 120, // Mock value
+                    humidity: 50, // Mock value as it's not in the CSV
+                    dustDensity: 120, // Mock value as it's not in the CSV
                 };
                 devicesArray.push(device);
             }
         } else if (typeof rawData === 'object' && rawData !== null) {
-            // This handles cases where the database might have structured data
+            // This handles cases where the database might have structured data from other sources
             Object.keys(rawData).forEach(key => {
                 devicesArray.push({
                     id: key,
