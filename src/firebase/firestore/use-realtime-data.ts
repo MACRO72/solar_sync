@@ -20,68 +20,42 @@ export function useRealtimeData() {
         const rawData = snapshot.val();
         const devicesArray: Device[] = [];
 
-        // The data arrives as a single CSV string: "253002,506322,0.00,-0.60,28.94,10.83,4095"
-        if (typeof rawData === 'string') {
-            const values = rawData.split(',');
+        // Handle incoming JSON data
+        if (typeof rawData === 'object' && rawData !== null) {
+            const deviceData = rawData; // Assuming rawData is the JSON object for one device
 
-            if (values.length >= 7) {
-                // Correct mapping based on the CSV format:
-                // index 0: 253002 (ID part 1)
-                // index 1: 506322 (ID part 2)
-                // index 2: 0.00   (Current)
-                // index 3: -0.60  (Power)
-                // index 4: 28.94  (Temperature)
-                // index 5: 10.83  (Voltage)
-                // index 6: 4095   (Raw Irradiance ADC)
+            // Calculate power = voltage * current
+            const voltage = parseFloat(deviceData.voltage || 0);
+            const current = parseFloat(deviceData.current || 0);
+            const power = voltage * current;
 
-                const current = parseFloat(values[2]);
-                const power = parseFloat(values[3]);
-                const temperature = parseFloat(values[4]);
-                const voltage = parseFloat(values[5]);
-                
-                // The irradiance value (4095) is a raw ADC reading from the sensor.
-                // We need to scale it to a realistic range, like 0-1200 W/m².
-                // Assuming 4095 is the maximum possible reading.
-                const irradiance = (parseFloat(values[6]) / 4095) * 1200;
-
-                let efficiency = 0;
-                // Efficiency = (Power Output / (Panel Area * Irradiance)) * 100
-                // We'll assume a standard panel area of 1.6 m² for the calculation.
-                const panelArea = 1.6;
-                // Power might be negative, but for efficiency, we should use its magnitude.
-                const absolutePower = Math.abs(power);
-                if (irradiance > 0 && panelArea > 0 && absolutePower > 0) {
-                    efficiency = (absolutePower / (irradiance * panelArea)) * 100;
-                }
-                // Cap efficiency at a realistic 25% and ensure it's not negative.
-                efficiency = Math.max(0, Math.min(efficiency, 25));
-
-                const device: Device = {
-                    id: `ESP32_${values[0]}`,
-                    name: `Solar Panel ${values[0]}`,
-                    status: 'Online',
-                    lastSeen: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
-                    // Ensure power is stored as a positive value for display.
-                    power: absolutePower,
-                    current: current,
-                    temperature: temperature,
-                    voltage: voltage,
-                    irradiance: isNaN(irradiance) ? 0 : parseFloat(irradiance.toFixed(2)),
-                    efficiency: isNaN(efficiency) ? 0 : parseFloat(efficiency.toFixed(2)),
-                    // These values are not in the CSV, so we provide mock data.
-                    humidity: 50, 
-                    dustDensity: 120,
-                };
-                devicesArray.push(device);
+            // Calculate efficiency
+            const irradiance = parseFloat(deviceData.irradiance || 0);
+            let efficiency = 0;
+            // Efficiency = (Power Output / (Panel Area * Irradiance)) * 100
+            // We'll assume a standard panel area of 1.6 m² for the calculation.
+            const panelArea = 1.6;
+            if (irradiance > 0 && panelArea > 0 && power > 0) {
+                efficiency = (power / (irradiance * panelArea)) * 100;
             }
-        } else if (typeof rawData === 'object' && rawData !== null) {
-            // This fallback handles cases where data might already be in a structured format.
-            Object.keys(rawData).forEach(key => {
-                devicesArray.push({
-                    id: key,
-                    ...rawData[key]
-                });
-            });
+            // Cap efficiency at a realistic 25% and ensure it's not negative.
+            efficiency = Math.max(0, Math.min(efficiency, 25));
+
+            const device: Device = {
+                id: deviceData.id || 'ESP32_Device',
+                name: deviceData.name || `Solar Panel ${deviceData.id || '1'}`,
+                status: deviceData.status || 'Online',
+                lastSeen: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
+                power: isNaN(power) ? 0 : parseFloat(power.toFixed(2)),
+                current: isNaN(current) ? 0 : current,
+                temperature: isNaN(parseFloat(deviceData.temperature)) ? 0 : parseFloat(deviceData.temperature),
+                voltage: isNaN(voltage) ? 0 : voltage,
+                irradiance: isNaN(irradiance) ? 0 : irradiance,
+                efficiency: isNaN(efficiency) ? 0 : parseFloat(efficiency.toFixed(2)),
+                humidity: isNaN(parseFloat(deviceData.humidity)) ? 0 : parseFloat(deviceData.humidity),
+                dustDensity: isNaN(parseFloat(deviceData.dustDensity)) ? 0 : parseFloat(deviceData.dustDensity),
+            };
+            devicesArray.push(device);
         }
         
         setData(devicesArray);
