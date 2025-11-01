@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect } from 'react';
 import { getDatabase, ref, onValue } from 'firebase/database';
@@ -30,7 +31,7 @@ export function useRealtimeData() {
                 // index 3: power (W)
                 // index 4: temperature (°C)
                 // index 5: voltage (V)
-                // index 6: irradiance (W/m²)
+                // index 6: irradiance raw value
 
                 const current = parseFloat(values[2]);
                 const power = parseFloat(values[3]);
@@ -45,8 +46,9 @@ export function useRealtimeData() {
                 // Efficiency = (Power Output / (Panel Area * Irradiance)) * 100
                 // Assuming a standard panel area of 1.6 m² for calculation.
                 const panelArea = 1.6;
-                if (irradiance > 0 && panelArea > 0) {
-                    efficiency = (power / (irradiance * panelArea)) * 100;
+                const absolutePower = Math.abs(power);
+                if (irradiance > 0 && panelArea > 0 && absolutePower > 0) {
+                    efficiency = (absolutePower / (irradiance * panelArea)) * 100;
                 }
                 // Cap efficiency at a realistic 25% and ensure it's not negative.
                 efficiency = Math.max(0, Math.min(efficiency, 25));
@@ -56,7 +58,7 @@ export function useRealtimeData() {
                     name: `Solar Panel ${values[0]}`,
                     status: 'Online',
                     lastSeen: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
-                    power: Math.abs(power), // Power should be positive
+                    power: absolutePower, // Power should be positive
                     current: current,
                     temperature: temperature,
                     voltage: voltage,
