@@ -27,10 +27,12 @@ export function useRealtimeData() {
 
             const irradiance = parseFloat(deviceData.irradiance || 0);
             let efficiency = 0;
-            const panelArea = 1.6;
+            // Assuming a standard panel area of 1.6 square meters for efficiency calculation
+            const panelArea = 1.6; 
             if (irradiance > 0 && panelArea > 0 && power > 0) {
                 efficiency = (power / (irradiance * panelArea)) * 100;
             }
+            // Cap efficiency at a reasonable maximum, e.g., 25%
             efficiency = Math.max(0, Math.min(efficiency, 25));
 
             const device: Device = {
@@ -48,11 +50,12 @@ export function useRealtimeData() {
                 dustDensity: isNaN(parseFloat(deviceData.dustDensity)) ? 0 : parseFloat(deviceData.dustDensity),
             };
             
+            // The dashboard expects an array of devices
             setData([device]);
         }
       }
       // If snapshot doesn't exist, we no longer clear the data.
-      // This keeps the last known data on screen.
+      // This keeps the last known data on screen if the connection is lost.
       setLoading(false);
     }, (error) => {
       console.error("Firebase Realtime Database read failed: ", error);
