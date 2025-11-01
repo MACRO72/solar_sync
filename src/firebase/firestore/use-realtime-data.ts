@@ -12,32 +12,25 @@ export function useRealtimeData() {
   
   useEffect(() => {
     const db = getDatabase(app);
-    // Corrected the path to listen to where the ESP32 is sending data.
     const dataRef = ref(db, 'SolarSync/sensor_data');
 
     const unsubscribe = onValue(dataRef, (snapshot) => {
       if (snapshot.exists()) {
         const rawData = snapshot.val();
         
-        // Ensure rawData is an object before processing
         if (typeof rawData === 'object' && rawData !== null) {
             const deviceData = rawData; 
 
-            // Calculate power = voltage * current
             const voltage = parseFloat(deviceData.voltage || 0);
             const current = parseFloat(deviceData.current || 0);
             const power = voltage * current;
 
-            // Calculate efficiency
             const irradiance = parseFloat(deviceData.irradiance || 0);
             let efficiency = 0;
-            // Efficiency = (Power Output / (Panel Area * Irradiance)) * 100
-            // Assuming a standard panel area of 1.6 m² for the calculation.
             const panelArea = 1.6;
             if (irradiance > 0 && panelArea > 0 && power > 0) {
                 efficiency = (power / (irradiance * panelArea)) * 100;
             }
-            // Cap efficiency at a realistic 25% and ensure it's not negative.
             efficiency = Math.max(0, Math.min(efficiency, 25));
 
             const device: Device = {
@@ -55,16 +48,11 @@ export function useRealtimeData() {
                 dustDensity: isNaN(parseFloat(deviceData.dustDensity)) ? 0 : parseFloat(deviceData.dustDensity),
             };
             
-            // The dashboard expects an array of devices
             setData([device]);
-        } else {
-            // Handle cases where data is not an object as expected
-            setData([]);
         }
-      } else {
-        // If snapshot doesn't exist, clear data to show "Waiting for data...".
-        setData([]);
       }
+      // If snapshot doesn't exist, we no longer clear the data.
+      // This keeps the last known data on screen.
       setLoading(false);
     }, (error) => {
       console.error("Firebase Realtime Database read failed: ", error);
