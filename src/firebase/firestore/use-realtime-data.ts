@@ -16,34 +16,47 @@ export function useRealtimeData() {
     const unsubscribe = onValue(dataRef, (snapshot) => {
       if (snapshot.exists()) {
         const rawData = snapshot.val();
-        
-        // Data is coming as a single CSV string: "253002,506322,0.00,-0.60,28.94,10.83,4095"
-        // We need to parse it.
         const devicesArray: Device[] = [];
 
+        // Check if rawData is a string (our CSV format)
         if (typeof rawData === 'string') {
             const values = rawData.split(',');
 
             if (values.length >= 7) {
+                const power = parseFloat(values[2]);
+                const irradiance = parseFloat(values[6]);
+                let efficiency = 0;
+                // Avoid division by zero if irradiance is 0
+                if (irradiance > 0) {
+                    // A more realistic efficiency calculation would need panel area,
+                    // but for a rough metric we'll use a simplified ratio.
+                    // This is likely not the true efficiency but serves as a placeholder.
+                    efficiency = (power / irradiance); 
+                    if (efficiency > 1) efficiency = efficiency / 100; // Heuristic to scale it
+                    if (efficiency > 0.25) efficiency = 0.25; // Cap at a realistic 25%
+                    efficiency = efficiency * 100;
+
+                }
+
+
                 const device: Device = {
-                    id: `Device_${values[0]}`,
-                    name: `Panel ${values[0]}`,
+                    id: `ESP32_${values[0]}`,
+                    name: `Solar Panel ${values[0]}`,
                     status: 'Online',
                     lastSeen: format(new Date(), "yyyy-MM-dd'T'HH:mm:ss"),
-                    power: parseFloat(values[2]),
+                    power: power,
                     current: parseFloat(values[3]),
                     temperature: parseFloat(values[4]),
                     voltage: parseFloat(values[5]),
-                    irradiance: parseFloat(values[6]),
-                    // Calculate other values if possible
-                    efficiency: (parseFloat(values[2]) / parseFloat(values[6])) * 100, // Example efficiency calc
-                    humidity: 50, // Mock value
+                    irradiance: irradiance,
+                    efficiency: efficiency,
+                    humidity: 50, // Mock value, as it's not in the CSV
                     dustDensity: 120, // Mock value
                 };
                 devicesArray.push(device);
             }
         } else if (typeof rawData === 'object' && rawData !== null) {
-            // Handle if data is structured JSON object (from previous attempts)
+            // This handles cases where the database might have structured data
             Object.keys(rawData).forEach(key => {
                 devicesArray.push({
                     id: key,
@@ -51,8 +64,10 @@ export function useRealtimeData() {
                 });
             });
         }
+        
         setData(devicesArray);
       } else {
+        // If snapshot doesn't exist, clear data
         setData([]);
       }
       setLoading(false);
