@@ -1,5 +1,6 @@
 'use client';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { getMaintenanceSuggestion } from '@/app/dashboard/insights/actions';
 
 import { GlassCard, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/glass-card"
@@ -25,7 +26,7 @@ function SubmitButton() {
 }
 
 export function InsightsGenerator() {
-  const [state, formAction] = useFormState(getMaintenanceSuggestion, initialState);
+  const [state, formAction] = useActionState(getMaintenanceSuggestion, initialState);
 
   return (
     <div className="grid gap-8 lg:grid-cols-2">

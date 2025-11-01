@@ -1,5 +1,6 @@
 'use client';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { getAnomalySummary } from '@/app/dashboard/insights/actions';
 
 import { GlassCard, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/glass-card"
@@ -24,7 +25,7 @@ function SubmitButton() {
 }
 
 export function AnomalySummarizer() {
-  const [state, formAction] = useFormState(getAnomalySummary, initialState);
+  const [state, formAction] = useActionState(getAnomalySummary, initialState);
 
   return (
     <div className="grid gap-8 lg:grid-cols-2">
