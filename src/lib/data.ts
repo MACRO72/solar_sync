@@ -1,13 +1,14 @@
 import type { Device, Alert, PerformanceData, Stat, HistoricalData, PowerData, DustData, TempData } from './types';
 import { Gauge, Zap, Wind, Thermometer, Sun, Percent } from "lucide-react";
 
-// This file is now empty of mock data.
-// All components will rely on real-time data from Firestore.
+// This file contains mock data for demonstration purposes.
+// In a real application, this data would be fetched from a live database.
 
 export const stats: Stat[] = [];
 
 export const devices: Device[] = [];
 
+// Recent alerts are now generated dynamically in the RecentAlerts component
 export const alerts: Alert[] = [];
 
 export const performanceData = {
