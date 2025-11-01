@@ -12,7 +12,7 @@ export function useRealtimeData() {
   
   useEffect(() => {
     const db = getDatabase(app);
-    const dataRef = ref(db, 'SolarSync/sensor_data');
+    const dataRef = ref(db, 'data');
 
     const unsubscribe = onValue(dataRef, (snapshot) => {
       if (snapshot.exists()) {
@@ -54,8 +54,6 @@ export function useRealtimeData() {
             setData([device]);
         }
       }
-      // If snapshot doesn't exist, we no longer clear the data.
-      // This keeps the last known data on screen if the connection is lost.
       setLoading(false);
     }, (error) => {
       console.error("Firebase Realtime Database read failed: ", error);
