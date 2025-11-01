@@ -3,7 +3,6 @@
 import { generateMaintenanceSchedule, type GenerateMaintenanceScheduleInput, type GenerateMaintenanceScheduleOutput } from "@/ai/flows/generate-maintenance-schedule";
 import { summarizePerformanceAnomalies, type SummarizePerformanceAnomaliesInput, type SummarizePerformanceAnomaliesOutput } from "@/ai/flows/summarize-performance-anomalies";
 import { analyzeCsvData, type AnalyzeCsvDataInput, type AnalyzeCsvDataOutput } from "@/ai/flows/analyze-csv-data";
-import { getEfficiencyPrediction, type GetEfficiencyPredictionInput, type GetEfficiencyPredictionOutput } from "@/ai/flows/get-efficiency-prediction";
 import { z } from "zod";
 
 // --- Maintenance Suggestion ---
@@ -135,49 +134,6 @@ export async function getCsvAnalysis(prevState: CsvFormState, formData: FormData
     console.error(error);
     return {
       errors: { _form: [error.message || 'Failed to analyze CSV. Please try again.'] },
-      data: null,
-    };
-  }
-}
-
-// --- Efficiency Predictor ---
-const PredictionSchema = z.object({
-  solar_irradiance: z.coerce.number(),
-  temperature: z.coerce.number(),
-  humidity: z.coerce.number(),
-  dust_density: z.coerce.number(),
-});
-
-type PredictionFormState = {
-  errors: Record<string, any> | null;
-  data: GetEfficiencyPredictionOutput | null;
-}
-
-export async function getPrediction(prevState: PredictionFormState, formData: FormData) : Promise<PredictionFormState> {
-  const validatedFields = PredictionSchema.safeParse({
-    solar_irradiance: formData.get('solar_irradiance'),
-    temperature: formData.get('temperature'),
-    humidity: formData.get('humidity'),
-    dust_density: formData.get('dust_density'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      data: null,
-    };
-  }
-
-  try {
-    const result = await getEfficiencyPrediction(validatedFields.data as GetEfficiencyPredictionInput);
-    return {
-      errors: null,
-      data: result,
-    };
-  } catch (error: any) {
-    console.error("Prediction error:", error);
-    return {
-      errors: { _form: [error.message || 'Failed to get prediction. Please try again.'] },
       data: null,
     };
   }
