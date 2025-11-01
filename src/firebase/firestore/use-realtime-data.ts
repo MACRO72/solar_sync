@@ -31,14 +31,14 @@ export function useRealtimeData() {
               const temperature = deviceData.temperature || 0;
               const humidity = deviceData.humidity || 0;
               const dustDensity = deviceData.dustDensity || 0;
-
+              
               let efficiency = 0;
               const panelArea = 1.6; // Standard panel area in m²
               if (irradiance > 0 && panelArea > 0 && power > 0) {
                 efficiency = (power / (irradiance * panelArea)) * 100;
               }
               
-              efficiency = Math.max(0, Math.min(efficiency, 25)); // Clamp efficiency
+              efficiency = Math.max(0, Math.min(efficiency, 25));
 
               return {
                 id: key,
@@ -53,6 +53,7 @@ export function useRealtimeData() {
                 efficiency: isNaN(efficiency) ? 0 : parseFloat(efficiency.toFixed(2)),
                 humidity: isNaN(humidity) ? 0 : humidity,
                 dustDensity: isNaN(dustDensity) ? 0 : dustDensity,
+                location: deviceData.location,
               };
             });
             setData(devices);
@@ -79,7 +80,7 @@ export function useRealtimeData() {
     );
 
     return () => unsubscribe();
-  }, []); // Empty dependency array ensures this runs only once on mount.
+  }, []); 
 
   return { data, loading };
 }
