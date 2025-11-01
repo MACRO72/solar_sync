@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import type { Device } from '@/lib/types';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+import type { SecurityRuleContext } from '@/firebase/errors';
 
 export function useRealtimeData() {
   const [data, setData] = useState<Device[]>([]);
@@ -27,8 +30,16 @@ export function useRealtimeData() {
       });
       setData(devices);
       setLoading(false);
-    }, (error) => {
-      console.error("Error fetching real-time data: ", error);
+    }, (serverError) => {
+      console.error("Error fetching real-time data: ", serverError);
+      
+      const permissionError = new FirestorePermissionError({
+        path: deviceDataCollection.path,
+        operation: 'list',
+      } satisfies SecurityRuleContext);
+
+      errorEmitter.emit('permission-error', permissionError);
+
       setLoading(false);
     });
 
