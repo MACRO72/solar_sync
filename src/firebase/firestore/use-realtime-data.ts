@@ -22,7 +22,7 @@ export function useRealtimeData() {
             console.log("Last data from DB:", rawData);
 
             if (typeof rawData === "object" && rawData !== null) {
-                const devices: Device[] = Object.keys(rawData).map((key, index) => {
+                const devices: Device[] = Object.keys(rawData).map((key) => {
                     const deviceData = rawData[key];
                     const voltage = parseFloat(deviceData.voltage || 0);
                     const current = parseFloat(deviceData.current || 0);
@@ -39,7 +39,7 @@ export function useRealtimeData() {
 
                     return {
                       id: deviceData.id || key,
-                      name: `Solar Panel ${deviceData.id || (index + 1)}`,
+                      name: `Solar Panel ${deviceData.id || "Unknown"}`,
                       status: "Online",
                       lastSeen: format(new Date(), "yyyy-MM-dd HH:mm:ss"),
                       power: isNaN(power) ? 0 : parseFloat(power.toFixed(2)),
@@ -72,7 +72,7 @@ export function useRealtimeData() {
     );
 
     return () => unsubscribe();
-  }, [loading]);
+  }, []);
 
   return { data, loading };
 }
