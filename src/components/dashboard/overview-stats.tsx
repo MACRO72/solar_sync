@@ -65,7 +65,7 @@ export function OverviewStats() {
                 { title: "Total Power", value: "N/A", icon: Zap, change: "Waiting for data...", color: "text-orange-500" },
                 { title: "Irradiance", value: "N/A", icon: Sun, change: "Waiting for data...", color: "text-yellow-400" },
                 { title: "Temperature", value: "N/A", icon: Thermometer, change: "Waiting for data...", color: "text-destructive" },
-                { title: "Dust Index", value: "N/A", icon: Wind, change: "Waiting for data...", color: "text-status-neutral" },
+                { title: "Dust Index", value: "N", icon: Wind, change: "Waiting for data...", color: "text-status-neutral" },
                 { title: "System Health", value: "N/A", icon: Gauge, change: "Waiting for data...", color: "text-status-positive" },
             ];
         }
