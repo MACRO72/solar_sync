@@ -1,6 +1,6 @@
 'use client'
 import * as React from 'react';
-import { Bar, BarChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import { Bar, BarChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
@@ -190,9 +190,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig} className={fullHeight ? "h-[400px] w-full" : "h-[300px] w-full"}>
-                   <ResponsiveContainer>
-                        {renderChart()}
-                    </ResponsiveContainer>
+                   {renderChart()}
                 </ChartContainer>
             </CardContent>
         </Card>
