@@ -22,12 +22,15 @@ export function useRealtimeData() {
           console.log('Last data from DB:', rawData);
 
           if (typeof rawData === 'object' && rawData !== null) {
-            const devices: Device[] = Object.keys(rawData).map((key) => {
+            const devices: Device[] = Object.keys(rawData).map((key, index) => {
               const deviceData = rawData[key];
-              const voltage = parseFloat(deviceData.voltage || 0);
-              const current = parseFloat(deviceData.current || 0);
+              const voltage = deviceData.voltage || 0;
+              const current = deviceData.current || 0;
               const power = voltage * current;
-              const irradiance = parseFloat(deviceData.irradiance || 0);
+              const irradiance = deviceData.irradiance || 0;
+              const temperature = deviceData.temperature || 0;
+              const humidity = deviceData.humidity || 0;
+              const dustDensity = deviceData.dustDensity || 0;
 
               let efficiency = 0;
               const panelArea = 1.6; // Standard panel area in m²
@@ -38,18 +41,18 @@ export function useRealtimeData() {
               efficiency = Math.max(0, Math.min(efficiency, 25)); // Clamp efficiency
 
               return {
-                id: key, // Use the unique key from Firebase as the ID
-                name: `Solar Panel ${deviceData.id || 'Unknown'}`,
+                id: key,
+                name: `Solar Panel ${index + 1}`,
                 status: 'Online',
                 lastSeen: format(new Date(), 'yyyy-MM-dd HH:mm:ss'),
                 power: isNaN(power) ? 0 : parseFloat(power.toFixed(2)),
                 current: isNaN(current) ? 0 : current,
-                temperature: parseFloat(deviceData.temperature || 0),
+                temperature: isNaN(temperature) ? 0 : temperature,
                 voltage: isNaN(voltage) ? 0 : voltage,
                 irradiance: isNaN(irradiance) ? 0 : irradiance,
                 efficiency: isNaN(efficiency) ? 0 : parseFloat(efficiency.toFixed(2)),
-                humidity: parseFloat(deviceData.humidity || 0),
-                dustDensity: parseFloat(deviceData.dustDensity || 0),
+                humidity: isNaN(humidity) ? 0 : humidity,
+                dustDensity: isNaN(dustDensity) ? 0 : dustDensity,
               };
             });
             setData(devices);
