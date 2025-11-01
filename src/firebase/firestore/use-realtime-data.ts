@@ -18,11 +18,10 @@ export function useRealtimeData() {
     const unsubscribe = onValue(dataRef, (snapshot) => {
       if (snapshot.exists()) {
         const rawData = snapshot.val();
-        const devicesArray: Device[] = [];
-
-        // Handle incoming JSON data
+        
+        // Ensure rawData is an object before processing
         if (typeof rawData === 'object' && rawData !== null) {
-            const deviceData = rawData; // Assuming rawData is the JSON object for one device
+            const deviceData = rawData; 
 
             // Calculate power = voltage * current
             const voltage = parseFloat(deviceData.voltage || 0);
@@ -33,7 +32,7 @@ export function useRealtimeData() {
             const irradiance = parseFloat(deviceData.irradiance || 0);
             let efficiency = 0;
             // Efficiency = (Power Output / (Panel Area * Irradiance)) * 100
-            // We'll assume a standard panel area of 1.6 m² for the calculation.
+            // Assuming a standard panel area of 1.6 m² for the calculation.
             const panelArea = 1.6;
             if (irradiance > 0 && panelArea > 0 && power > 0) {
                 efficiency = (power / (irradiance * panelArea)) * 100;
@@ -55,10 +54,13 @@ export function useRealtimeData() {
                 humidity: isNaN(parseFloat(deviceData.humidity)) ? 0 : parseFloat(deviceData.humidity),
                 dustDensity: isNaN(parseFloat(deviceData.dustDensity)) ? 0 : parseFloat(deviceData.dustDensity),
             };
-            devicesArray.push(device);
+            
+            // The dashboard expects an array of devices
+            setData([device]);
+        } else {
+            // Handle cases where data is not an object as expected
+            setData([]);
         }
-        
-        setData(devicesArray);
       } else {
         // If snapshot doesn't exist, clear data to show "Waiting for data...".
         setData([]);
