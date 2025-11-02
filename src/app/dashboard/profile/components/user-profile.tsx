@@ -39,8 +39,9 @@ export function UserProfile() {
         setCurrentName(user.displayName || name);
         setCurrentEmail(user.email || email);
         setCurrentAvatar(user.photoURL || avatar);
+        setCurrentPhone(phone);
     }
-  }, [user, name, email, avatar]);
+  }, [user, name, email, avatar, phone]);
 
   const handleSave = async () => {
     if (!user || !firestore) {

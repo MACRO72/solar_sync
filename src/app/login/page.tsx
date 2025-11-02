@@ -33,6 +33,7 @@ const formSchema = z.object({
   password: z
     .string()
     .min(6, { message: 'Password must be at least 6 characters.' }),
+  phone: z.string().optional(),
 });
 
 
@@ -51,10 +52,11 @@ export default function LoginPage() {
     defaultValues: {
       email: '',
       password: '',
+      phone: '',
     },
   });
 
-  const handleUserSetup = async (user: User) => {
+  const handleUserSetup = async (user: User, phone?: string) => {
     if (!firestore) return;
     const userRef = doc(firestore, 'users', user.uid);
     const userDoc = await getDoc(userRef);
@@ -66,6 +68,7 @@ export default function LoginPage() {
           name: user.displayName || user.email,
           email: user.email,
           photoURL: user.photoURL,
+          phone: phone || '',
         },
         { merge: true }
       );
@@ -82,7 +85,7 @@ export default function LoginPage() {
           values.email,
           values.password
         );
-        await handleUserSetup(userCredential.user);
+        await handleUserSetup(userCredential.user, values.phone);
       } else {
         userCredential = await signInWithEmailAndPassword(
           auth,
@@ -172,6 +175,25 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
+              {mode === 'signup' && (
+                <FormField
+                  control={form.control}
+                  name="phone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Phone Number (Optional)</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="+1 (555) 555-5555"
+                          {...field}
+                          disabled={isProcessing}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
               <Button type="submit" className="w-full" disabled={isProcessing}>
                 {isProcessing && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
