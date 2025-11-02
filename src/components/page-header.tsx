@@ -1,6 +1,6 @@
 
 "use client";
-import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut } from 'lucide-react';
+import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut, Wifi, WifiOff } from 'lucide-react';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,11 +31,14 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Logo } from './icons';
 import { useUser } from '@/firebase/auth/use-user';
 import { getAuth, signOut } from 'firebase/auth';
+import { useRealtimeData } from '@/firebase/firestore/use-realtime-data';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 
 const menuItems = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { path: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/dashboard/devices', label: 'Devices', icon: PanelTop },
+  { path: '/dashboard/connectivity', label: 'Connectivity', icon: Wifi },
   { path: '/dashboard/insights', label: 'Insights', icon: Lightbulb },
 ];
 
@@ -56,6 +59,9 @@ export function PageHeader() {
   const pathname = usePathname();
   const { user } = useUser();
   const router = useRouter();
+  const { data: devices, loading } = useRealtimeData();
+
+  const isConnected = !loading && devices.some(d => d.status === 'Online');
 
   const handleSignOut = async () => {
     const auth = getAuth();
@@ -139,7 +145,27 @@ export function PageHeader() {
             <span className="text-xl font-semibold animate-logo-text">SolarSync</span>
         </Link>
       </div>
-      <div className="ml-auto flex items-center gap-4">
+      <div className="ml-auto flex items-center gap-2">
+        <TooltipProvider>
+           <Tooltip>
+            <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full as-child">
+                  <Link href="/dashboard/connectivity">
+                    {isConnected ? (
+                      <Wifi className="text-status-positive" />
+                    ) : (
+                      <WifiOff className="text-destructive" />
+                    )}
+                    <span className="sr-only">Connectivity Status</span>
+                  </Link>
+                </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{isConnected ? "Sensors Connected" : "Sensors Disconnected"}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative rounded-full">
