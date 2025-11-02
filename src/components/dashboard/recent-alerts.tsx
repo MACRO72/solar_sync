@@ -21,7 +21,7 @@ export function RecentAlerts() {
     const { data: devices, loading } = useRealtimeData();
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [debouncedDevices] = useDebounce(devices, 2000); // 2-second debounce
+    const [debouncedDevices] = useDebounce(devices, 30000); // 30-second debounce
 
     useEffect(() => {
         const generateAlerts = async () => {
