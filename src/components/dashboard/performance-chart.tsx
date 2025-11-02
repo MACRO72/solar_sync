@@ -1,6 +1,6 @@
 'use client'
 import * as React from 'react';
-import { Bar, BarChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
+import { Bar, BarChart, Line, LineChart, Scatter, ScatterChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
@@ -60,6 +60,18 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                     // If the time is in the future, assume it's from yesterday
                     if (deviceDate > now) {
                         deviceDate.setDate(deviceDate.getDate() - 1);
+                    }
+                } else {
+                    // Fallback for invalid time format
+                     try {
+                        const parsedDate = new Date(device.lastSeen);
+                        if (!isNaN(parsedDate.getTime())) {
+                            deviceDate = parsedDate;
+                        } else {
+                            deviceDate = now;
+                        }
+                    } catch {
+                        deviceDate = now;
                     }
                 }
             }
@@ -143,7 +155,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                 );
              case 'temperature':
                  return (
-                     <LineChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                     <ScatterChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 20, left: 20 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" />
                         <XAxis
                             dataKey="temperature"
@@ -153,20 +165,20 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                             axisLine={false}
                             unit="°C"
                             domain={['dataMin - 2', 'dataMax + 2']}
-                            label={{ value: "Temperature (°C)", position: "insideBottom", offset: -5 }}
+                            name="Temperature"
                         />
                         <YAxis
-                            yAxisId="left"
+                            dataKey="power"
                             tickLine={false}
                             axisLine={false}
                             tickMargin={10}
                             unit="W"
-                            label={{ value: 'Power (W)', angle: -90, position: 'insideLeft' }}
+                            name="Power"
                         />
-                        <Tooltip content={<ChartTooltipContent />} />
+                        <Tooltip content={<ChartTooltipContent />} cursor={false} />
                         <ChartLegend content={<ChartLegendContent />} />
-                        <Line yAxisId="left" dataKey="power" type="monotone" stroke="var(--color-power)" strokeWidth={2} name="Power" unit="W" dot={false} />
-                    </LineChart>
+                        <Scatter name="Power vs Temp" data={processedData} fill="var(--color-power)" />
+                    </ScatterChart>
                 );
         }
     }
