@@ -15,8 +15,8 @@ export default function DashboardOverviewPage() {
           <thead>
             <tr>
               <th className="border-b border-[#3a506b] p-3 text-left bg-[#3a506b] text-[#00d9ff]">Time</th>
-              <th className="border-b border-[#3a506b] p-3 text-left bg-[#3a506b] text-[#00d9ff]">Voltage (V)</th>
               <th className="border-b border-[#3a506b] p-3 text-left bg-[#3a506b] text-[#00d9ff]">Current (A)</th>
+              <th className="border-b border-[#3a506b] p-3 text-left bg-[#3a506b] text-[#00d9ff]">Power (W)</th>
               <th className="border-b border-[#3a506b] p-3 text-left bg-[#3a506b] text-[#00d9ff]">Temp (°C)</th>
               <th className="border-b border-[#3a506b] p-3 text-left bg-[#3a506b] text-[#00d9ff]">Humidity (%)</th>
               <th className="border-b border-[#3a506b] p-3 text-left bg-[#3a506b] text-[#00d9ff]">Light (lx)</th>
@@ -32,8 +32,8 @@ export default function DashboardOverviewPage() {
             {devices.map((device) => (
               <tr key={device.id} className="hover:bg-[#1f2a44]">
                 <td className="border-b border-[#3a506b] p-3">{device.lastSeen}</td>
-                <td className="border-b border-[#3a506b] p-3">{device.voltage ?? '--'}</td>
                 <td className="border-b border-[#3a506b] p-3">{device.current ?? '--'}</td>
+                <td className="border-b border-[#3a506b] p-3">{device.power ?? '--'}</td>
                 <td className="border-b border-[#3a506b] p-3">{device.temperature ?? '--'}</td>
                 <td className="border-b border-[#3a506b] p-3">{device.humidity ?? '--'}</td>
                 <td className="border-b border-[#3a506b] p-3">{device.irradiance ?? '--'}</td>
