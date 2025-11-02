@@ -3,6 +3,7 @@
 import { generateMaintenanceSchedule, type GenerateMaintenanceScheduleInput, type GenerateMaintenanceScheduleOutput } from "@/ai/flows/generate-maintenance-schedule";
 import { summarizePerformanceAnomalies, type SummarizePerformanceAnomaliesInput, type SummarizePerformanceAnomaliesOutput } from "@/ai/flows/summarize-performance-anomalies";
 import { analyzeCsvData, type AnalyzeCsvDataInput, type AnalyzeCsvDataOutput } from "@/ai/flows/analyze-csv-data";
+import { predictEfficiency, type PredictEfficiencyInput, type PredictEfficiencyOutput } from "@/ai/flows/predict-efficiency";
 import { z } from "zod";
 
 // --- Maintenance Suggestion ---
@@ -134,6 +135,50 @@ export async function getCsvAnalysis(prevState: CsvFormState, formData: FormData
     console.error(error);
     return {
       errors: { _form: [error.message || 'Failed to analyze CSV. Please try again.'] },
+      data: null,
+    };
+  }
+}
+
+
+// --- Efficiency Forecaster ---
+const EfficiencySchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+});
+
+type EfficiencyFormState = {
+  errors: {
+    lat?: string[];
+    lng?: string[];
+    _form?: string[];
+  };
+  data: PredictEfficiencyOutput | null;
+}
+
+export async function getEfficiencyPrediction(prevState: EfficiencyFormState, formData: FormData) : Promise<EfficiencyFormState> {
+  const validatedFields = EfficiencySchema.safeParse({
+    lat: formData.get('lat'),
+    lng: formData.get('lng'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    const result = await predictEfficiency(validatedFields.data as PredictEfficiencyInput);
+    return {
+      errors: {},
+      data: result,
+    };
+  } catch (error: any) {
+    console.error(error);
+    return {
+      errors: { _form: [error.message || 'Failed to get prediction. Please try again.'] },
       data: null,
     };
   }
