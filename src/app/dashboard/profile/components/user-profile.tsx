@@ -177,7 +177,7 @@ export function UserProfile() {
         </div>
         <div className="space-y-2">
           <Label htmlFor="phone">Phone Number</Label>
-          <Input id="phone" type="tel" value={currentPhone} onChange={(e) => setCurrentPhone(e.target.value)} placeholder="+1 (555) 555-5555" disabled={isSaving} />
+          <Input id="phone" type="tel" value={currentPhone} onChange={(e) => setCurrentPhone(e.target.value)} placeholder="+91 98765 43210" disabled={isSaving} />
         </div>
       </CardContent>
       <CardFooter>

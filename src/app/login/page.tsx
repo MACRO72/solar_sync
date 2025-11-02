@@ -52,7 +52,7 @@ export default function LoginPage() {
     defaultValues: {
       email: '',
       password: '',
-      phone: '',
+      phone: '+91 ',
     },
   });
 
@@ -184,7 +184,7 @@ export default function LoginPage() {
                       <FormLabel>Phone Number (Optional)</FormLabel>
                       <FormControl>
                         <Input
-                          placeholder="+1 (555) 555-5555"
+                          placeholder="+91 98765 43210"
                           {...field}
                           disabled={isProcessing}
                         />
