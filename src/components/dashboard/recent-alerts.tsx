@@ -28,14 +28,12 @@ const normalize = (value: number, min: number, max: number) => {
 
 const f_T = (temp: number) => normalize(temp, 40, 60); // Risk starts at 40°C, max at 60°C
 const f_D = (dust: number) => normalize(dust, 80, 200); // Risk starts at 80 µg/m³, max at 200
-const f_I = (irradiance: number) => 1 - normalize(irradiance, 100, 400); // Risk is high when irradiance is low (unexpectedly)
 const f_E = (efficiencyDeviation: number) => normalize(efficiencyDeviation, 10, 30); // Risk starts at 10% deviation, max at 30%
 
 // Tunable weights for each risk factor
 const WEIGHTS = {
-  temp: 0.3,       // w_T
-  dust: 0.25,      // w_D
-  irradiance: 0.15,// w_I
+  temp: 0.4,       // w_T
+  dust: 0.3,      // w_D
   efficiency: 0.3, // w_E
 };
 
@@ -99,16 +97,14 @@ export function RecentAlerts() {
                     // Calculate risk scores
                     const riskT = f_T(temperature);
                     const riskD = f_D(dustDensity);
-                    const riskI = f_I(irradiance);
                     const riskE = f_E(efficiencyDeviation);
 
-                    const alertScore = (WEIGHTS.temp * riskT) + (WEIGHTS.dust * riskD) + (WEIGHTS.irradiance * riskI) + (WEIGHTS.efficiency * riskE);
+                    const alertScore = (WEIGHTS.temp * riskT) + (WEIGHTS.dust * riskD) + (WEIGHTS.efficiency * riskE);
                     
                     if (alertScore > ALERT_THRESHOLD) {
                         const reasons = [];
                         if (riskT > 0.5) reasons.push(`high temperature (${temperature.toFixed(1)}°C)`);
                         if (riskD > 0.5) reasons.push(`high dust density (${dustDensity.toFixed(1)} µg/m³)`);
-                        if (riskI > 0.5) reasons.push(`unexpectedly low irradiance (${irradiance.toFixed(0)} W/m²)`);
                         if (riskE > 0.5) reasons.push(`significant efficiency drop (${efficiencyDeviation.toFixed(1)}%)`);
 
                         const eventDescription = `Multiple factors are indicating a potential issue, resulting in an alert score of ${alertScore.toFixed(2)}. Key contributors include: ${reasons.join(', ')}.`;
@@ -165,9 +161,10 @@ export function RecentAlerts() {
         if (!loading && devices.length > 0) {
             generateAlerts(devices);
         } else if (!loading && devices.length === 0) {
-            setAlerts([]); // Clear alerts if there are no devices
+             // Set an initial "waiting" message if there are no devices and not loading
+            setAlerts([]);
         }
-    }, [loading]);
+    }, [loading]); // Only dependent on loading state
 
     // Effect for debounced updates
     useEffect(() => {
