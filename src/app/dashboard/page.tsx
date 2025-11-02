@@ -1,7 +1,6 @@
 
 'use client';
 import { useRealtimeData } from "@/firebase/firestore/use-realtime-data";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardOverviewPage() {
   const { data: devices, loading } = useRealtimeData();
