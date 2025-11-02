@@ -29,9 +29,15 @@ export function RecentAlerts() {
 
             setIsGenerating(true);
             const newAlerts: Alert[] = [];
+            const latestDevice = debouncedDevices[0];
+
             const offlineDevices = debouncedDevices.filter(d => d.status === 'Offline');
             const errorDevices = debouncedDevices.filter(d => d.status === 'Error');
-            const hotDevices = debouncedDevices.filter(d => (d.temperature ?? 0) > 50);
+            
+            // New custom threshold checks
+            const highDustDevice = (latestDevice.dustDensity ?? 0) > 100 ? latestDevice : null;
+            const highTempDevice = (latestDevice.temperature ?? 0) > 47 ? latestDevice : null;
+            const lowIrradianceDevice = (latestDevice.irradiance ?? 0) < 250 ? latestDevice : null;
 
             try {
                 if (errorDevices.length > 0) {
@@ -47,11 +53,11 @@ export function RecentAlerts() {
                         severity: 'High',
                         timestamp: new Date().toLocaleTimeString(),
                     });
-                } else if (hotDevices.length > 0) {
+                } else if (highTempDevice) {
                      const alertContent = await generateAlertNotifications({
-                        eventDescription: `Device "${hotDevices[0].name}" is overheating. Current temperature: ${hotDevices[0].temperature}°C.`,
+                        eventDescription: `Device "${highTempDevice.name}" is overheating. Current temperature: ${highTempDevice.temperature}°C.`,
                         urgencyLevel: 'high',
-                        affectedDevice: hotDevices[0].name,
+                        affectedDevice: highTempDevice.name,
                     });
                      newAlerts.push({
                         id: `temp-${Date.now()}`,
@@ -60,7 +66,34 @@ export function RecentAlerts() {
                         severity: 'High',
                         timestamp: new Date().toLocaleTimeString(),
                     });
-                } else if (offlineDevices.length > 0) {
+                } else if (highDustDevice) {
+                     const alertContent = await generateAlertNotifications({
+                        eventDescription: `High dust density detected on "${highDustDevice.name}". Current level: ${highDustDevice.dustDensity?.toFixed(1)} µg/m³. Panel cleaning may be required.`,
+                        urgencyLevel: 'high',
+                        affectedDevice: highDustDevice.name,
+                    });
+                     newAlerts.push({
+                        id: `dust-${Date.now()}`,
+                        title: alertContent.title,
+                        description: alertContent.message,
+                        severity: 'High',
+                        timestamp: new Date().toLocaleTimeString(),
+                    });
+                } else if (lowIrradianceDevice) {
+                     const alertContent = await generateAlertNotifications({
+                        eventDescription: `Low solar irradiance detected: ${lowIrradianceDevice.irradiance} W/m². This may be due to weather conditions or an obstruction.`,
+                        urgencyLevel: 'high',
+                        affectedDevice: lowIrradianceDevice.name,
+                    });
+                     newAlerts.push({
+                        id: `irradiance-${Date.now()}`,
+                        title: alertContent.title,
+                        description: alertContent.message,
+                        severity: 'High',
+                        timestamp: new Date().toLocaleTimeString(),
+                    });
+                }
+                else if (offlineDevices.length > 0) {
                     const alertContent = await generateAlertNotifications({
                         eventDescription: `${offlineDevices.length} device(s) are offline.`,
                         urgencyLevel: 'medium',
