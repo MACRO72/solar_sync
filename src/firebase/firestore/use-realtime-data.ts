@@ -6,6 +6,12 @@ import { getDatabase, ref, onChildAdded, off } from 'firebase/database';
 import type { Device } from '@/lib/types';
 import { app } from '@/firebase/config';
 
+// --- Panel Configuration ---
+// You can adjust this value to match the surface area of your solar panel in square meters.
+// Example: A 20cm x 25cm panel has an area of 0.20 * 0.25 = 0.05 m².
+const PANEL_AREA_M2 = 0.05;
+
+
 /**
  * A hook to get a real-time feed of device data from Firebase Realtime Database.
  * This hook listens for new children added to the 'data' path and prepends them to a list.
@@ -32,6 +38,15 @@ export function useRealtimeData() {
         const irradiance = parseFloat(rawData.LightIntensity || '0');
         const dustDensity = parseFloat(rawData.ADC || '0');
 
+        // Calculate Efficiency
+        let efficiency = 0;
+        if (irradiance > 0 && PANEL_AREA_M2 > 0) {
+            const inputPower = irradiance * PANEL_AREA_M2;
+            if (inputPower > 0) {
+                 efficiency = (power / inputPower) * 100;
+            }
+        }
+
         const newDevice: Device = {
           id: snapshot.key as string,
           name: "ESP32 Node", // Name can be static if there's only one source
@@ -43,7 +58,8 @@ export function useRealtimeData() {
           temperature,
           humidity,
           irradiance,
-          dustDensity
+          dustDensity,
+          efficiency: Math.max(0, Math.min(100, efficiency)), // Clamp efficiency between 0 and 100
         };
         
         setData((prevData) => [newDevice, ...prevData]);
