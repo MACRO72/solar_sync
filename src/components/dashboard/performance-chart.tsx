@@ -1,4 +1,3 @@
-
 'use client'
 import * as React from 'react';
 import { Bar, BarChart, Line, LineChart, Scatter, ScatterChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
@@ -10,8 +9,8 @@ import { format } from 'date-fns';
 
 
 const chartConfig = {
-    actual: { label: "Actual", color: "hsl(var(--primary))" },
-    predicted: { label: "Predicted", color: "hsl(var(--chart-4))" },
+    measured: { label: "Measured", color: "hsl(var(--primary))" },
+    base: { label: "Base", color: "hsl(var(--chart-5))" },
     power: { label: "Power (W)", color: "hsl(var(--primary))" },
     voltage: { label: "Voltage (V)", color: "hsl(var(--primary))" },
     dust: { label: "Dust Level", color: "hsl(var(--chart-3))" },
@@ -38,18 +37,21 @@ const chartViewOptions: {value: ChartView, label: string}[] = [
 
 export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: { fullHeight?: boolean, defaultPeriod?: TimePeriod }) {
     const [timePeriod, setTimePeriod] = React.useState<TimePeriod>(defaultPeriod);
-    const [chartView, setChartView] = React.useState<ChartView>('power');
+    const [chartView, setChartView] = React.useState<ChartView>('performance');
     const { data: devices, loading } = useRealtimeData();
     
     const processedData = React.useMemo(() => {
         if (!devices || devices.length === 0) return [];
 
         const now = new Date();
+        const nominalEfficiency = 100; // η₀
+        const tempCoefficient = 0.003; // β
+        const dustFactor = 0.05;      // γ
         
         return devices.map(device => {
             let deviceDate: Date;
             // Check if lastSeen is a full date string or just time
-            if (device.lastSeen.includes('T')) {
+            if (device.lastSeen.includes('T') && device.lastSeen.endsWith('Z')) {
                 deviceDate = new Date(device.lastSeen);
             } else {
                 // Handle time-only strings
@@ -81,13 +83,18 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                 deviceDate = now;
             }
 
+            const temp = device.temperature ?? 0;
+            const dust = device.dustDensity ?? 0;
+            const baseEfficiency = nominalEfficiency * (1 - tempCoefficient * (temp - 25)) * (1 - dustFactor * dust);
+
             return {
                 time: format(deviceDate, 'HH:mm'),
                 date: deviceDate,
-                efficiency: device.efficiency ?? 0,
+                measured: device.efficiency ?? 0,
+                base: Math.max(0, baseEfficiency),
                 power: device.power ?? 0,
-                dust: device.dustDensity ?? 0,
-                temperature: device.temperature ?? 0,
+                dust: dust,
+                temperature: temp,
             };
         }).filter(item => {
              if (timePeriod === '24h') return true; 
@@ -102,7 +109,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
     const getChartDescription = () => {
         switch (chartView) {
             case 'performance':
-                return 'Real-time panel efficiency (%)';
+                return 'Measured vs. Base Efficiency (%)';
             case 'power':
                 return 'Real-time power output (W)';
             case 'dust':
@@ -129,7 +136,8 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                         <YAxis tickLine={false} axisLine={false} tickMargin={10} unit="%" />
                         <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
                         <ChartLegend content={<ChartLegendContent />} />
-                        <Line dataKey="efficiency" type="monotone" stroke="var(--color-efficiency)" strokeWidth={2} dot={false} unit="%" />
+                        <Line dataKey="measured" type="monotone" stroke="var(--color-measured)" strokeWidth={2} dot={false} unit="%" />
+                        <Line dataKey="base" type="monotone" stroke="var(--color-base)" strokeWidth={2} strokeDasharray="5 5" dot={false} unit="%" />
                     </LineChart>
                 );
             case 'power':
