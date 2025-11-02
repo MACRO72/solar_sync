@@ -42,7 +42,7 @@ const getEfficiencyPredictionFlow = ai.defineFlow(
     //
     // IMPORTANT: Replace this with the public URL of your deployed Flask/FastAPI model.
     //
-    const FLASK_API_ENDPOINT = 'http://127.0.0.1:5000/predict'; // Example: 'https://your-model-api.run.app/predict'
+    const FLASK_API_ENDPOINT = 'http://127.0.0.1:6000/predict'; // Example: 'https://your-model-api.run.app/predict'
 
     // Before proceeding, check if the placeholder URL is still being used.
     if (FLASK_API_ENDPOINT.includes('127.0.0.1')) {
