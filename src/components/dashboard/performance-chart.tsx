@@ -45,7 +45,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
         if (!devices || devices.length === 0) return [];
 
         const now = new Date();
-        const tempCoefficient = 0.3; // β - Adjusted for percentage-based efficiency
+        const tempCoefficient = 0.003; // β - Corrected temperature coefficient
         const dustFactor = 0.05;      // γ
         
         return devices.map(device => {
@@ -86,8 +86,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
             const temp = device.temperature ?? 0;
             const dust = device.dustDensity ?? 0;
             const measuredEfficiency = device.efficiency ?? 0;
-            // The base efficiency is calculated relative to the measured efficiency,
-            // factoring in environmental variables.
+
             const baseEfficiency = measuredEfficiency * (1 - tempCoefficient * (temp - 25)) * (1 - dustFactor * dust);
 
             return {
