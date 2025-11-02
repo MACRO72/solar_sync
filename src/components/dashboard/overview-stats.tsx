@@ -1,10 +1,10 @@
+
 'use client';
 import Link from "next/link";
 import { GlassCard, CardHeader, CardTitle, CardContent } from "@/components/glass-card"
 import { cn } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
 import { useRealtimeData } from "@/firebase/firestore/use-realtime-data";
-import { Gauge, Zap, Wind, Thermometer, Sun, Percent, Bolt } from "lucide-react";
+import { Zap, Wind, Thermometer, Sun, Bolt, Droplets } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Stat } from "@/lib/types";
 
@@ -15,11 +15,11 @@ const titleToSlug = (title: string) => {
 const getIcon = (title: string) => {
     switch (title) {
         case "Voltage": return Bolt;
-        case "Total Power": return Zap;
-        case "Irradiance": return Sun;
+        case "Current": return Droplets;
+        case "Power": return Zap;
         case "Temperature": return Thermometer;
+        case "Light Index": return Sun;
         case "Dust Index": return Wind;
-        case "System Health": return Gauge;
         default: return Zap;
     }
 }
@@ -27,11 +27,11 @@ const getIcon = (title: string) => {
 const getColor = (title: string) => {
      switch (title) {
         case "Voltage": return "text-primary";
-        case "Total Power": return "text-orange-500";
-        case "Irradiance": return "text-yellow-400";
+        case "Current": return "text-blue-400";
+        case "Power": return "text-orange-500";
         case "Temperature": return "text-destructive";
+        case "Light Index": return "text-yellow-400";
         case "Dust Index": return "text-status-neutral";
-        case "System Health": return "text-status-positive";
         default: return "text-primary";
     }
 }
@@ -59,34 +59,27 @@ export function OverviewStats() {
     }
     
     const calculateStats = (): Stat[] => {
-        if (devices.length === 0) {
+        const latestDevice = devices[0];
+
+        if (!latestDevice) {
+            const waitingStat = { value: "N/A", change: "Waiting for data..." };
             return [
-                { title: "Voltage", value: "N/A", icon: Bolt, change: "Waiting for data...", color: "text-primary"},
-                { title: "Total Power", value: "N/A", icon: Zap, change: "Waiting for data...", color: "text-orange-500" },
-                { title: "Irradiance", value: "N/A", icon: Sun, change: "Waiting for data...", color: "text-yellow-400" },
-                { title: "Temperature", value: "N/A", icon: Thermometer, change: "Waiting for data...", color: "text-destructive" },
-                { title: "Dust Index", value: "N/A", icon: Wind, change: "Waiting for data...", color: "text-status-neutral" },
-                { title: "System Health", value: "N/A", icon: Gauge, change: "Waiting for data...", color: "text-status-positive" },
+                { title: "Voltage", ...waitingStat, icon: Bolt, color: "text-primary"},
+                { title: "Current", ...waitingStat, icon: Droplets, color: "text-blue-400"},
+                { title: "Power", ...waitingStat, icon: Zap, color: "text-orange-500" },
+                { title: "Temperature", ...waitingStat, icon: Thermometer, color: "text-destructive" },
+                { title: "Light Index", ...waitingStat, icon: Sun, color: "text-yellow-400" },
+                { title: "Dust Index", ...waitingStat, icon: Wind, color: "text-status-neutral" },
             ];
         }
 
-        const totalPower = devices.reduce((acc, dev) => acc + (dev.power || 0), 0);
-        const avgVoltage = devices.reduce((acc, dev) => acc + (dev.voltage || 0), 0) / devices.length;
-        const currentTemp = devices[0]?.temperature ?? 0;
-        const totalIrradiance = devices.reduce((acc, dev) => acc + (dev.irradiance || 0), 0);
-        const avgDust = devices.reduce((acc, dev) => acc + (dev.dustDensity || 0), 0) / devices.length;
-        
-        // System health based on number of online devices
-        const onlineDevices = devices.filter(d => d.status === 'Online').length;
-        const systemHealth = (onlineDevices / devices.length) * 100;
-
         return [
-            { title: "Voltage", value: `${avgVoltage.toFixed(2)} V`, icon: Bolt, change: "Live", color: "text-primary", actual: avgVoltage, expected: 12 },
-            { title: "Total Power", value: `${(totalPower / 1000).toFixed(2)} kW`, icon: Zap, change: "Live", color: "text-orange-500", actual: totalPower, expected: 4000 },
-            { title: "Irradiance", value: `${totalIrradiance.toFixed(0)} W/m²`, icon: Sun, change: "Live", color: "text-yellow-400" },
-            { title: "Temperature", value: `${currentTemp.toFixed(1)}°C`, icon: Thermometer, change: "Live", color: "text-destructive", actual: currentTemp, expected: 60 },
-            { title: "Dust Index", value: `${avgDust.toFixed(1)} µg/m³`, icon: Wind, change: "Live", color: "text-status-neutral", actual: avgDust, expected: 100 },
-            { title: "System Health", value: `${systemHealth.toFixed(1)}%`, icon: Gauge, change: `${onlineDevices}/${devices.length} Online`, color: "text-status-positive", actual: systemHealth, expected: 100 },
+            { title: "Voltage", value: `${(latestDevice.voltage || 0).toFixed(2)} V`, icon: Bolt, change: "Live", color: "text-primary"},
+            { title: "Current", value: `${(latestDevice.current || 0).toFixed(2)} A`, icon: Droplets, change: "Live", color: "text-blue-400" },
+            { title: "Power", value: `${(latestDevice.power || 0).toFixed(2)} W`, icon: Zap, change: "Live", color: "text-orange-500" },
+            { title: "Temperature", value: `${(latestDevice.temperature || 0).toFixed(1)}°C`, icon: Thermometer, change: "Live", color: "text-destructive" },
+            { title: "Light Index", value: `${(latestDevice.irradiance || 0).toFixed(0)} lx`, icon: Sun, change: "Live", color: "text-yellow-400" },
+            { title: "Dust Index", value: `${(latestDevice.dustDensity || 0).toFixed(1)} µg/m³`, icon: Wind, change: "Live", color: "text-status-neutral" },
         ];
     }
     
@@ -108,15 +101,6 @@ export function OverviewStats() {
                             <CardContent>
                                 <div className="text-2xl font-bold">{stat.value}</div>
                                 <p className="text-xs text-muted-foreground">{stat.change}</p>
-                                 {stat.actual !== undefined && stat.expected !== undefined && (
-                                    <div className="mt-2">
-                                         <Progress 
-                                            value={(stat.actual / stat.expected) * 100} 
-                                            className="h-2 bg-blue-400/20"
-                                            indicatorClassName="bg-purple-500"
-                                        />
-                                    </div>
-                                )}
                             </CardContent>
                         </GlassCard>
                     </Link>

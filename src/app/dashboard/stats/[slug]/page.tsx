@@ -4,11 +4,9 @@ import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { HistoricalDataChart } from "./components/historical-data-chart";
-import { stats as statDetails } from '@/lib/data';
 import { notFound } from "next/navigation";
-import { cn } from "@/lib/utils";
 
-const statTitles = ["Voltage", "Total Power", "Irradiance", "Temperature", "Dust Index", "System Health"];
+const statTitles = ["Voltage", "Current", "Power", "Temperature", "Light Index", "Dust Index"];
 
 
 export default function StatDetailPage({ params }: { params: { slug: string } }) {
@@ -33,7 +31,7 @@ export default function StatDetailPage({ params }: { params: { slug: string } })
             <Card className="animate-energy-wave">
                 <CardHeader>
                     <CardTitle>{statTitle} - Historical Data</CardTitle>
-                    <CardDescription>Data from the previous 30 days.</CardDescription>
+                    <CardDescription>Real-time and historical data for the last 30 days.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <HistoricalDataChart metric={statTitle} />

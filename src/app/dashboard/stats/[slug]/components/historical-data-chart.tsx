@@ -1,3 +1,4 @@
+
 'use client'
 import * as React from 'react'
 import { Line, LineChart, CartesianGrid, XAxis, YAxis } from "recharts"
@@ -21,11 +22,11 @@ const timePeriodOptions: {value: TimePeriod, label: string}[] = [
 
 const metricToKeyMap: Record<string, keyof import('@/lib/types').Device> = {
     "Voltage": "voltage",
-    "Total Power": "power",
-    "Irradiance": "irradiance",
+    "Current": "current",
+    "Power": "power",
+    "Light Index": "irradiance",
     "Temperature": "temperature",
     "Dust Index": "dustDensity",
-    "System Health": "efficiency", // Fallback for system health
 };
 
 
@@ -42,7 +43,23 @@ export function HistoricalDataChart({ metric }: { metric: string }) {
         const filteredDevices = devices.filter(d => {
             try {
                 const deviceDate = new Date(d.lastSeen);
-                if (isNaN(deviceDate.getTime())) return false; // Invalid date
+                if (isNaN(deviceDate.getTime())) { // Check for invalid date
+                    const timeParts = d.lastSeen.split(':');
+                    if (timeParts.length === 3) {
+                        const [h, m, s] = timeParts.map(Number);
+                        const today = new Date();
+                        deviceDate.setHours(h, m, s);
+                        // If date is in the future, assume it's from yesterday
+                        if (deviceDate > today) {
+                            deviceDate.setDate(deviceDate.getDate() - 1);
+                        }
+                    } else {
+                        return false;
+                    }
+                }
+
+                if (isNaN(deviceDate.getTime())) return false; // Still invalid
+
                 const diffDays = (now.getTime() - deviceDate.getTime()) / (1000 * 3600 * 24);
 
                 if (timePeriod === '24h') return diffDays <= 1;
@@ -55,17 +72,29 @@ export function HistoricalDataChart({ metric }: { metric: string }) {
         });
         
         return filteredDevices.map(d => ({
-            time: timePeriod === '24h' ? format(new Date(d.lastSeen), 'HH:mm') : format(new Date(d.lastSeen), 'MMM d'),
+            time: d.lastSeen,
             value: d[dataKey] as number ?? 0
-        })).sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+        })).sort((a, b) => {
+            try {
+                return new Date(a.time).getTime() - new Date(b.time).getTime()
+            } catch {
+                return a.time.localeCompare(b.time);
+            }
+        });
 
     }, [devices, timePeriod, dataKey, loading]);
     
     const formatTick = (value: any) => {
-        if (timePeriod === '24h') {
-            return value; // Already formatted as HH:mm
+        try {
+            const date = new Date(value);
+            if (isNaN(date.getTime())) {
+                return value; // Return time string if not a full date
+            }
+            if (timePeriod === '24h') return format(date, 'HH:mm');
+            return format(date, 'MMM d');
+        } catch {
+            return value;
         }
-        return value; // Already formatted as 'MMM d'
     };
 
     if (loading) return <div className="h-[400px] w-full flex items-center justify-center text-muted-foreground">Loading historical data...</div>
