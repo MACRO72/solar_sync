@@ -43,25 +43,40 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
     const processedData = React.useMemo(() => {
         if (!devices || devices.length === 0) return [];
 
-        // For simplicity, we'll use the 'lastSeen' timestamp for all views.
-        // In a real app, you might have more structured time-series data.
         const now = new Date();
-        const filteredDevices = devices.filter(d => {
-            if (timePeriod === '24h') return true; // Show all live data
-            const deviceDate = new Date(d.lastSeen);
-            const diffDays = (now.getTime() - deviceDate.getTime()) / (1000 * 3600 * 24);
-            if (timePeriod === '7d') return diffDays <= 7;
-            if (timePeriod === '30d') return diffDays <= 30;
-            return true;
-        });
+        
+        return devices.map(device => {
+            let deviceDate = new Date(device.lastSeen);
+            if (isNaN(deviceDate.getTime())) { // Check for invalid date
+                const timeParts = device.lastSeen.split(':');
+                if (timeParts.length === 3) {
+                    const [h, m, s] = timeParts.map(Number);
+                    deviceDate = new Date();
+                    deviceDate.setHours(h, m, s, 0);
+                    // If date is in the future, assume it's from yesterday
+                    if (deviceDate > now) {
+                        deviceDate.setDate(deviceDate.getDate() - 1);
+                    }
+                } else {
+                    deviceDate = now; // Fallback to now if format is unexpected
+                }
+            }
 
-        return filteredDevices.map(device => ({
-            time: format(new Date(device.lastSeen), 'HH:mm'),
-            efficiency: device.efficiency ?? 0,
-            power: device.power ?? 0,
-            dust: device.dustDensity ?? 0,
-            temperature: device.temperature ?? 0,
-        })).sort((a, b) => a.time.localeCompare(b.time));
+            return {
+                time: format(deviceDate, 'HH:mm'),
+                date: deviceDate,
+                efficiency: device.efficiency ?? 0,
+                power: device.power ?? 0,
+                dust: device.dustDensity ?? 0,
+                temperature: device.temperature ?? 0,
+            };
+        }).filter(item => {
+             if (timePeriod === '24h') return true; 
+             const diffDays = (now.getTime() - item.date.getTime()) / (1000 * 3600 * 24);
+             if (timePeriod === '7d') return diffDays <= 7;
+             if (timePeriod === '30d') return diffDays <= 30;
+             return true;
+        }).sort((a, b) => a.date.getTime() - b.date.getTime());
     }, [devices, timePeriod]);
 
 
