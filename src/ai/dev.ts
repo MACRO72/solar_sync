@@ -7,4 +7,5 @@ import '@/ai/flows/summarize-performance-anomalies.ts';
 import '@/ai/flows/generate-alert-notifications.ts';
 import '@/ai/flows/get-device-location.ts';
 import '@/ai/flows/analyze-csv-data.ts';
+import '@/ai/flows/get-weather-forecast.ts';
 import '@/ai/tools/send-notification.ts';
