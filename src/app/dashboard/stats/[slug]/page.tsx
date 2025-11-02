@@ -1,10 +1,21 @@
 
+
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { HistoricalDataChart } from "./components/historical-data-chart";
 import { notFound } from "next/navigation";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const HistoricalDataChart = dynamic(
+    () => import('./components/historical-data-chart').then(mod => mod.HistoricalDataChart),
+    {
+        ssr: false,
+        loading: () => <Skeleton className="h-[400px] w-full" />
+    }
+);
+
 
 const statTitles = ["Voltage", "Current", "Power", "Temperature", "Light Index", "Dust Index"];
 

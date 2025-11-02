@@ -1,4 +1,14 @@
-import { PerformanceChart } from "@/components/dashboard/performance-chart";
+
+import dynamic from 'next/dynamic';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const PerformanceChart = dynamic(
+    () => import('@/components/dashboard/performance-chart').then(mod => mod.PerformanceChart),
+    { 
+        ssr: false,
+        loading: () => <Skeleton className="h-[400px] w-full" />
+    }
+);
 
 export default function AnalyticsPage() {
     return (

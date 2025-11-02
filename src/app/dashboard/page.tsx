@@ -2,8 +2,18 @@
 'use client';
 
 import { OverviewStats } from "@/components/dashboard/overview-stats";
-import { PerformanceChart } from "@/components/dashboard/performance-chart";
 import { RecentAlerts } from "@/components/dashboard/recent-alerts";
+import dynamic from 'next/dynamic';
+import { Skeleton } from "@/components/ui/skeleton";
+
+const PerformanceChart = dynamic(
+  () => import('@/components/dashboard/performance-chart').then(mod => mod.PerformanceChart),
+  { 
+    ssr: false,
+    loading: () => <Skeleton className="h-[300px] w-full" />
+  }
+);
+
 
 export default function DashboardOverviewPage() {
 
