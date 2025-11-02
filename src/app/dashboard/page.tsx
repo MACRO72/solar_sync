@@ -4,7 +4,6 @@
 import { OverviewStats } from "@/components/dashboard/overview-stats";
 import { PerformanceChart } from "@/components/dashboard/performance-chart";
 import { RecentAlerts } from "@/components/dashboard/recent-alerts";
-import { WeatherForecast } from "@/components/dashboard/weather-forecast";
 
 export default function DashboardOverviewPage() {
 
@@ -17,7 +16,6 @@ export default function DashboardOverviewPage() {
             <PerformanceChart />
         </div>
         <div className="lg:col-span-1 grid grid-cols-1 gap-6">
-            <WeatherForecast />
             <RecentAlerts />
         </div>
     </div>
