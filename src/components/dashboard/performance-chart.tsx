@@ -37,7 +37,7 @@ const chartViewOptions: {value: ChartView, label: string}[] = [
 
 export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: { fullHeight?: boolean, defaultPeriod?: TimePeriod }) {
     const [timePeriod, setTimePeriod] = React.useState<TimePeriod>(defaultPeriod);
-    const [chartView, setChartView] = React.useState<ChartView>('performance');
+    const [chartView, setChartView] = React.useState<ChartView>('power');
     const { data: devices, loading } = useRealtimeData();
     
     const processedData = React.useMemo(() => {
