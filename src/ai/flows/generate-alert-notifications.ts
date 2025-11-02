@@ -23,6 +23,7 @@ const GenerateAlertNotificationsInputSchema = z.object({
     .string()
     .optional()
     .describe('The name of the affected device, if applicable.'),
+  recipientEmail: z.string().optional().describe('An optional email address to send the notification to.'),
 });
 export type GenerateAlertNotificationsInput = z.infer<
   typeof GenerateAlertNotificationsInputSchema
@@ -61,7 +62,9 @@ const prompt = ai.definePrompt({
   The alert notification should include a title, a detailed message, and a priority level (high, medium, or low).
   The priority level should align with the urgency level.
   
-  IMPORTANT: If the urgency level is 'high' or 'medium', you MUST use the sendEmail tool to send the generated title and message to the administrator immediately. For 'low' urgency, do not send an email.
+  IMPORTANT: If the urgency level is 'high' or 'medium', you MUST use the sendEmail tool to send the generated title and message to the administrator immediately.
+  If a 'recipientEmail' is provided in the input, send the email to that address. Otherwise, the tool will use a default address.
+  For 'low' urgency, do not send an email.
   `,
 });
 

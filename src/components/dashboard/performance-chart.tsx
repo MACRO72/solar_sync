@@ -6,7 +6,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLe
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { useRealtimeData } from '@/firebase/firestore/use-realtime-data';
-import { format } from 'date-fns';
+import { format, parse, startOfDay } from 'date-fns';
 
 
 const chartConfig = {
@@ -43,68 +43,115 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
     
     const processedData = React.useMemo(() => {
         if (!devices || devices.length === 0) return [];
-
         const now = new Date();
-        const tempCoefficient = 0.003; // β - Corrected temperature coefficient
-        const dustFactor = 0.05;      // γ
-        
-        return devices.map(device => {
+        const tempCoefficient = 0.003;
+        const dustFactor = 0.05;
+
+        // Filter devices based on the selected time period first
+        const filteredDevices = devices.filter(device => {
             let deviceDate: Date;
-            // Check if lastSeen is a full date string or just time
             if (device.lastSeen.includes('T') && device.lastSeen.endsWith('Z')) {
                 deviceDate = new Date(device.lastSeen);
             } else {
-                // Handle time-only strings
                 const timeParts = device.lastSeen.split(':');
                 deviceDate = new Date();
                 if (timeParts.length === 3) {
                     const [h, m, s] = timeParts.map(Number);
                     deviceDate.setHours(h, m, s, 0);
-                    // If the time is in the future, assume it's from yesterday
                     if (deviceDate > now) {
                         deviceDate.setDate(deviceDate.getDate() - 1);
                     }
                 } else {
-                    // Fallback for invalid time format
-                     try {
-                        const parsedDate = new Date(device.lastSeen);
-                        if (!isNaN(parsedDate.getTime())) {
-                            deviceDate = parsedDate;
-                        } else {
-                            deviceDate = now;
-                        }
-                    } catch {
-                        deviceDate = now;
-                    }
+                    return false; // Invalid time format
                 }
             }
-            if (isNaN(deviceDate.getTime())) {
-                // Fallback for any other invalid date format
-                deviceDate = now;
+            if (isNaN(deviceDate.getTime())) return false;
+
+            const diffDays = (now.getTime() - deviceDate.getTime()) / (1000 * 3600 * 24);
+            if (timePeriod === '24h') return diffDays <= 1;
+            if (timePeriod === '7d') return diffDays <= 7;
+            if (timePeriod === '30d') return diffDays <= 30;
+            return true;
+        });
+
+        // If 'Live' view, process and return detailed data
+        if (timePeriod === '24h') {
+            return filteredDevices.map(device => {
+                let deviceDate: Date;
+                 if (device.lastSeen.includes('T') && device.lastSeen.endsWith('Z')) {
+                    deviceDate = new Date(device.lastSeen);
+                } else {
+                    deviceDate = parse(device.lastSeen, 'HH:mm:ss', new Date());
+                }
+
+                const temp = device.temperature ?? 0;
+                const dust = device.dustDensity ?? 0;
+                const measuredEfficiency = device.efficiency ?? 0;
+                const baseEfficiency = measuredEfficiency > 0 ? (measuredEfficiency / ((1 - tempCoefficient * (temp - 25)) * (1 - dustFactor * dust))) : 0;
+                
+                return {
+                    time: format(deviceDate, 'HH:mm'),
+                    date: deviceDate,
+                    measured: measuredEfficiency,
+                    base: Math.max(0, Math.min(100, baseEfficiency)),
+                    power: device.power ?? 0,
+                    dust: dust,
+                    temperature: temp,
+                };
+            }).sort((a, b) => a.date.getTime() - b.date.getTime());
+        }
+
+        // For '7d' and '30d', aggregate data by day
+        const dailyData: Record<string, {
+            temps: number[],
+            dusts: number[],
+            powers: number[],
+            measuredEffs: number[],
+            baseEffs: number[],
+            count: number
+        }> = {};
+
+        filteredDevices.forEach(device => {
+            let deviceDate: Date;
+            if (device.lastSeen.includes('T') && device.lastSeen.endsWith('Z')) {
+                deviceDate = new Date(device.lastSeen);
+            } else {
+                 deviceDate = parse(device.lastSeen, 'HH:mm:ss', new Date());
+                 if (deviceDate > new Date()) deviceDate.setDate(deviceDate.getDate() - 1);
+            }
+
+            const dayKey = format(startOfDay(deviceDate), 'yyyy-MM-dd');
+            if (!dailyData[dayKey]) {
+                dailyData[dayKey] = { temps: [], dusts: [], powers: [], measuredEffs: [], baseEffs: [], count: 0 };
             }
 
             const temp = device.temperature ?? 0;
             const dust = device.dustDensity ?? 0;
+            const power = device.power ?? 0;
             const measuredEfficiency = device.efficiency ?? 0;
+            const baseEfficiency = measuredEfficiency > 0 ? (measuredEfficiency / ((1 - tempCoefficient * (temp - 25)) * (1 - dustFactor * dust))) : 0;
 
-            const baseEfficiency = measuredEfficiency * (1 - tempCoefficient * (temp - 25)) * (1 - dustFactor * dust);
+            dailyData[dayKey].temps.push(temp);
+            dailyData[dayKey].dusts.push(dust);
+            dailyData[dayKey].powers.push(power);
+            dailyData[dayKey].measuredEffs.push(measuredEfficiency);
+            dailyData[dayKey].baseEffs.push(Math.max(0, Math.min(100, baseEfficiency)));
+            dailyData[dayKey].count++;
+        });
 
+        return Object.entries(dailyData).map(([day, data]) => {
+            const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
             return {
-                time: format(deviceDate, 'HH:mm'),
-                date: deviceDate,
-                measured: measuredEfficiency,
-                base: Math.max(0, baseEfficiency),
-                power: device.power ?? 0,
-                dust: dust,
-                temperature: temp,
+                time: format(new Date(day), 'MMM d'),
+                date: new Date(day),
+                measured: avg(data.measuredEffs),
+                base: avg(data.baseEffs),
+                power: avg(data.powers),
+                dust: avg(data.dusts),
+                temperature: avg(data.temps),
             };
-        }).filter(item => {
-             if (timePeriod === '24h') return true; 
-             const diffDays = (now.getTime() - item.date.getTime()) / (1000 * 3600 * 24);
-             if (timePeriod === '7d') return diffDays <= 7;
-             if (timePeriod === '30d') return diffDays <= 30;
-             return true;
         }).sort((a, b) => a.date.getTime() - b.date.getTime());
+
     }, [devices, timePeriod]);
 
 

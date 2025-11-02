@@ -3,11 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useDebounce } from 'use-debounce';
 import { GlassCard, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/glass-card"
-import { AlertTriangle, Bell, Info, Loader2 } from 'lucide-react'
+import { AlertTriangle, Bell, Info, Loader2, TestTube2 } from 'lucide-react'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useRealtimeData } from '@/firebase/firestore/use-realtime-data';
 import type { Alert, Device } from '@/lib/types';
 import { generateAlertNotifications } from '@/ai/flows/generate-alert-notifications';
+import { Button } from '../ui/button';
+import { useUser } from '@/firebase/auth/use-user';
+import { toast } from '@/hooks/use-toast';
 
 const getIcon = (severity: 'High' | 'Medium' | 'Low') => {
     switch (severity) {
@@ -42,22 +45,48 @@ const ALERT_THRESHOLD = 0.7; // θ
 
 export function RecentAlerts() {
     const { data: devices, loading } = useRealtimeData();
+    const { user } = useUser();
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [debouncedDevices] = useDebounce(devices, 30000); // 30-second debounce
 
-    const generateAlerts = useCallback(async (deviceList: Device[]) => {
-            if (deviceList.length === 0 || isGenerating) return;
+    const generateAlerts = useCallback(async (deviceList: Device[], isTest = false) => {
+        if ((!isTest && deviceList.length === 0) || isGenerating) return;
 
-            setIsGenerating(true);
-            
-            const latestDevice = deviceList[0];
-            const offlineDevices = deviceList.filter(d => d.status === 'Offline');
-            const errorDevices = deviceList.filter(d => d.status === 'Error');
-            let newAlert: Alert | null = null;
-            
-            try {
-                 // Handle critical, non-score-based alerts first
+        setIsGenerating(true);
+        let newAlert: Alert | null = null;
+        
+        try {
+            if (isTest) {
+                if (!user?.email) {
+                    toast({
+                        variant: 'destructive',
+                        title: 'User Not Found',
+                        description: 'Could not find user email to send test alert.'
+                    });
+                    setIsGenerating(false);
+                    return;
+                }
+                 const alertContent = await generateAlertNotifications({
+                    eventDescription: `This is a test alert to confirm the notification system is working.`,
+                    urgencyLevel: 'high',
+                    affectedDevice: 'Test System',
+                    recipientEmail: user.email,
+                });
+                newAlert = {
+                    id: `test-alert-${Date.now()}`,
+                    title: alertContent.title,
+                    description: alertContent.message,
+                    severity: 'High',
+                    timestamp: new Date().toLocaleTimeString(),
+                };
+
+            } else {
+                const latestDevice = deviceList[0];
+                const offlineDevices = deviceList.filter(d => d.status === 'Offline');
+                const errorDevices = deviceList.filter(d => d.status === 'Error');
+                
+                // Handle critical, non-score-based alerts first
                 if (errorDevices.length > 0) {
                      const alertContent = await generateAlertNotifications({
                         eventDescription: `Device "${errorDevices[0].name}" is reporting a critical error state. Immediate attention may be required.`,
@@ -86,13 +115,13 @@ export function RecentAlerts() {
                     };
                 } else {
                     // --- Advanced Alert Score Calculation ---
-                    const { temperature = 0, dustDensity = 0, irradiance = 0, efficiency = 0 } = latestDevice;
+                    const { temperature = 0, dustDensity = 0, efficiency = 0 } = latestDevice;
 
                     // Calculate base efficiency
                     const tempCoefficient = 0.003;
                     const dustFactor = 0.05;
-                    const baseEfficiency = efficiency * (1 - tempCoefficient * (temperature - 25)) * (1 - dustFactor * dustDensity);
-                    const efficiencyDeviation = baseEfficiency > 0 ? ((baseEfficiency - efficiency) / baseEfficiency) * 100 : 0;
+                    const baseEfficiency = efficiency > 0 ? (efficiency / ((1 - tempCoefficient * (temperature - 25)) * (1 - dustFactor * dustDensity))) : 0;
+                    const efficiencyDeviation = baseEfficiency > 0 ? Math.abs(((baseEfficiency - efficiency) / baseEfficiency) * 100) : 0;
 
                     // Calculate risk scores
                     const riskT = f_T(temperature);
@@ -123,8 +152,7 @@ export function RecentAlerts() {
                         };
                     }
                 }
-                
-                // If no alerts were generated, create an "All Clear" message
+                 // If no alerts were generated, create an "All Clear" message
                 if (!newAlert) {
                      const alertContent = await generateAlertNotifications({
                         eventDescription: `All systems are online and performing within expected parameters.`,
@@ -138,11 +166,17 @@ export function RecentAlerts() {
                          timestamp: new Date().toLocaleTimeString(),
                      };
                 }
-
+            }
+            
+            if (newAlert) {
                 setAlerts([newAlert]);
+            }
 
-            } catch (error) {
-                console.error("Failed to generate alerts:", error);
+
+        } catch (error: any) {
+            console.error("Failed to generate alerts:", error);
+            // Avoid setting error alerts for rate limit issues
+             if (!error.message.includes('429')) {
                 setAlerts([{
                     id: `error-fallback-${Date.now()}`,
                     title: "Alert Generation Paused",
@@ -150,34 +184,37 @@ export function RecentAlerts() {
                     severity: 'Medium',
                     timestamp: new Date().toLocaleTimeString(),
                 }]);
-            } finally {
-                setIsGenerating(false);
             }
-        }, [isGenerating]);
-
-
-    // Effect for initial load
-    useEffect(() => {
-        if (!loading && devices.length > 0) {
-            generateAlerts(devices);
-        } else if (!loading && devices.length === 0) {
-             // Set an initial "waiting" message if there are no devices and not loading
-            setAlerts([]);
+        } finally {
+            setIsGenerating(false);
         }
-    }, [loading]); // Only dependent on loading state
+    }, [isGenerating, user?.email]);
 
-    // Effect for debounced updates
+    const handleTestAlert = () => {
+        generateAlerts([], true);
+    }
+
+    // Effect for debounced updates from real-time data
     useEffect(() => {
         if (debouncedDevices.length > 0) {
             generateAlerts(debouncedDevices);
+        } else if (!loading && devices.length === 0) {
+            setAlerts([]);
         }
-    }, [debouncedDevices, generateAlerts]);
+    }, [debouncedDevices, loading, devices.length, generateAlerts]);
+
 
     return (
         <GlassCard className="h-full animate-energy-wave">
-            <CardHeader>
-                <CardTitle>Recent Alerts</CardTitle>
-                <CardDescription>AI-detected events and system notifications.</CardDescription>
+            <CardHeader className="flex-row items-start justify-between">
+                <div>
+                    <CardTitle>Recent Alerts</CardTitle>
+                    <CardDescription>AI-detected events and system notifications.</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={handleTestAlert} disabled={isGenerating}>
+                    <TestTube2 className="mr-2 h-4 w-4" />
+                    Test Alert
+                </Button>
             </CardHeader>
             <CardContent>
                 {loading && alerts.length === 0 ? (
