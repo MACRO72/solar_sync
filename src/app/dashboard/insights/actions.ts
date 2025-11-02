@@ -4,6 +4,7 @@ import { generateMaintenanceSchedule, type GenerateMaintenanceScheduleInput, typ
 import { summarizePerformanceAnomalies, type SummarizePerformanceAnomaliesInput, type SummarizePerformanceAnomaliesOutput } from "@/ai/flows/summarize-performance-anomalies";
 import { analyzeCsvData, type AnalyzeCsvDataInput, type AnalyzeCsvDataOutput } from "@/ai/flows/analyze-csv-data";
 import { predictEfficiency, type PredictEfficiencyInput, type PredictEfficiencyOutput } from "@/ai/flows/predict-efficiency";
+import { predictPowerOutput, type PredictPowerOutputInput, type PredictPowerOutputOutput } from "@/ai/flows/predict-power-output";
 import { z } from "zod";
 
 // --- Maintenance Suggestion ---
@@ -142,7 +143,7 @@ export async function getCsvAnalysis(prevState: CsvFormState, formData: FormData
 
 
 // --- Efficiency Forecaster ---
-const EfficiencySchema = z.object({
+const LocationSchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
   lng: z.coerce.number().min(-180).max(180),
 });
@@ -157,7 +158,7 @@ type EfficiencyFormState = {
 }
 
 export async function getEfficiencyPrediction(prevState: EfficiencyFormState, formData: FormData) : Promise<EfficiencyFormState> {
-  const validatedFields = EfficiencySchema.safeParse({
+  const validatedFields = LocationSchema.safeParse({
     lat: formData.get('lat'),
     lng: formData.get('lng'),
   });
@@ -171,6 +172,45 @@ export async function getEfficiencyPrediction(prevState: EfficiencyFormState, fo
 
   try {
     const result = await predictEfficiency(validatedFields.data as PredictEfficiencyInput);
+    return {
+      errors: {},
+      data: result,
+    };
+  } catch (error: any) {
+    console.error(error);
+    return {
+      errors: { _form: [error.message || 'Failed to get prediction. Please try again.'] },
+      data: null,
+    };
+  }
+}
+
+
+// --- Power Output Forecaster ---
+type PowerFormState = {
+  errors: {
+    lat?: string[];
+    lng?: string[];
+    _form?: string[];
+  };
+  data: PredictPowerOutputOutput | null;
+}
+
+export async function getPowerPrediction(prevState: PowerFormState, formData: FormData) : Promise<PowerFormState> {
+  const validatedFields = LocationSchema.safeParse({
+    lat: formData.get('lat'),
+    lng: formData.get('lng'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      data: null,
+    };
+  }
+
+  try {
+    const result = await predictPowerOutput(validatedFields.data as PredictPowerOutputInput);
     return {
       errors: {},
       data: result,

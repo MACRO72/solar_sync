@@ -11,3 +11,4 @@ import '@/ai/tools/send-notification.ts';
 import '@/ai/tools/send-sms.ts';
 import '@/ai/tools/get-weather-forecast.ts';
 import '@/ai/flows/predict-efficiency.ts';
+import '@/ai/flows/predict-power-output.ts';
