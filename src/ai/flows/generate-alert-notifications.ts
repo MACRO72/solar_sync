@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
+import { sendEmail } from '@/ai/tools/send-notification';
 
 const GenerateAlertNotificationsInputSchema = z.object({
   eventDescription: z
@@ -48,9 +49,10 @@ const prompt = ai.definePrompt({
   name: 'generateAlertNotificationsPrompt',
   input: {schema: GenerateAlertNotificationsInputSchema},
   output: {schema: GenerateAlertNotificationsOutputSchema},
-  prompt: `You are an AI assistant that generates alert notifications for a solar power system.
+  tools: [sendEmail],
+  prompt: `You are an AI assistant that generates alert notifications for a solar power system and notifies the administrator.
 
-  Based on the event description, urgency level, and affected device (if applicable), create a concise and informative alert notification.
+  Based on the event description, urgency level, and affected device, create a concise and informative alert notification.
 
   Event Description: {{{eventDescription}}}
   Urgency Level: {{{urgencyLevel}}}
@@ -58,10 +60,9 @@ const prompt = ai.definePrompt({
 
   The alert notification should include a title, a detailed message, and a priority level (high, medium, or low).
   The priority level should align with the urgency level.
-
-  Title:
-  Message:
-  Priority:`,
+  
+  IMPORTANT: If the urgency level is 'high' or 'medium', you MUST use the sendEmail tool to send the generated title and message to the administrator immediately. For 'low' urgency, do not send an email.
+  `,
 });
 
 const generateAlertNotificationsFlow = ai.defineFlow(
