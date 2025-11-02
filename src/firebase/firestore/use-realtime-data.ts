@@ -20,7 +20,8 @@ export function useRealtimeData() {
     const handleNewData = (snapshot: any) => {
       if (snapshot.exists()) {
         const rawData = snapshot.val();
-        const timestamp = rawData.Time ? rawData.Time : new Date().toLocaleTimeString();
+        // Use ISO string for full date context, fallback to rawData.Time if it exists
+        const timestamp = rawData.Time ? rawData.Time : new Date().toISOString();
 
         const voltage = parseFloat(rawData.Voltage || '0');
         const current = parseFloat(rawData.Current || '0');

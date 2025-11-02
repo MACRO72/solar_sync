@@ -46,20 +46,26 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
         const now = new Date();
         
         return devices.map(device => {
-            let deviceDate = new Date(device.lastSeen);
-            if (isNaN(deviceDate.getTime())) { // Check for invalid date
+            let deviceDate: Date;
+            // Check if lastSeen is a full date string or just time
+            if (device.lastSeen.includes('T')) {
+                deviceDate = new Date(device.lastSeen);
+            } else {
+                // Handle time-only strings
                 const timeParts = device.lastSeen.split(':');
+                deviceDate = new Date();
                 if (timeParts.length === 3) {
                     const [h, m, s] = timeParts.map(Number);
-                    deviceDate = new Date();
                     deviceDate.setHours(h, m, s, 0);
-                    // If date is in the future, assume it's from yesterday
+                    // If the time is in the future, assume it's from yesterday
                     if (deviceDate > now) {
                         deviceDate.setDate(deviceDate.getDate() - 1);
                     }
-                } else {
-                    deviceDate = now; // Fallback to now if format is unexpected
                 }
+            }
+            if (isNaN(deviceDate.getTime())) {
+                // Fallback for any other invalid date format
+                deviceDate = now;
             }
 
             return {

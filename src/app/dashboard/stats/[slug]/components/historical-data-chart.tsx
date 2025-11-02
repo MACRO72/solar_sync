@@ -42,22 +42,24 @@ export function HistoricalDataChart({ metric }: { metric: string }) {
         const now = new Date();
         const filteredDevices = devices.filter(d => {
             try {
-                const deviceDate = new Date(d.lastSeen);
-                if (isNaN(deviceDate.getTime())) { // Check for invalid date
+                let deviceDate: Date;
+                if (d.lastSeen.includes('T')) {
+                    deviceDate = new Date(d.lastSeen);
+                } else {
                     const timeParts = d.lastSeen.split(':');
+                    deviceDate = new Date();
                     if (timeParts.length === 3) {
                         const [h, m, s] = timeParts.map(Number);
-                        const today = new Date();
-                        deviceDate.setHours(h, m, s);
-                        // If date is in the future, assume it's from yesterday
-                        if (deviceDate > today) {
+                        deviceDate.setHours(h, m, s, 0);
+                        if (deviceDate > now) {
                             deviceDate.setDate(deviceDate.getDate() - 1);
                         }
                     } else {
+                        // Fallback for invalid time format
                         return false;
                     }
                 }
-
+                
                 if (isNaN(deviceDate.getTime())) return false; // Still invalid
 
                 const diffDays = (now.getTime() - deviceDate.getTime()) / (1000 * 3600 * 24);
@@ -76,7 +78,9 @@ export function HistoricalDataChart({ metric }: { metric: string }) {
             value: d[dataKey] as number ?? 0
         })).sort((a, b) => {
             try {
-                return new Date(a.time).getTime() - new Date(b.time).getTime()
+                const dateA = a.time.includes('T') ? new Date(a.time) : new Date(`1970-01-01T${a.time}Z`);
+                const dateB = b.time.includes('T') ? new Date(b.time) : new Date(`1970-01-01T${b.time}Z`);
+                return dateA.getTime() - dateB.getTime();
             } catch {
                 return a.time.localeCompare(b.time);
             }
@@ -88,7 +92,10 @@ export function HistoricalDataChart({ metric }: { metric: string }) {
         try {
             const date = new Date(value);
             if (isNaN(date.getTime())) {
-                return value; // Return time string if not a full date
+                if (typeof value === 'string' && value.includes(':')) {
+                    return value; // Return time string if not a full date
+                }
+                return value;
             }
             if (timePeriod === '24h') return format(date, 'HH:mm');
             return format(date, 'MMM d');
