@@ -1,3 +1,4 @@
+
 'use client'
 import * as React from 'react';
 import { Bar, BarChart, Line, LineChart, Scatter, ScatterChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
@@ -31,7 +32,7 @@ const chartViewOptions: {value: ChartView, label: string}[] = [
     { value: 'performance', label: 'Efficiency' },
     { value: 'power', label: 'Power' },
     { value: 'dust', label: 'Dust Index' },
-    { value: 'temperature', label: 'Temp. Impact' },
+    { value: 'temperature', label: 'Temperature' },
 ];
 
 
