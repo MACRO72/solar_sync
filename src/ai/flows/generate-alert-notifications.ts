@@ -24,17 +24,20 @@ const GenerateAlertNotificationsInputSchema = z.object({
     .optional()
     .describe('The name of the affected device, if applicable.'),
   recipientEmail: z.string().optional().describe('An optional email address to send the notification to.'),
+  fcmToken: z.string().optional().describe('The FCM token for push notifications.')
 });
 export type GenerateAlertNotificationsInput = z.infer<
   typeof GenerateAlertNotificationsInputSchema
 >;
 
 const GenerateAlertNotificationsOutputSchema = z.object({
-  title: z.string().describe('Title of the alert notification.'),
-  message: z.string().describe('Detailed message of the alert notification.'),
+  title: z.string().describe('Title of the alert notification for dashboard display.'),
+  message: z.string().describe('Detailed message of the alert notification for dashboard display.'),
   priority: z
     .enum(['high', 'medium', 'low'])
     .describe('The priority level of the alert.'),
+  pushTitle: z.string().describe('A very short, concise title for a push notification (max 50 chars).'),
+  pushBody: z.string().describe('A short, concise body for a push notification (max 150 chars).'),
 });
 export type GenerateAlertNotificationsOutput = z.infer<
   typeof GenerateAlertNotificationsOutputSchema
@@ -51,18 +54,17 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateAlertNotificationsInputSchema},
   output: {schema: GenerateAlertNotificationsOutputSchema},
   tools: [sendEmail],
-  prompt: `You are an AI assistant that generates alert notifications for a solar power system and notifies the administrator.
+  prompt: `You are an AI assistant that generates alert notifications for a solar power system.
 
-  Based on the event description, urgency level, and affected device, create a concise and informative alert notification.
+  Based on the event description, urgency level, and affected device, you will generate two things:
+  1. A standard alert notification with a 'title' and a detailed 'message' for display within a dashboard UI. The 'priority' should align with the 'urgencyLevel'.
+  2. A push notification with a very concise 'pushTitle' and 'pushBody'. This should be short enough to be read at a glance on a mobile device.
 
   Event Description: {{{eventDescription}}}
   Urgency Level: {{{urgencyLevel}}}
   Affected Device: {{{affectedDevice}}}
 
-  The alert notification should include a title, a detailed message, and a priority level (high, medium, or low).
-  The priority level should align with the urgency level.
-  
-  IMPORTANT: If the urgency level is 'high' or 'medium', you MUST use the sendEmail tool to send the generated title and message to the administrator immediately.
+  IMPORTANT: If the urgency level is 'high' or 'medium', you MUST use the sendEmail tool to send the generated 'title' and 'message' to the administrator immediately.
   If a 'recipientEmail' is provided in the input, send the email to that address. Otherwise, the tool will use a default address.
   For 'low' urgency, do not send an email.
   `,

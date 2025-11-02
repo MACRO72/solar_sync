@@ -10,7 +10,7 @@ import type { Alert, Device } from '@/lib/types';
 import { generateAlertNotifications } from '@/ai/flows/generate-alert-notifications';
 import { Button } from '../ui/button';
 import { useUser } from '@/firebase/auth/use-user';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const getIcon = (severity: 'High' | 'Medium' | 'Low') => {
     switch (severity) {
@@ -49,6 +49,7 @@ export function RecentAlerts() {
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [debouncedDevices] = useDebounce(devices, 30000); // 30-second debounce
+    const { toast } = useToast();
 
     const generateAlerts = useCallback(async (deviceList: Device[], isTest = false) => {
         if ((!isTest && deviceList.length === 0) || isGenerating) return;
@@ -57,6 +58,7 @@ export function RecentAlerts() {
         let newAlert: Alert | null = null;
         
         try {
+            let alertContent;
             if (isTest) {
                  if (!user?.email) {
                     toast({
@@ -76,7 +78,7 @@ export function RecentAlerts() {
                 };
                 const eventDescription = `Simulated test event: Device '${fakeDeviceData.name}' is reporting a high temperature of ${fakeDeviceData.temperature}°C and an efficiency of ${fakeDeviceData.efficiency}%. This test is to confirm alert generation and notification delivery.`;
 
-                const alertContent = await generateAlertNotifications({
+                alertContent = await generateAlertNotifications({
                     eventDescription: eventDescription,
                     urgencyLevel: 'high',
                     affectedDevice: fakeDeviceData.name,
@@ -98,7 +100,7 @@ export function RecentAlerts() {
                 
                 // Handle critical, non-score-based alerts first
                 if (errorDevices.length > 0) {
-                     const alertContent = await generateAlertNotifications({
+                     alertContent = await generateAlertNotifications({
                         eventDescription: `Device "${errorDevices[0].name}" is reporting a critical error state. Immediate attention may be required.`,
                         urgencyLevel: 'high',
                         affectedDevice: errorDevices[0].name,
@@ -111,7 +113,7 @@ export function RecentAlerts() {
                         timestamp: new Date().toLocaleTimeString(),
                     };
                 } else if (offlineDevices.length > 0) {
-                    const alertContent = await generateAlertNotifications({
+                    alertContent = await generateAlertNotifications({
                         eventDescription: `${offlineDevices.length} device(s) are offline and not reporting data.`,
                         urgencyLevel: 'medium',
                         affectedDevice: offlineDevices.map(d => d.name).join(', '),
@@ -148,7 +150,7 @@ export function RecentAlerts() {
 
                         const eventDescription = `Multiple factors are indicating a potential issue, resulting in an alert score of ${alertScore.toFixed(2)}. Key contributors include: ${reasons.join(', ')}.`;
                         
-                        const alertContent = await generateAlertNotifications({
+                        alertContent = await generateAlertNotifications({
                             eventDescription,
                             urgencyLevel: 'high',
                             affectedDevice: latestDevice.name,
@@ -164,7 +166,7 @@ export function RecentAlerts() {
                 }
                  // If no alerts were generated, create an "All Clear" message
                 if (!newAlert) {
-                     const alertContent = await generateAlertNotifications({
+                     alertContent = await generateAlertNotifications({
                         eventDescription: `All systems are online and performing within expected parameters.`,
                         urgencyLevel: 'low',
                     });
@@ -180,6 +182,15 @@ export function RecentAlerts() {
             
             if (newAlert) {
                 setAlerts([newAlert]);
+
+                 // Simulate Push Notification with a toast
+                if (alertContent?.pushTitle && alertContent?.pushBody) {
+                    toast({
+                        title: alertContent.pushTitle,
+                        description: alertContent.pushBody,
+                        variant: newAlert.severity === 'High' ? 'destructive' : 'default',
+                    });
+                }
             }
 
 
@@ -198,7 +209,7 @@ export function RecentAlerts() {
         } finally {
             setIsGenerating(false);
         }
-    }, [isGenerating, user?.email]);
+    }, [isGenerating, user?.email, toast]);
 
     const handleTestAlert = () => {
         generateAlerts([], true);
