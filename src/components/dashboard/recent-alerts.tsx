@@ -1,9 +1,9 @@
 
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useDebounce } from 'use-debounce';
 import { GlassCard, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/glass-card"
-import { AlertTriangle, Bell, Info } from 'lucide-react'
+import { AlertTriangle, Bell, Info, Loader2 } from 'lucide-react'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useRealtimeData } from '@/firebase/firestore/use-realtime-data';
 import type { Alert, Device } from '@/lib/types';
@@ -48,15 +48,14 @@ export function RecentAlerts() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [debouncedDevices] = useDebounce(devices, 30000); // 30-second debounce
 
-    useEffect(() => {
-        const generateAlerts = async () => {
-            if (loading || debouncedDevices.length === 0 || isGenerating) return;
+    const generateAlerts = useCallback(async (deviceList: Device[]) => {
+            if (deviceList.length === 0 || isGenerating) return;
 
             setIsGenerating(true);
             
-            const latestDevice = debouncedDevices[0];
-            const offlineDevices = debouncedDevices.filter(d => d.status === 'Offline');
-            const errorDevices = debouncedDevices.filter(d => d.status === 'Error');
+            const latestDevice = deviceList[0];
+            const offlineDevices = deviceList.filter(d => d.status === 'Offline');
+            const errorDevices = deviceList.filter(d => d.status === 'Error');
             let newAlert: Alert | null = null;
             
             try {
@@ -158,10 +157,24 @@ export function RecentAlerts() {
             } finally {
                 setIsGenerating(false);
             }
-        };
+        }, [isGenerating]);
 
-        generateAlerts();
-    }, [debouncedDevices, loading, isGenerating]);
+
+    // Effect for initial load
+    useEffect(() => {
+        if (!loading && devices.length > 0) {
+            generateAlerts(devices);
+        } else if (!loading && devices.length === 0) {
+            setAlerts([]); // Clear alerts if there are no devices
+        }
+    }, [loading]);
+
+    // Effect for debounced updates
+    useEffect(() => {
+        if (debouncedDevices.length > 0) {
+            generateAlerts(debouncedDevices);
+        }
+    }, [debouncedDevices, generateAlerts]);
 
     return (
         <GlassCard className="h-full animate-energy-wave">
@@ -172,7 +185,10 @@ export function RecentAlerts() {
             <CardContent>
                 {loading && alerts.length === 0 ? (
                      <div className="flex h-[350px] items-center justify-center text-center">
-                        <p className="text-muted-foreground">Scanning for alerts...</p>
+                        <div className='flex items-center gap-2'>
+                           <Loader2 className="h-5 w-5 animate-spin"/>
+                           <p className="text-muted-foreground">Scanning for alerts...</p>
+                        </div>
                     </div>
                 ) : alerts.length > 0 ? (
                     <ScrollArea className="h-[350px]">
