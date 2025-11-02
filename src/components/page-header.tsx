@@ -1,6 +1,6 @@
 
 "use client";
-import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut, Wifi, WifiOff } from 'lucide-react';
+import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut, Wifi, WifiOff, Download } from 'lucide-react';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,6 +33,8 @@ import { useUser } from '@/firebase/auth/use-user';
 import { getAuth, signOut } from 'firebase/auth';
 import { useRealtimeData } from '@/firebase/firestore/use-realtime-data';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import Papa from 'papaparse';
+import { useToast } from '@/hooks/use-toast';
 
 const menuItems = [
   { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -60,6 +62,7 @@ export function PageHeader() {
   const { user } = useUser();
   const router = useRouter();
   const { data: devices, loading } = useRealtimeData();
+  const { toast } = useToast();
 
   const isConnected = !loading && devices.some(d => d.status === 'Online');
 
@@ -78,6 +81,35 @@ export function PageHeader() {
   const handleLinkClick = () => {
     setIsSheetOpen(false);
   };
+  
+  const handleDownloadCsv = () => {
+    if (devices.length === 0) {
+        toast({
+            variant: 'destructive',
+            title: 'No Data Available',
+            description: 'There is no data to download yet.',
+        });
+        return;
+    }
+
+    const csv = Papa.unparse(devices);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'solarsync_data.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    toast({
+        title: 'Download Started',
+        description: 'Your data is being downloaded as solarsync_data.csv.',
+    });
+    handleLinkClick();
+  };
+
 
   return (
     <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background/80 px-4 md:px-6 z-10 backdrop-blur-sm">
@@ -121,6 +153,15 @@ export function PageHeader() {
                       {item.label}
                     </Link>
                 ))}
+                 <button
+                    onClick={handleDownloadCsv}
+                    className={cn(
+                        'flex items-center gap-4 px-2.5 transition-colors hover:text-foreground text-muted-foreground'
+                    )}
+                    >
+                    <Download className="h-5 w-5" />
+                    Download CSV
+                 </button>
                  <Link
                       href={'/dashboard/settings'}
                       onClick={handleLinkClick}
