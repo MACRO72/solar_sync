@@ -75,7 +75,7 @@ export function OverviewStats() {
 
         return [
             { title: "Voltage", value: `${(latestDevice.voltage || 0).toFixed(2)} V`, icon: Bolt, change: "Live", color: "text-primary"},
-            { title: "Current", value: `${(latestDevice.current || 0).toFixed(2)} A`, icon: Droplets, change: "Live", color: "text-blue-400" },
+            { title: "Current", value: `${((latestDevice.current || 0) * 1000).toFixed(2)} mA`, icon: Droplets, change: "Live", color: "text-blue-400" },
             { title: "Power", value: `${(latestDevice.power || 0).toFixed(2)} W`, icon: Zap, change: "Live", color: "text-orange-500" },
             { title: "Temperature", value: `${(latestDevice.temperature || 0).toFixed(1)}°C`, icon: Thermometer, change: "Live", color: "text-destructive" },
             { title: "Light Index", value: `${(latestDevice.irradiance || 0).toFixed(0)} lx`, icon: Sun, change: "Live", color: "text-yellow-400" },
