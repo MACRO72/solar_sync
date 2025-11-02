@@ -1,3 +1,4 @@
+
 'use client'
 import * as React from 'react';
 import { Bar, BarChart, Line, LineChart, Scatter, ScatterChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
@@ -44,8 +45,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
         if (!devices || devices.length === 0) return [];
 
         const now = new Date();
-        const nominalEfficiency = 100; // η₀
-        const tempCoefficient = 0.003; // β
+        const tempCoefficient = 0.3; // β - Adjusted for percentage-based efficiency
         const dustFactor = 0.05;      // γ
         
         return devices.map(device => {
@@ -85,12 +85,15 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
 
             const temp = device.temperature ?? 0;
             const dust = device.dustDensity ?? 0;
-            const baseEfficiency = nominalEfficiency * (1 - tempCoefficient * (temp - 25)) * (1 - dustFactor * dust);
+            const measuredEfficiency = device.efficiency ?? 0;
+            // The base efficiency is calculated relative to the measured efficiency,
+            // factoring in environmental variables.
+            const baseEfficiency = measuredEfficiency * (1 - tempCoefficient * (temp - 25)) * (1 - dustFactor * dust);
 
             return {
                 time: format(deviceDate, 'HH:mm'),
                 date: deviceDate,
-                measured: device.efficiency ?? 0,
+                measured: measuredEfficiency,
                 base: Math.max(0, baseEfficiency),
                 power: device.power ?? 0,
                 dust: dust,
