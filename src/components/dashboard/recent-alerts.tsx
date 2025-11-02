@@ -6,7 +6,7 @@ import { GlassCard, CardHeader, CardTitle, CardContent, CardDescription } from "
 import { AlertTriangle, Bell, Info } from 'lucide-react'
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useRealtimeData } from '@/firebase/firestore/use-realtime-data';
-import type { Alert } from '@/lib/types';
+import type { Alert, Device } from '@/lib/types';
 import { generateAlertNotifications } from '@/ai/flows/generate-alert-notifications';
 
 const getIcon = (severity: 'High' | 'Medium' | 'Low') => {
@@ -16,6 +16,31 @@ const getIcon = (severity: 'High' | 'Medium' | 'Low') => {
         case 'Low': return <Info className="h-6 w-6 text-primary" />;
     }
 }
+
+// --- Alert Score Calculation ---
+
+// Normalization functions to map sensor values to a 0-1 risk score.
+const normalize = (value: number, min: number, max: number) => {
+  if (value <= min) return 0;
+  if (value >= max) return 1;
+  return (value - min) / (max - min);
+};
+
+const f_T = (temp: number) => normalize(temp, 40, 60); // Risk starts at 40°C, max at 60°C
+const f_D = (dust: number) => normalize(dust, 80, 200); // Risk starts at 80 µg/m³, max at 200
+const f_I = (irradiance: number) => 1 - normalize(irradiance, 100, 400); // Risk is high when irradiance is low (unexpectedly)
+const f_E = (efficiencyDeviation: number) => normalize(efficiencyDeviation, 10, 30); // Risk starts at 10% deviation, max at 30%
+
+// Tunable weights for each risk factor
+const WEIGHTS = {
+  temp: 0.3,       // w_T
+  dust: 0.25,      // w_D
+  irradiance: 0.15,// w_I
+  efficiency: 0.3, // w_E
+};
+
+const ALERT_THRESHOLD = 0.7; // θ
+
 
 export function RecentAlerts() {
     const { data: devices, loading } = useRealtimeData();
@@ -28,108 +53,101 @@ export function RecentAlerts() {
             if (loading || debouncedDevices.length === 0 || isGenerating) return;
 
             setIsGenerating(true);
-            const newAlerts: Alert[] = [];
+            
             const latestDevice = debouncedDevices[0];
-
             const offlineDevices = debouncedDevices.filter(d => d.status === 'Offline');
             const errorDevices = debouncedDevices.filter(d => d.status === 'Error');
+            let newAlert: Alert | null = null;
             
-            // New custom threshold checks
-            const highDustDevice = (latestDevice.dustDensity ?? 0) > 100 ? latestDevice : null;
-            const highTempDevice = (latestDevice.temperature ?? 0) > 47 ? latestDevice : null;
-            const lowIrradianceDevice = (latestDevice.irradiance ?? 0) < 250 ? latestDevice : null;
-
             try {
+                 // Handle critical, non-score-based alerts first
                 if (errorDevices.length > 0) {
                      const alertContent = await generateAlertNotifications({
-                        eventDescription: `Device "${errorDevices[0].name}" is reporting an error.`,
+                        eventDescription: `Device "${errorDevices[0].name}" is reporting a critical error state. Immediate attention may be required.`,
                         urgencyLevel: 'high',
                         affectedDevice: errorDevices[0].name,
                     });
-                    newAlerts.push({
+                    newAlert = {
                         id: `error-${Date.now()}`,
                         title: alertContent.title,
                         description: alertContent.message,
                         severity: 'High',
                         timestamp: new Date().toLocaleTimeString(),
-                    });
-                } else if (highTempDevice) {
-                     const alertContent = await generateAlertNotifications({
-                        eventDescription: `Device "${highTempDevice.name}" is overheating. Current temperature: ${highTempDevice.temperature}°C.`,
-                        urgencyLevel: 'high',
-                        affectedDevice: highTempDevice.name,
-                    });
-                     newAlerts.push({
-                        id: `temp-${Date.now()}`,
-                        title: alertContent.title,
-                        description: alertContent.message,
-                        severity: 'High',
-                        timestamp: new Date().toLocaleTimeString(),
-                    });
-                } else if (highDustDevice) {
-                     const alertContent = await generateAlertNotifications({
-                        eventDescription: `High dust density detected on "${highDustDevice.name}". Current level: ${highDustDevice.dustDensity?.toFixed(1)} µg/m³. Panel cleaning may be required.`,
-                        urgencyLevel: 'high',
-                        affectedDevice: highDustDevice.name,
-                    });
-                     newAlerts.push({
-                        id: `dust-${Date.now()}`,
-                        title: alertContent.title,
-                        description: alertContent.message,
-                        severity: 'High',
-                        timestamp: new Date().toLocaleTimeString(),
-                    });
-                } else if (lowIrradianceDevice) {
-                     const alertContent = await generateAlertNotifications({
-                        eventDescription: `Low solar irradiance detected: ${lowIrradianceDevice.irradiance} W/m². This may be due to weather conditions or an obstruction.`,
-                        urgencyLevel: 'high',
-                        affectedDevice: lowIrradianceDevice.name,
-                    });
-                     newAlerts.push({
-                        id: `irradiance-${Date.now()}`,
-                        title: alertContent.title,
-                        description: alertContent.message,
-                        severity: 'High',
-                        timestamp: new Date().toLocaleTimeString(),
-                    });
-                }
-                else if (offlineDevices.length > 0) {
+                    };
+                } else if (offlineDevices.length > 0) {
                     const alertContent = await generateAlertNotifications({
-                        eventDescription: `${offlineDevices.length} device(s) are offline.`,
+                        eventDescription: `${offlineDevices.length} device(s) are offline and not reporting data.`,
                         urgencyLevel: 'medium',
                         affectedDevice: offlineDevices.map(d => d.name).join(', '),
                     });
-                    newAlerts.push({
+                    newAlert = {
                         id: `offline-${Date.now()}`,
                         title: alertContent.title,
                         description: alertContent.message,
                         severity: 'Medium',
                         timestamp: new Date().toLocaleTimeString(),
-                    });
+                    };
+                } else {
+                    // --- Advanced Alert Score Calculation ---
+                    const { temperature = 0, dustDensity = 0, irradiance = 0, efficiency = 0 } = latestDevice;
+
+                    // Calculate base efficiency
+                    const tempCoefficient = 0.003;
+                    const dustFactor = 0.05;
+                    const baseEfficiency = efficiency * (1 - tempCoefficient * (temperature - 25)) * (1 - dustFactor * dustDensity);
+                    const efficiencyDeviation = baseEfficiency > 0 ? ((baseEfficiency - efficiency) / baseEfficiency) * 100 : 0;
+
+                    // Calculate risk scores
+                    const riskT = f_T(temperature);
+                    const riskD = f_D(dustDensity);
+                    const riskI = f_I(irradiance);
+                    const riskE = f_E(efficiencyDeviation);
+
+                    const alertScore = (WEIGHTS.temp * riskT) + (WEIGHTS.dust * riskD) + (WEIGHTS.irradiance * riskI) + (WEIGHTS.efficiency * riskE);
+                    
+                    if (alertScore > ALERT_THRESHOLD) {
+                        const reasons = [];
+                        if (riskT > 0.5) reasons.push(`high temperature (${temperature.toFixed(1)}°C)`);
+                        if (riskD > 0.5) reasons.push(`high dust density (${dustDensity.toFixed(1)} µg/m³)`);
+                        if (riskI > 0.5) reasons.push(`unexpectedly low irradiance (${irradiance.toFixed(0)} W/m²)`);
+                        if (riskE > 0.5) reasons.push(`significant efficiency drop (${efficiencyDeviation.toFixed(1)}%)`);
+
+                        const eventDescription = `Multiple factors are indicating a potential issue, resulting in an alert score of ${alertScore.toFixed(2)}. Key contributors include: ${reasons.join(', ')}.`;
+                        
+                        const alertContent = await generateAlertNotifications({
+                            eventDescription,
+                            urgencyLevel: 'high',
+                            affectedDevice: latestDevice.name,
+                        });
+                        newAlert = {
+                            id: `score-alert-${Date.now()}`,
+                            title: alertContent.title,
+                            description: alertContent.message,
+                            severity: 'High',
+                            timestamp: new Date().toLocaleTimeString(),
+                        };
+                    }
                 }
                 
-                if (newAlerts.length === 0) {
+                // If no alerts were generated, create an "All Clear" message
+                if (!newAlert) {
                      const alertContent = await generateAlertNotifications({
-                        eventDescription: `All systems are online and performing as expected.`,
+                        eventDescription: `All systems are online and performing within expected parameters.`,
                         urgencyLevel: 'low',
                     });
-                    newAlerts.push({
+                    newAlert = {
                          id: `all-ok-${Date.now()}`,
                          title: alertContent.title,
                          description: alertContent.message,
                          severity: 'Low',
                          timestamp: new Date().toLocaleTimeString(),
-                     });
+                     };
                 }
 
-                setAlerts(newAlerts.sort((a,b) => {
-                    const severityOrder = { 'High': 1, 'Medium': 2, 'Low': 3 };
-                    return severityOrder[a.severity] - severityOrder[b.severity];
-                }));
+                setAlerts([newAlert]);
 
             } catch (error) {
                 console.error("Failed to generate alerts:", error);
-                // Avoid crashing the UI on API errors, show a fallback.
                 setAlerts([{
                     id: `error-fallback-${Date.now()}`,
                     title: "Alert Generation Paused",
@@ -143,7 +161,7 @@ export function RecentAlerts() {
         };
 
         generateAlerts();
-    }, [debouncedDevices, loading]); // isGenerating is intentionally omitted to allow re-runs
+    }, [debouncedDevices, loading, isGenerating]);
 
     return (
         <GlassCard className="h-full animate-energy-wave">
