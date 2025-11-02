@@ -58,7 +58,7 @@ export function RecentAlerts() {
         
         try {
             if (isTest) {
-                if (!user?.email) {
+                 if (!user?.email) {
                     toast({
                         variant: 'destructive',
                         title: 'User Not Found',
@@ -67,12 +67,22 @@ export function RecentAlerts() {
                     setIsGenerating(false);
                     return;
                 }
-                 const alertContent = await generateAlertNotifications({
-                    eventDescription: `This is a test alert to confirm the notification system is working.`,
+                // Simulate a high temperature and efficiency drop scenario
+                const fakeDeviceData = {
+                    name: 'Test Panel Alpha',
+                    temperature: 55, // High temperature
+                    dustDensity: 40,
+                    efficiency: 75, // Lower efficiency
+                };
+                const eventDescription = `Simulated test event: Device '${fakeDeviceData.name}' is reporting a high temperature of ${fakeDeviceData.temperature}°C and an efficiency of ${fakeDeviceData.efficiency}%. This test is to confirm alert generation and notification delivery.`;
+
+                const alertContent = await generateAlertNotifications({
+                    eventDescription: eventDescription,
                     urgencyLevel: 'high',
-                    affectedDevice: 'Test System',
+                    affectedDevice: fakeDeviceData.name,
                     recipientEmail: user.email,
                 });
+
                 newAlert = {
                     id: `test-alert-${Date.now()}`,
                     title: alertContent.title,
