@@ -13,7 +13,7 @@ const GlassCard = React.forwardRef<
     <Card
       ref={ref}
       className={cn(
-        "rounded-2xl backdrop-blur-sm border border-border/20 shadow-lg transition-all duration-300 hover:shadow-[0_0_20px_5px] hover:shadow-yellow-500/30 hover:scale-[1.02] animate-energy-wave",
+        "rounded-2xl backdrop-blur-sm border border-border/20 shadow-lg transition-all duration-300 hover:shadow-[0_0_40px_8px] hover:shadow-primary/30 hover:scale-[1.02] animate-energy-wave",
         className
       )}
       {...props}
