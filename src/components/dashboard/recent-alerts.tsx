@@ -36,14 +36,25 @@ export function RecentAlerts() {
         let newAlert: Alert | null = null;
         try {
             if (isTest) {
+                // LITERAL TEST ALERT LOGIC
                 if (user?.email) {
                     const res = await triggerTestAlert(user.email, phone);
                     if (res.status === 'success') {
-                        newAlert = { id: `test-${Date.now()}`, title: 'Test Alert', description: 'Test notification sent.', severity: 'Medium', timestamp: new Date().toLocaleTimeString() };
-                        toast({ title: "Test Alert Sent", description: "Email and SMS (if configured) sent." });
+                        newAlert = { 
+                            id: `test-${Date.now()}`, 
+                            title: 'Test Alert', 
+                            description: 'A literal "Test Alert" has been sent to your email and phone.', 
+                            severity: 'Medium', 
+                            timestamp: new Date().toLocaleTimeString() 
+                        };
+                        toast({ 
+                            title: "Test Alert Sent", 
+                            description: "Literal test messages sent via Email and SMS." 
+                        });
                     }
                 }
             } else {
+                // AI DRIVEN ALERT LOGIC (Real events)
                 const latest = deviceList[0];
                 const content = await generateAlertNotifications({
                     eventDescription: `Telemetry data analysis for ${latest.name}.`,
@@ -52,19 +63,35 @@ export function RecentAlerts() {
                     recipientEmail: user?.email || undefined,
                     recipientPhone: phone || undefined,
                 });
-                newAlert = { id: `alert-${Date.now()}`, title: content.title, description: content.message, severity: 'High', timestamp: new Date().toLocaleTimeString() };
-                toast({ title: content.pushTitle, description: content.pushBody, variant: content.priority === 'high' ? 'destructive' : 'default' });
+                newAlert = { 
+                    id: `alert-${Date.now()}`, 
+                    title: content.title, 
+                    description: content.message, 
+                    severity: content.priority === 'high' ? 'High' : 'Medium', 
+                    timestamp: new Date().toLocaleTimeString() 
+                };
+                toast({ 
+                    title: content.pushTitle, 
+                    description: content.pushBody, 
+                    variant: content.priority === 'high' ? 'destructive' : 'default' 
+                });
             }
             if (newAlert) setAlerts((p) => [newAlert!, ...p].slice(0, 10));
         } catch (e: any) {
             console.error(e);
-            toast({ title: "Alert Failed", description: e.message, variant: "destructive" });
+            toast({ 
+                title: "Alert Failed", 
+                description: e.message || "Failed to process alert.", 
+                variant: "destructive" 
+            });
         } finally {
             setIsGenerating(false);
         }
     }, [isGenerating, user?.email, phone, toast]);
 
-    useEffect(() => { if (debouncedDevices.length > 0) generateAlerts(debouncedDevices); }, [debouncedDevices, generateAlerts]);
+    useEffect(() => { 
+        if (debouncedDevices.length > 0) generateAlerts(debouncedDevices); 
+    }, [debouncedDevices, generateAlerts]);
 
     return (
         <GlassCard className="h-full">

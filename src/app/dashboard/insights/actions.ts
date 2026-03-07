@@ -1,10 +1,6 @@
 'use server';
 
-import { generateMaintenanceSchedule, type GenerateMaintenanceScheduleInput, type GenerateMaintenanceScheduleOutput } from "@/ai/flows/generate-maintenance-schedule";
-import { summarizePerformanceAnomalies, type SummarizePerformanceAnomaliesInput, type SummarizePerformanceAnomaliesOutput } from "@/ai/flows/summarize-performance-anomalies";
-import { analyzeCsvData, type AnalyzeCsvDataInput, type AnalyzeCsvDataOutput } from "@/ai/flows/analyze-csv-data";
-import { predictEfficiency, type PredictEfficiencyInput, type PredictEfficiencyOutput } from "@/ai/flows/predict-efficiency";
-import { predictPowerOutput, type PredictPowerOutputInput, type PredictPowerOutputOutput } from "@/ai/flows/predict-power-output";
+import { generateMaintenanceSchedule, type GenerateMaintenanceScheduleOutput } from "@/ai/flows/generate-maintenance-schedule";
 import { sendEmailInternal } from "@/ai/tools/send-notification";
 import { sendSmsInternal } from "@/ai/tools/send-sms";
 import { z } from "zod";
@@ -32,19 +28,21 @@ export async function getMaintenanceSuggestion(prevState: MaintenanceFormState, 
   }
 }
 
-// --- Raw Alert Trigger ---
+// --- Raw Alert Trigger (Literal "Test Alert") ---
 export async function triggerTestAlert(email: string, phone?: string) {
   try {
+    // Send literal "Test Alert" email
     await sendEmailInternal({
       subject: 'Test Alert',
-      message: 'This is a literal "Test Alert" sent from your SolarSync dashboard.',
+      message: 'Test Alert',
       recipientEmail: email,
     });
     
+    // Send literal "Test Alert" SMS if phone exists
     if (phone) {
       await sendSmsInternal({
         phoneNumber: phone,
-        message: 'SolarSync: Test Alert. Your SMS configuration is active.',
+        message: 'SolarSync: Test Alert',
       });
     }
 
