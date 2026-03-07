@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useDebounce } from 'use-debounce';
@@ -27,26 +28,27 @@ export function RecentAlerts() {
     const { phone } = useAppState();
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [debouncedDevices] = useDebounce(devices, 30000);
+    const [debouncedDevices] = useDebounce(devices, 45000); // Check for real alerts every 45s
     const { toast } = useToast();
 
-    const generateAlerts = useCallback(async (deviceList: Device[], isTest = false) => {
+    const handleAlert = useCallback(async (deviceList: Device[], isTest = false) => {
         if ((!isTest && deviceList.length === 0) || isGenerating) return;
         setIsGenerating(true);
-        let newAlert: Alert | null = null;
+        
         try {
             if (isTest) {
-                // LITERAL TEST ALERT LOGIC
+                // LITERAL TEST ALERT - NO AI GENERATION
                 if (user?.email) {
                     const res = await triggerTestAlert(user.email, phone);
                     if (res.status === 'success') {
-                        newAlert = { 
+                        const testAlert: Alert = { 
                             id: `test-${Date.now()}`, 
                             title: 'Test Alert', 
-                            description: 'A literal "Test Alert" has been sent to your email and phone.', 
+                            description: 'A literal "Test Alert" message was sent successfully.', 
                             severity: 'Medium', 
                             timestamp: new Date().toLocaleTimeString() 
                         };
+                        setAlerts((p) => [testAlert, ...p].slice(0, 10));
                         toast({ 
                             title: "Test Alert Sent", 
                             description: "Literal test messages sent via Email and SMS." 
@@ -54,34 +56,38 @@ export function RecentAlerts() {
                     }
                 }
             } else {
-                // AI DRIVEN ALERT LOGIC (Real events)
+                // AI DRIVEN ALERT - FOR REAL EVENTS
                 const latest = deviceList[0];
+                if (latest.status === 'Online' && (latest.temperature || 0) < 50) return; // Only alert for issues
+
                 const content = await generateAlertNotifications({
-                    eventDescription: `Telemetry data analysis for ${latest.name}.`,
-                    urgencyLevel: latest.status === 'Error' ? 'high' : 'medium',
+                    eventDescription: `Telemetry check: ${latest.status}, Temp: ${latest.temperature}°C, Power: ${latest.power}W.`,
+                    urgencyLevel: latest.status === 'Error' || (latest.temperature || 0) > 60 ? 'high' : 'medium',
                     affectedDevice: latest.name,
                     recipientEmail: user?.email || undefined,
                     recipientPhone: phone || undefined,
                 });
-                newAlert = { 
+
+                const newAlert: Alert = { 
                     id: `alert-${Date.now()}`, 
                     title: content.title, 
                     description: content.message, 
                     severity: content.priority === 'high' ? 'High' : 'Medium', 
                     timestamp: new Date().toLocaleTimeString() 
                 };
+
+                setAlerts((p) => [newAlert, ...p].slice(0, 10));
                 toast({ 
                     title: content.pushTitle, 
                     description: content.pushBody, 
                     variant: content.priority === 'high' ? 'destructive' : 'default' 
                 });
             }
-            if (newAlert) setAlerts((p) => [newAlert!, ...p].slice(0, 10));
         } catch (e: any) {
-            console.error(e);
+            console.error('Alert Error:', e);
             toast({ 
-                title: "Alert Failed", 
-                description: e.message || "Failed to process alert.", 
+                title: "Alert System Unavailable", 
+                description: e.message || "Could not process alert.", 
                 variant: "destructive" 
             });
         } finally {
@@ -90,24 +96,49 @@ export function RecentAlerts() {
     }, [isGenerating, user?.email, phone, toast]);
 
     useEffect(() => { 
-        if (debouncedDevices.length > 0) generateAlerts(debouncedDevices); 
-    }, [debouncedDevices, generateAlerts]);
+        if (debouncedDevices.length > 0) handleAlert(debouncedDevices); 
+    }, [debouncedDevices, handleAlert]);
 
     return (
         <GlassCard className="h-full">
             <CardHeader className="flex-row items-start justify-between">
-                <div><CardTitle>Recent Alerts</CardTitle><CardDescription>AI monitoring.</CardDescription></div>
-                <Button variant="outline" size="sm" onClick={() => generateAlerts([], true)} disabled={isGenerating}>
-                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TestTube2 className="mr-2 h-4 w-4" />} Test Alert
+                <div>
+                    <CardTitle>Security & Alerts</CardTitle>
+                    <CardDescription>Real-time AI monitoring enabled.</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => handleAlert([], true)} disabled={isGenerating}>
+                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TestTube2 className="mr-2 h-4 w-4" />} 
+                    Test Alert
                 </Button>
             </CardHeader>
             <CardContent>
-                {loading && alerts.length === 0 ? <div className="flex h-[350px] items-center justify-center"><Loader2 className="animate-spin mr-2" /> Monitoring...</div> :
-                 alerts.length > 0 ? <ScrollArea className="h-[350px]"><div className="space-y-6 pr-4">{alerts.map((a) => (
-                    <div key={a.id} className="flex items-start gap-4"><div>{getIcon(a.severity)}</div><div className="flex-1">
-                    <div className="flex items-center justify-between"><p className="font-semibold">{a.title}</p><p className="text-xs text-muted-foreground">{a.timestamp}</p></div>
-                    <p className="text-sm text-muted-foreground">{a.description}</p></div></div>))}</div></ScrollArea> :
-                    <div className="flex h-[350px] items-center justify-center text-muted-foreground">No alerts.</div>}
+                {loading && alerts.length === 0 ? (
+                    <div className="flex h-[350px] items-center justify-center">
+                        <Loader2 className="animate-spin mr-2" /> 
+                        Analyzing sensor data...
+                    </div>
+                ) : alerts.length > 0 ? (
+                    <ScrollArea className="h-[350px]">
+                        <div className="space-y-6 pr-4">
+                            {alerts.map((a) => (
+                                <div key={a.id} className="flex items-start gap-4">
+                                    <div>{getIcon(a.severity)}</div>
+                                    <div className="flex-1">
+                                        <div className="flex items-center justify-between">
+                                            <p className="font-semibold">{a.title}</p>
+                                            <p className="text-xs text-muted-foreground">{a.timestamp}</p>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">{a.description}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </ScrollArea>
+                ) : (
+                    <div className="flex h-[350px] items-center justify-center text-muted-foreground">
+                        No active alerts. All systems nominal.
+                    </div>
+                )}
             </CardContent>
         </GlassCard>
     )

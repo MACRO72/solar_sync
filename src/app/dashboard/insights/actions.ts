@@ -1,3 +1,4 @@
+
 'use server';
 
 import { generateMaintenanceSchedule, type GenerateMaintenanceScheduleOutput } from "@/ai/flows/generate-maintenance-schedule";
@@ -18,8 +19,14 @@ type MaintenanceFormState = {
 }
 
 export async function getMaintenanceSuggestion(prevState: MaintenanceFormState, formData: FormData) : Promise<MaintenanceFormState> {
-  const validated = MaintenanceSchema.safeParse({ historicalData: formData.get('historicalData'), sensorReadings: formData.get('sensorReadings'), systemDescription: formData.get('systemDescription') });
+  const validated = MaintenanceSchema.safeParse({ 
+    historicalData: formData.get('historicalData'), 
+    sensorReadings: formData.get('sensorReadings'), 
+    systemDescription: formData.get('systemDescription') 
+  });
+  
   if (!validated.success) return { errors: validated.error.flatten().fieldErrors as any, data: null };
+  
   try {
     const res = await generateMaintenanceSchedule(validated.data as any);
     return { errors: {}, data: res };
@@ -28,17 +35,19 @@ export async function getMaintenanceSuggestion(prevState: MaintenanceFormState, 
   }
 }
 
-// --- Raw Alert Trigger (Literal "Test Alert") ---
+/**
+ * Sends a literal "Test Alert" to the user's registered channels.
+ */
 export async function triggerTestAlert(email: string, phone?: string) {
   try {
-    // Send literal "Test Alert" email
+    // Send literal "Test Alert" via Email
     await sendEmailInternal({
       subject: 'Test Alert',
-      message: 'Test Alert',
+      message: 'This is a literal Test Alert from your SolarSync dashboard.',
       recipientEmail: email,
     });
     
-    // Send literal "Test Alert" SMS if phone exists
+    // Send literal "Test Alert" via SMS if phone exists
     if (phone) {
       await sendSmsInternal({
         phoneNumber: phone,
@@ -48,7 +57,7 @@ export async function triggerTestAlert(email: string, phone?: string) {
 
     return { status: 'success' as const };
   } catch (error: any) {
-    console.error('Failed to trigger test alert:', error);
+    console.error('Literal Test Alert failed:', error);
     return { status: 'error' as const, details: error.message };
   }
 }
