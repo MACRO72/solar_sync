@@ -63,7 +63,8 @@ const generateAlertNotificationsFlow = ai.defineFlow(
         const {output} = await prompt(input);
         return output!;
       } catch (error: any) {
-        if ((error.message?.includes('429')) && retries < maxRetries) {
+        const isRateLimit = error.message?.includes('429') || error.message?.includes('Quota exceeded');
+        if (isRateLimit && retries < maxRetries) {
           retries++;
           await new Promise(r => setTimeout(r, 2000));
           continue;
