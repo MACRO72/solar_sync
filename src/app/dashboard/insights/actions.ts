@@ -6,234 +6,49 @@ import { analyzeCsvData, type AnalyzeCsvDataInput, type AnalyzeCsvDataOutput } f
 import { predictEfficiency, type PredictEfficiencyInput, type PredictEfficiencyOutput } from "@/ai/flows/predict-efficiency";
 import { predictPowerOutput, type PredictPowerOutputInput, type PredictPowerOutputOutput } from "@/ai/flows/predict-power-output";
 import { sendEmailInternal } from "@/ai/tools/send-notification";
+import { sendSmsInternal } from "@/ai/tools/send-sms";
 import { z } from "zod";
 
 // --- Maintenance Suggestion ---
 const MaintenanceSchema = z.object({
-  historicalData: z.string().min(10, { message: "Please provide more detailed historical data." }),
-  sensorReadings: z.string().min(10, { message: "Please provide more detailed sensor readings." }),
-  systemDescription: z.string().min(10, { message: "Please provide a more detailed system description." }),
+  historicalData: z.string().min(10),
+  sensorReadings: z.string().min(10),
+  systemDescription: z.string().min(10),
 });
 
 type MaintenanceFormState = {
-  errors: {
-    historicalData?: string[];
-    sensorReadings?: string[];
-    systemDescription?: string[];
-    _form?: string[];
-  };
+  errors: Record<string, string[]>;
   data: GenerateMaintenanceScheduleOutput | null;
 }
 
 export async function getMaintenanceSuggestion(prevState: MaintenanceFormState, formData: FormData) : Promise<MaintenanceFormState> {
-  const validatedFields = MaintenanceSchema.safeParse({
-    historicalData: formData.get('historicalData'),
-    sensorReadings: formData.get('sensorReadings'),
-    systemDescription: formData.get('systemDescription'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      data: null,
-    };
-  }
-
+  const validated = MaintenanceSchema.safeParse({ historicalData: formData.get('historicalData'), sensorReadings: formData.get('sensorReadings'), systemDescription: formData.get('systemDescription') });
+  if (!validated.success) return { errors: validated.error.flatten().fieldErrors as any, data: null };
   try {
-    const result = await generateMaintenanceSchedule(validatedFields.data as GenerateMaintenanceScheduleInput);
-    return {
-      errors: {},
-      data: result,
-    };
-  } catch (error) {
-    return {
-      errors: { _form: ['Failed to generate insights. Please try again later.'] },
-      data: null,
-    };
-  }
-}
-
-
-// --- Anomaly Summarizer ---
-const AnomalySchema = z.object({
-  anomalyData: z.string().min(10, { message: "Please provide a more detailed anomaly description." }),
-});
-
-type AnomalyFormState = {
-  errors: {
-    anomalyData?: string[];
-    _form?: string[];
-  };
-  data: SummarizePerformanceAnomaliesOutput | null;
-};
-
-export async function getAnomalySummary(prevState: AnomalyFormState, formData: FormData): Promise<AnomalyFormState> {
-  const validatedFields = AnomalySchema.safeParse({
-    anomalyData: formData.get('anomalyData'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      data: null,
-    };
-  }
-
-  try {
-    const result = await summarizePerformanceAnomalies(validatedFields.data as SummarizePerformanceAnomaliesInput);
-    return {
-      errors: {},
-      data: result,
-    };
-  } catch (error) {
-    console.error(error);
-    return {
-      errors: { _form: ['Failed to get summary. Please try again.'] },
-      data: null,
-    };
-  }
-}
-
-// --- CSV Analyzer ---
-const CsvSchema = z.object({
-  csvData: z.string().min(1, { message: "CSV file is empty or could not be read." }),
-});
-
-type CsvFormState = {
-  errors: {
-    csvData?: string[];
-    _form?: string[];
-  };
-  data: AnalyzeCsvDataOutput | null;
-};
-
-export async function getCsvAnalysis(prevState: CsvFormState, formData: FormData): Promise<CsvFormState> {
-  const file = formData.get('csvFile') as File;
-  if (!file || file.size === 0) {
-    return {
-      errors: { _form: ['Please select a valid CSV file to upload.'] },
-      data: null,
-    }
-  }
-
-  const csvData = await file.text();
-
-  const validatedFields = CsvSchema.safeParse({ csvData });
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      data: null,
-    };
-  }
-
-  try {
-    const result = await analyzeCsvData(validatedFields.data as AnalyzeCsvDataInput);
-    return {
-      errors: {},
-      data: result,
-    };
-  } catch (error: any) {
-    console.error(error);
-    return {
-      errors: { _form: [error.message || 'Failed to analyze CSV. Please try again.'] },
-      data: null,
-    };
-  }
-}
-
-
-// --- Efficiency Forecaster ---
-const LocationSchema = z.object({
-  lat: z.coerce.number().min(-90).max(90),
-  lng: z.coerce.number().min(-180).max(180),
-});
-
-type EfficiencyFormState = {
-  errors: {
-    lat?: string[];
-    lng?: string[];
-    _form?: string[];
-  };
-  data: PredictEfficiencyOutput | null;
-}
-
-export async function getEfficiencyPrediction(prevState: EfficiencyFormState, formData: FormData) : Promise<EfficiencyFormState> {
-  const validatedFields = LocationSchema.safeParse({
-    lat: formData.get('lat'),
-    lng: formData.get('lng'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      data: null,
-    };
-  }
-
-  try {
-    const result = await predictEfficiency(validatedFields.data as PredictEfficiencyInput);
-    return {
-      errors: {},
-      data: result,
-    };
-  } catch (error: any) {
-    console.error(error);
-    return {
-      errors: { _form: [error.message || 'Failed to get prediction. Please try again.'] },
-      data: null,
-    };
-  }
-}
-
-
-// --- Power Output Forecaster ---
-type PowerFormState = {
-  errors: {
-    lat?: string[];
-    lng?: string[];
-    _form?: string[];
-  };
-  data: PredictPowerOutputOutput | null;
-}
-
-export async function getPowerPrediction(prevState: PowerFormState, formData: FormData) : Promise<PowerFormState> {
-  const validatedFields = LocationSchema.safeParse({
-    lat: formData.get('lat'),
-    lng: formData.get('lng'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      data: null,
-    };
-  }
-
-  try {
-    const result = await predictPowerOutput(validatedFields.data as PredictPowerOutputInput);
-    return {
-      errors: {},
-      data: result,
-    };
-  } catch (error: any) {
-    console.error(error);
-    return {
-      errors: { _form: [error.message || 'Failed to get prediction. Please try again.'] },
-      data: null,
-    };
+    const res = await generateMaintenanceSchedule(validated.data as any);
+    return { errors: {}, data: res };
+  } catch (e) {
+    return { errors: { _form: ['Failed to generate insights.'] }, data: null };
   }
 }
 
 // --- Raw Alert Trigger ---
-export async function triggerTestAlert(email: string) {
+export async function triggerTestAlert(email: string, phone?: string) {
   try {
-    const result = await sendEmailInternal({
+    await sendEmailInternal({
       subject: 'Test Alert',
-      message: 'This is a test alert sent from the SolarSync dashboard to verify your Brevo configuration.',
+      message: 'This is a literal "Test Alert" sent from your SolarSync dashboard.',
       recipientEmail: email,
     });
-    return result;
+    
+    if (phone) {
+      await sendSmsInternal({
+        phoneNumber: phone,
+        message: 'SolarSync: Test Alert. Your SMS configuration is active.',
+      });
+    }
+
+    return { status: 'success' as const };
   } catch (error: any) {
     console.error('Failed to trigger test alert:', error);
     return { status: 'error' as const, details: error.message };

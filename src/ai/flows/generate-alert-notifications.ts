@@ -2,49 +2,32 @@
 
 /**
  * @fileOverview AI-powered alert notification generator.
- *
- * - generateAlertNotifications - A function that generates alert notifications based on AI-detected events.
- * - GenerateAlertNotificationsInput - The input type for the generateAlertNotifications function.
- * - GenerateAlertNotificationsOutput - The return type for the generateAlertNotifications function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { sendEmail } from '@/ai/tools/send-notification';
+import { sendSms } from '@/ai/tools/send-sms';
 
 const GenerateAlertNotificationsInputSchema = z.object({
-  eventDescription: z
-    .string()
-    .describe('Description of the AI-detected event or maintenance reminder.'),
-  urgencyLevel: z
-    .enum(['high', 'medium', 'low'])
-    .describe('Urgency level of the alert.'),
-  affectedDevice: z
-    .string()
-    .optional()
-    .describe('The name of the affected device, if applicable.'),
-  recipientEmail: z.string().optional().describe('The email address to send the notification to.'),
+  eventDescription: z.string().describe('Description of the AI-detected event.'),
+  urgencyLevel: z.enum(['high', 'medium', 'low']).describe('Urgency level.'),
+  affectedDevice: z.string().optional().describe('Affected device name.'),
+  recipientEmail: z.string().optional().describe('User email.'),
+  recipientPhone: z.string().optional().describe('User phone number.'),
 });
-export type GenerateAlertNotificationsInput = z.infer<
-  typeof GenerateAlertNotificationsInputSchema
->;
+export type GenerateAlertNotificationsInput = z.infer<typeof GenerateAlertNotificationsInputSchema>;
 
 const GenerateAlertNotificationsOutputSchema = z.object({
-  title: z.string().describe('Title of the alert notification for dashboard display.'),
-  message: z.string().describe('Detailed message of the alert notification for dashboard display.'),
-  priority: z
-    .enum(['high', 'medium', 'low'])
-    .describe('The priority level of the alert.'),
-  pushTitle: z.string().describe('A very short, concise title for a push notification (max 50 chars).'),
-  pushBody: z.string().describe('A short, concise body for a push notification (max 150 chars).'),
+  title: z.string().describe('Alert title.'),
+  message: z.string().describe('Detailed message.'),
+  priority: z.enum(['high', 'medium', 'low']).describe('Priority level.'),
+  pushTitle: z.string().describe('Short push notification title.'),
+  pushBody: z.string().describe('Short push notification body.'),
 });
-export type GenerateAlertNotificationsOutput = z.infer<
-  typeof GenerateAlertNotificationsOutputSchema
->;
+export type GenerateAlertNotificationsOutput = z.infer<typeof GenerateAlertNotificationsOutputSchema>;
 
-export async function generateAlertNotifications(
-  input: GenerateAlertNotificationsInput
-): Promise<GenerateAlertNotificationsOutput> {
+export async function generateAlertNotifications(input: GenerateAlertNotificationsInput): Promise<GenerateAlertNotificationsOutput> {
   return generateAlertNotificationsFlow(input);
 }
 
@@ -52,21 +35,17 @@ const prompt = ai.definePrompt({
   name: 'generateAlertNotificationsPrompt',
   input: {schema: GenerateAlertNotificationsInputSchema},
   output: {schema: GenerateAlertNotificationsOutputSchema},
-  tools: [sendEmail],
-  prompt: `You are an AI assistant for a solar power system.
-
-  Based on the event description, urgency level, and affected device, you will generate a notification.
-
-  Event Description: {{{eventDescription}}}
-  Urgency Level: {{{urgencyLevel}}}
-  Affected Device: {{{affectedDevice}}}
-
-  CRITICAL ACTIONS:
-  - If urgency is 'high' or 'medium', you MUST use the 'sendEmail' tool to alert the user at {{{recipientEmail}}}.
-  - NEVER use an SMS tool. Only use 'sendEmail'.
-  - For 'low' urgency, just generate the notification content.
-
-  Ensure the email message is clear and concise.
+  tools: [sendEmail, sendSms],
+  prompt: `You are an AI assistant for SolarSync.
+  
+  Event: {{{eventDescription}}}
+  Urgency: {{{urgencyLevel}}}
+  Device: {{{affectedDevice}}}
+  
+  CRITICAL:
+  - If urgency is 'high' or 'medium', use 'sendEmail' to alert {{{recipientEmail}}}.
+  - If urgency is 'high' and {{{recipientPhone}}} is provided, you MUST ALSO use 'sendSms'.
+  - Provide content for a simulated Firebase Push Notification in 'pushTitle' and 'pushBody'.
   `,
 });
 
@@ -79,29 +58,19 @@ const generateAlertNotificationsFlow = ai.defineFlow(
   async input => {
     let retries = 0;
     const maxRetries = 2;
-    
     while (retries <= maxRetries) {
       try {
         const {output} = await prompt(input);
         return output!;
       } catch (error: any) {
-        const isRateLimit = error.message?.includes('429') || error.message?.includes('Quota exceeded');
-        const isNotFound = error.message?.includes('404');
-
-        if (isRateLimit && retries < maxRetries) {
+        if ((error.message?.includes('429')) && retries < maxRetries) {
           retries++;
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          await new Promise(r => setTimeout(r, 2000));
           continue;
         }
-        
-        // Log details if it's a 404 to help debugging, but don't retry 404s
-        if (isNotFound) {
-          console.error("AI Model Not Found (404). Please ensure the model identifier in genkit.ts is correct for your region.");
-        }
-        
         throw error;
       }
     }
-    throw new Error('AI processing failed after retries.');
+    throw new Error('AI processing failed.');
   }
 );
