@@ -1,13 +1,13 @@
 
 'use client'
 import * as React from 'react';
-import { Bar, BarChart, Line, LineChart, Scatter, ScatterChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
+import { Bar, BarChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { useRealtimeData } from '@/firebase/firestore/use-realtime-data';
 import { format, parse, startOfDay } from 'date-fns';
-
+import { Activity, LayoutPanelLeft } from 'lucide-react';
 
 const chartConfig = {
     measured: { label: "Measured", color: "hsl(var(--primary))" },
@@ -21,6 +21,7 @@ const chartConfig = {
 
 type TimePeriod = '24h' | '7d' | '30d';
 type ChartView = 'performance' | 'power' | 'dust' | 'temperature';
+type ChartType = 'curve' | 'bar';
 
 const timePeriodOptions: {value: TimePeriod, label: string}[] = [
     { value: '24h', label: 'Live' },
@@ -35,10 +36,10 @@ const chartViewOptions: {value: ChartView, label: string}[] = [
     { value: 'temperature', label: 'Temperature' },
 ];
 
-
 export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: { fullHeight?: boolean, defaultPeriod?: TimePeriod }) {
     const [timePeriod, setTimePeriod] = React.useState<TimePeriod>(defaultPeriod);
     const [chartView, setChartView] = React.useState<ChartView>('performance');
+    const [chartType, setChartType] = React.useState<ChartType>('curve');
     const { data: devices, loading } = useRealtimeData();
     
     const processedData = React.useMemo(() => {
@@ -176,6 +177,36 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
             return <div className="flex h-full items-center justify-center text-muted-foreground">Waiting for device data...</div>;
         }
 
+        if (chartView === 'temperature') {
+             return (
+                 <LineChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="temperature" type="number" tickLine={false} tickMargin={10} axisLine={false} unit="°C" domain={['dataMin - 2', 'dataMax + 2']} />
+                    <YAxis dataKey="power" tickLine={false} axisLine={false} tickMargin={10} unit="W" />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+                    <Line dataKey="power" type="monotone" stroke="var(--color-power)" strokeWidth={2} dot={true} />
+                </LineChart>
+            );
+        }
+
+        if (chartType === 'bar') {
+            const dataKey = chartView === 'performance' ? 'measured' : chartView === 'power' ? 'power' : 'dust';
+            const color = chartView === 'performance' ? 'var(--color-measured)' : chartView === 'power' ? 'var(--color-power)' : 'var(--color-dust)';
+            
+            return (
+                <BarChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
+                    <YAxis tickLine={false} axisLine={false} tickMargin={10} />
+                    <Tooltip content={<ChartTooltipContent />} />
+                    <ChartLegend content={<ChartLegendContent />} />
+                    <Bar dataKey={dataKey} fill={color} radius={4} barSize={20} />
+                    {chartView === 'performance' && <Bar dataKey="base" fill="var(--color-base)" radius={4} barSize={20} opacity={0.3} />}
+                </BarChart>
+            );
+        }
+
+        // Default: Curve (Monotone Line)
         switch (chartView) {
             case 'performance':
                 return (
@@ -202,42 +233,16 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                 );
             case 'dust':
                 return (
-                    <BarChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                    <LineChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
                         <CartesianGrid vertical={false} strokeDasharray="3 3" />
                         <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
                         <YAxis tickLine={false} axisLine={false} tickMargin={10} unit="µg/m³" />
-                        <Tooltip content={<ChartTooltipContent />} />
+                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
                         <ChartLegend content={<ChartLegendContent />} />
-                        <Bar dataKey="dust" fill="var(--color-dust)" radius={4} barSize={20} />
-                    </BarChart>
+                        <Line dataKey="dust" type="monotone" stroke="var(--color-dust)" strokeWidth={2} dot={false} name="Dust Level" />
+                    </LineChart>
                 );
-             case 'temperature':
-                 return (
-                     <ScatterChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 20, left: 20 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                        <XAxis
-                            dataKey="temperature"
-                            type="number"
-                            tickLine={false}
-                            tickMargin={10}
-                            axisLine={false}
-                            unit="°C"
-                            domain={['dataMin - 2', 'dataMax + 2']}
-                            name="Temperature"
-                        />
-                        <YAxis
-                            dataKey="power"
-                            tickLine={false}
-                            axisLine={false}
-                            tickMargin={10}
-                            unit="W"
-                            name="Power"
-                        />
-                        <Tooltip content={<ChartTooltipContent />} cursor={false} />
-                        <ChartLegend content={<ChartLegendContent />} />
-                        <Scatter name="Power vs Temp" data={processedData} fill="var(--color-power)" />
-                    </ScatterChart>
-                );
+            default: return null;
         }
     }
     
@@ -251,11 +256,29 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                     </CardDescription>
                 </div>
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+                    <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
+                        <Button 
+                            variant={chartType === 'curve' ? 'default' : 'ghost'} 
+                            size="sm" 
+                            className="rounded-md h-8 px-2"
+                            onClick={() => setChartType('curve')}
+                        >
+                            <Activity className="h-4 w-4 mr-1" /> Curve
+                        </Button>
+                        <Button 
+                            variant={chartType === 'bar' ? 'default' : 'ghost'} 
+                            size="sm" 
+                            className="rounded-md h-8 px-2"
+                            onClick={() => setChartType('bar')}
+                        >
+                            <LayoutPanelLeft className="h-4 w-4 mr-1" /> Bar
+                        </Button>
+                    </div>
                     <div className="flex items-center gap-2 flex-wrap">
                         {chartViewOptions.map(option => (
                             <Button 
                                 key={option.value}
-                                variant={chartView === option.value ? 'default' : 'outline'}
+                                variant={chartView === option.value ? 'secondary' : 'outline'}
                                 size="sm"
                                 className="rounded-full"
                                 onClick={() => setChartView(option.value)}
@@ -287,3 +310,4 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
         </Card>
     )
 }
+    
