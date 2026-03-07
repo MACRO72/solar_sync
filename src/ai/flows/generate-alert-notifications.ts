@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -11,7 +12,6 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { sendEmail } from '@/ai/tools/send-notification';
-import { sendSms } from '@/ai/tools/send-sms';
 
 const GenerateAlertNotificationsInputSchema = z.object({
   eventDescription: z
@@ -25,7 +25,6 @@ const GenerateAlertNotificationsInputSchema = z.object({
     .optional()
     .describe('The name of the affected device, if applicable.'),
   recipientEmail: z.string().optional().describe('An optional email address to send the notification to.'),
-  recipientPhone: z.string().optional().describe('An optional phone number to send an SMS alert to.')
 });
 export type GenerateAlertNotificationsInput = z.infer<
   typeof GenerateAlertNotificationsInputSchema
@@ -55,7 +54,7 @@ const prompt = ai.definePrompt({
   model: 'googleai/gemini-1.5-flash-002',
   input: {schema: GenerateAlertNotificationsInputSchema},
   output: {schema: GenerateAlertNotificationsOutputSchema},
-  tools: [sendEmail, sendSms],
+  tools: [sendEmail],
   prompt: `You are an AI assistant that generates alert notifications for a solar power system.
 
   Based on the event description, urgency level, and affected device, you will generate two things:
@@ -68,10 +67,9 @@ const prompt = ai.definePrompt({
 
   CRITICAL ACTIONS:
   - If urgency is 'high' or 'medium', you MUST use the 'sendEmail' tool to alert the administrator (using 'recipientEmail' if provided).
-  - If urgency is 'high' AND a 'recipientPhone' is provided, you MUST use the 'sendSms' tool to send a brief summary of the alert to the user's phone number: {{{recipientPhone}}}.
   - For 'low' urgency, just generate the notification content for the UI.
 
-  When using 'sendSms', ensure the message is clear, urgent, and provides a short summary of the event description.
+  Ensure the email message is clear and provides a short summary of the event description.
   `,
 });
 

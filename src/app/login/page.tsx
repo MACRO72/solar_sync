@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -33,7 +34,6 @@ const formSchema = z.object({
   password: z
     .string()
     .min(6, { message: 'Password must be at least 6 characters.' }),
-  phone: z.string().optional().or(z.literal('')),
 });
 
 
@@ -52,11 +52,10 @@ export default function LoginPage() {
     defaultValues: {
       email: '',
       password: '',
-      phone: '',
     },
   });
 
-  const handleUserSetup = async (user: User, phone: string) => {
+  const handleUserSetup = async (user: User) => {
     if (!firestore) return;
     const userRef = doc(firestore, 'users', user.uid);
     
@@ -66,19 +65,13 @@ export default function LoginPage() {
         name: user.displayName || user.email?.split('@')[0] || 'User',
         email: user.email,
         photoURL: user.photoURL,
-        phone: phone || '',
+        phone: '', // Optional now
       },
       { merge: true }
     );
   };
 
   const handleEmailAuth = async (values: z.infer<typeof formSchema>) => {
-    // Phone is only strictly required during signup for new users
-    if (mode === 'signup' && (!values.phone || values.phone.length < 10)) {
-        form.setError('phone', { message: 'Phone number must be at least 10 digits for sign up.' });
-        return;
-    }
-
     setIsProcessing(true);
     try {
       if (mode === 'signup') {
@@ -87,7 +80,7 @@ export default function LoginPage() {
           values.email,
           values.password
         );
-        await handleUserSetup(userCredential.user, values.phone || '');
+        await handleUserSetup(userCredential.user);
       } else {
         await signInWithEmailAndPassword(
           auth,
@@ -177,25 +170,6 @@ export default function LoginPage() {
                   </FormItem>
                 )}
               />
-              {mode === 'signup' && (
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="+91 98765 43210"
-                          {...field}
-                          disabled={isProcessing}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
               <Button type="submit" className="w-full" disabled={isProcessing}>
                 {isProcessing && (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

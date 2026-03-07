@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -21,7 +22,7 @@ export function useRealtimeData() {
         const timestamp = rawData.Time ? rawData.Time : new Date().toISOString();
 
         const voltage = parseFloat(rawData.Voltage || '0');
-        // Read current from Current_mA as requested by the user
+        // Handle Current_mA as requested
         const currentMA = parseFloat(rawData.Current_mA || rawData.Current || '0');
         const current = Math.abs(currentMA / 1000); // Convert mA to A for calculations
         
@@ -45,7 +46,7 @@ export function useRealtimeData() {
           status: 'Online',
           lastSeen: timestamp,
           voltage,
-          current: currentMA, // Maintain mA for display consistency
+          current: currentMA,
           power,
           temperature,
           humidity,

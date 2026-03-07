@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useDebounce } from 'use-debounce';
@@ -10,7 +11,6 @@ import { generateAlertNotifications } from '@/ai/flows/generate-alert-notificati
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase/auth/use-user';
 import { useToast } from '@/hooks/use-toast';
-import { useAppState } from '@/context/app-state-provider';
 
 const getIcon = (severity: 'High' | 'Medium' | 'Low') => {
     switch (severity) {
@@ -42,7 +42,6 @@ const ALERT_THRESHOLD = 0.7;
 export function RecentAlerts() {
     const { data: devices, loading } = useRealtimeData();
     const { user } = useUser();
-    const { phone } = useAppState();
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
     const [debouncedDevices] = useDebounce(devices, 30000);
@@ -57,14 +56,13 @@ export function RecentAlerts() {
         try {
             let alertContent;
             if (isTest) {
-                const eventDescription = `Simulated test event: System is reporting a high temperature scenario. This test is to confirm alert generation and notification delivery via Email and SMS. A high-priority SMS should be sent to the user.`;
+                const eventDescription = `Simulated test event: System is reporting a high temperature scenario. This test is to confirm alert generation and notification delivery via Email. A high-priority email should be sent to the administrator.`;
 
                 alertContent = await generateAlertNotifications({
                     eventDescription: eventDescription,
                     urgencyLevel: 'high',
                     affectedDevice: 'Test Panel Alpha',
                     recipientEmail: user?.email || undefined,
-                    recipientPhone: phone || undefined,
                 });
 
                 newAlert = {
@@ -85,7 +83,6 @@ export function RecentAlerts() {
                         urgencyLevel: 'high',
                         affectedDevice: errorDevices[0].name,
                         recipientEmail: user?.email || undefined,
-                        recipientPhone: phone || undefined,
                     });
                     newAlert = {
                         id: `error-${Date.now()}`,
@@ -115,7 +112,6 @@ export function RecentAlerts() {
                             urgencyLevel: 'high',
                             affectedDevice: latestDevice.name,
                             recipientEmail: user?.email || undefined,
-                            recipientPhone: phone || undefined,
                         });
                         newAlert = {
                             id: `score-alert-${Date.now()}`,
@@ -155,17 +151,9 @@ export function RecentAlerts() {
         } finally {
             setIsGenerating(false);
         }
-    }, [isGenerating, user?.email, phone, toast]);
+    }, [isGenerating, user?.email, toast]);
 
     const handleTestAlert = () => {
-        if (!phone) {
-          toast({
-            title: "Phone Number Missing",
-            description: "Please update your profile with a phone number to receive SMS alerts.",
-            variant: "destructive",
-          });
-          return;
-        }
         generateAlerts([], true);
     }
 
