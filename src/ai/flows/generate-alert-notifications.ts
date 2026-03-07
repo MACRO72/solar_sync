@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -11,6 +12,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { sendEmail } from '@/ai/tools/send-notification';
+import { sendSms } from '@/ai/tools/send-sms';
 
 const GenerateAlertNotificationsInputSchema = z.object({
   eventDescription: z
@@ -24,7 +26,7 @@ const GenerateAlertNotificationsInputSchema = z.object({
     .optional()
     .describe('The name of the affected device, if applicable.'),
   recipientEmail: z.string().optional().describe('An optional email address to send the notification to.'),
-  fcmToken: z.string().optional().describe('The FCM token for push notifications.')
+  recipientPhone: z.string().optional().describe('An optional phone number to send an SMS alert to.')
 });
 export type GenerateAlertNotificationsInput = z.infer<
   typeof GenerateAlertNotificationsInputSchema
@@ -53,20 +55,21 @@ const prompt = ai.definePrompt({
   name: 'generateAlertNotificationsPrompt',
   input: {schema: GenerateAlertNotificationsInputSchema},
   output: {schema: GenerateAlertNotificationsOutputSchema},
-  tools: [sendEmail],
+  tools: [sendEmail, sendSms],
   prompt: `You are an AI assistant that generates alert notifications for a solar power system.
 
   Based on the event description, urgency level, and affected device, you will generate two things:
-  1. A standard alert notification with a 'title' and a detailed 'message' for display within a dashboard UI. The 'priority' should align with the 'urgencyLevel'.
-  2. A push notification with a very concise 'pushTitle' and 'pushBody'. This should be short enough to be read at a glance on a mobile device.
+  1. A standard alert notification with a 'title' and a detailed 'message' for display within a dashboard UI.
+  2. A push notification with a very concise 'pushTitle' and 'pushBody'.
 
   Event Description: {{{eventDescription}}}
   Urgency Level: {{{urgencyLevel}}}
   Affected Device: {{{affectedDevice}}}
 
-  IMPORTANT: If the urgency level is 'high' or 'medium', you MUST use the sendEmail tool to send the generated 'title' and 'message' to the administrator immediately.
-  If a 'recipientEmail' is provided in the input, send the email to that address. Otherwise, the tool will use a default address.
-  For 'low' urgency, do not send an email.
+  CRITICAL ACTIONS:
+  - If urgency is 'high' or 'medium', use 'sendEmail' to alert the administrator (using 'recipientEmail' if provided).
+  - If urgency is 'high' AND a 'recipientPhone' is provided, use 'sendSms' to send a brief summary of the alert to the user's phone.
+  - For 'low' urgency, just generate the notification content for the UI.
   `,
 });
 

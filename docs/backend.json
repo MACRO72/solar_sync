@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -16,10 +17,10 @@
         },
         "phone": {
           "type": "string",
-          "description": "The user's phone number."
+          "description": "The user's phone number for SMS alerts."
         }
       },
-      "required": ["name", "email"]
+      "required": ["name", "email", "phone"]
     },
     "DeviceData": {
       "title": "Device Data",

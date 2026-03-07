@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -33,7 +34,7 @@ const formSchema = z.object({
   password: z
     .string()
     .min(6, { message: 'Password must be at least 6 characters.' }),
-  phone: z.string().optional(),
+  phone: z.string().min(10, { message: 'Phone number must be at least 10 digits.' }),
 });
 
 
@@ -52,11 +53,11 @@ export default function LoginPage() {
     defaultValues: {
       email: '',
       password: '',
-      phone: '+91 ',
+      phone: '',
     },
   });
 
-  const handleUserSetup = async (user: User, phone?: string) => {
+  const handleUserSetup = async (user: User, phone: string) => {
     if (!firestore) return;
     const userRef = doc(firestore, 'users', user.uid);
     const userDoc = await getDoc(userRef);
@@ -65,10 +66,10 @@ export default function LoginPage() {
       await setDoc(
         userRef,
         {
-          name: user.displayName || user.email,
+          name: user.displayName || user.email?.split('@')[0] || 'User',
           email: user.email,
           photoURL: user.photoURL,
-          phone: phone || '',
+          phone: phone,
         },
         { merge: true }
       );
@@ -78,16 +79,15 @@ export default function LoginPage() {
   const handleEmailAuth = async (values: z.infer<typeof formSchema>) => {
     setIsProcessing(true);
     try {
-      let userCredential;
       if (mode === 'signup') {
-        userCredential = await createUserWithEmailAndPassword(
+        const userCredential = await createUserWithEmailAndPassword(
           auth,
           values.email,
           values.password
         );
         await handleUserSetup(userCredential.user, values.phone);
       } else {
-        userCredential = await signInWithEmailAndPassword(
+        await signInWithEmailAndPassword(
           auth,
           values.email,
           values.password
@@ -165,7 +165,7 @@ export default function LoginPage() {
                         onClick={() => setShowPassword((prev) => !prev)}
                         disabled={isProcessing}
                       >
-                        {showPassword ? <EyeOff /> : <Eye />}
+                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                         <span className="sr-only">
                           {showPassword ? 'Hide password' : 'Show password'}
                         </span>
@@ -181,7 +181,7 @@ export default function LoginPage() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Phone Number (Optional)</FormLabel>
+                      <FormLabel>Phone Number</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="+91 98765 43210"
