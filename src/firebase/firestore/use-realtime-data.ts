@@ -6,16 +6,8 @@ import { getDatabase, ref, onChildAdded, off } from 'firebase/database';
 import type { Device } from '@/lib/types';
 import { app } from '@/firebase/config';
 
-// --- Panel Configuration ---
-// You can adjust this value to match the surface area of your solar panel in square meters.
-// Example: A 20cm x 25cm panel has an area of 0.20 * 0.25 = 0.05 m².
 const PANEL_AREA_M2 = 0.05;
 
-
-/**
- * A hook to get a real-time feed of device data from Firebase Realtime Database.
- * This hook listens for new children added to the 'data' path and prepends them to a list.
- */
 export function useRealtimeData() {
   const [data, setData] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
@@ -27,18 +19,19 @@ export function useRealtimeData() {
     const handleNewData = (snapshot: any) => {
       if (snapshot.exists()) {
         const rawData = snapshot.val();
-        // Use ISO string for full date context, fallback to rawData.Time if it exists
         const timestamp = rawData.Time ? rawData.Time : new Date().toISOString();
 
         const voltage = parseFloat(rawData.Voltage || '0');
-        const current = Math.abs(parseFloat(rawData.Current || '0'));
-        const power = voltage * current; // Calculate power from V * I
+        // Fix: Read current from Current_mA as requested
+        const currentMA = parseFloat(rawData.Current_mA || rawData.Current || '0');
+        const current = Math.abs(currentMA / 1000); // Convert mA to A for calculations
+        
+        const power = voltage * current;
         const temperature = parseFloat(rawData.Temperature || '0');
         const humidity = parseFloat(rawData.Humidity || '0');
         const irradiance = parseFloat(rawData.LightIntensity || '0');
         const dustDensity = parseFloat(rawData.ADC || '0');
 
-        // Calculate Efficiency
         let efficiency = 0;
         if (irradiance > 0 && PANEL_AREA_M2 > 0) {
             const inputPower = irradiance * PANEL_AREA_M2;
@@ -49,17 +42,17 @@ export function useRealtimeData() {
 
         const newDevice: Device = {
           id: snapshot.key as string,
-          name: "ESP32 Node", // Name can be static if there's only one source
+          name: "ESP32 Node",
           status: 'Online',
           lastSeen: timestamp,
           voltage,
-          current,
+          current: currentMA, // Keep it in mA for display if that's what's preferred
           power,
           temperature,
           humidity,
           irradiance,
           dustDensity,
-          efficiency: Math.max(0, Math.min(100, efficiency)), // Clamp efficiency between 0 and 100
+          efficiency: Math.max(0, Math.min(100, efficiency)),
         };
         
         setData((prevData) => [newDevice, ...prevData]);
@@ -74,11 +67,10 @@ export function useRealtimeData() {
        setLoading(false);
     });
 
-    // Cleanup subscription on component unmount
     return () => {
       off(dataRef, 'child_added', listener);
     };
-  }, []); // Empty dependency array ensures this effect runs only once
+  }, []);
 
   return { data, loading };
 }

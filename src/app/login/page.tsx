@@ -60,20 +60,17 @@ export default function LoginPage() {
   const handleUserSetup = async (user: User, phone: string) => {
     if (!firestore) return;
     const userRef = doc(firestore, 'users', user.uid);
-    const userDoc = await getDoc(userRef);
-
-    if (!userDoc.exists()) {
-      await setDoc(
-        userRef,
-        {
-          name: user.displayName || user.email?.split('@')[0] || 'User',
-          email: user.email,
-          photoURL: user.photoURL,
-          phone: phone,
-        },
-        { merge: true }
-      );
-    }
+    
+    await setDoc(
+      userRef,
+      {
+        name: user.displayName || user.email?.split('@')[0] || 'User',
+        email: user.email,
+        photoURL: user.photoURL,
+        phone: phone,
+      },
+      { merge: true }
+    );
   };
 
   const handleEmailAuth = async (values: z.infer<typeof formSchema>) => {

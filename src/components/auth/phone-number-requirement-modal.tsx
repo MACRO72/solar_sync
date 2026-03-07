@@ -32,7 +32,6 @@ export function PhoneNumberRequirementModal() {
   const [isSaving, setIsSaving] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
 
-  // Show the modal if the user is logged in, profile is loaded, but phone is missing
   React.useEffect(() => {
     if (!userLoading && user && !phone) {
       setIsOpen(true);
@@ -56,8 +55,6 @@ export function PhoneNumberRequirementModal() {
     setIsSaving(true);
     const userRef = doc(firestore, 'users', user.uid);
     
-    // We use setDoc with merge: true to ensure the document is created if it doesn't exist.
-    // We also include basic profile info as a fallback.
     const updatedData = { 
       phone: inputPhone,
       name: name || user.displayName || 'User',
