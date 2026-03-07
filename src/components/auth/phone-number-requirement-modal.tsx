@@ -5,7 +5,7 @@ import * as React from 'react';
 import { useAppState } from '@/context/app-state-provider';
 import { useUser } from '@/firebase/auth/use-user';
 import { useFirestore } from '@/firebase/provider';
-import { doc, updateDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import {
   Dialog,
   DialogContent,
@@ -23,7 +23,7 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError, type SecurityRuleContext } from '@/firebase/errors';
 
 export function PhoneNumberRequirementModal() {
-  const { phone } = useAppState();
+  const { phone, name, email } = useAppState();
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -55,9 +55,16 @@ export function PhoneNumberRequirementModal() {
 
     setIsSaving(true);
     const userRef = doc(firestore, 'users', user.uid);
-    const updatedData = { phone: inputPhone };
+    
+    // We use setDoc with merge: true to ensure the document is created if it doesn't exist.
+    // We also include basic profile info as a fallback.
+    const updatedData = { 
+      phone: inputPhone,
+      name: name || user.displayName || 'User',
+      email: email || user.email || '',
+    };
 
-    updateDoc(userRef, updatedData)
+    setDoc(userRef, updatedData, { merge: true })
       .then(() => {
         toast({
           title: 'Profile Updated',
