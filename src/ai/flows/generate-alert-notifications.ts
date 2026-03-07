@@ -24,7 +24,7 @@ const GenerateAlertNotificationsInputSchema = z.object({
     .string()
     .optional()
     .describe('The name of the affected device, if applicable.'),
-  recipientEmail: z.string().optional().describe('An optional email address to send the notification to.'),
+  recipientEmail: z.string().optional().describe('The email address to send the notification to.'),
 });
 export type GenerateAlertNotificationsInput = z.infer<
   typeof GenerateAlertNotificationsInputSchema
@@ -51,7 +51,6 @@ export async function generateAlertNotifications(
 
 const prompt = ai.definePrompt({
   name: 'generateAlertNotificationsPrompt',
-  model: 'googleai/gemini-1.5-flash-002',
   input: {schema: GenerateAlertNotificationsInputSchema},
   output: {schema: GenerateAlertNotificationsOutputSchema},
   tools: [sendEmail],
@@ -66,7 +65,7 @@ const prompt = ai.definePrompt({
   Affected Device: {{{affectedDevice}}}
 
   CRITICAL ACTIONS:
-  - If urgency is 'high' or 'medium', you MUST use the 'sendEmail' tool to alert the administrator (using 'recipientEmail' if provided).
+  - If urgency is 'high' or 'medium', you MUST use the 'sendEmail' tool to alert the administrator (using 'recipientEmail' as the to address).
   - For 'low' urgency, just generate the notification content for the UI.
 
   Ensure the email message is clear and provides a short summary of the event description.
