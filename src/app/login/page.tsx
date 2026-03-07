@@ -34,7 +34,7 @@ const formSchema = z.object({
   password: z
     .string()
     .min(6, { message: 'Password must be at least 6 characters.' }),
-  phone: z.string().min(10, { message: 'Phone number must be at least 10 digits.' }),
+  phone: z.string().optional().or(z.literal('')),
 });
 
 
@@ -67,13 +67,19 @@ export default function LoginPage() {
         name: user.displayName || user.email?.split('@')[0] || 'User',
         email: user.email,
         photoURL: user.photoURL,
-        phone: phone,
+        phone: phone || '',
       },
       { merge: true }
     );
   };
 
   const handleEmailAuth = async (values: z.infer<typeof formSchema>) => {
+    // Manual validation for phone during signup
+    if (mode === 'signup' && (!values.phone || values.phone.length < 10)) {
+        form.setError('phone', { message: 'Phone number must be at least 10 digits for sign up.' });
+        return;
+    }
+
     setIsProcessing(true);
     try {
       if (mode === 'signup') {
@@ -82,7 +88,7 @@ export default function LoginPage() {
           values.email,
           values.password
         );
-        await handleUserSetup(userCredential.user, values.phone);
+        await handleUserSetup(userCredential.user, values.phone || '');
       } else {
         await signInWithEmailAndPassword(
           auth,
