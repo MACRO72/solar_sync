@@ -52,6 +52,7 @@ export async function generateAlertNotifications(
 
 const prompt = ai.definePrompt({
   name: 'generateAlertNotificationsPrompt',
+  model: 'googleai/gemini-1.5-flash-002',
   input: {schema: GenerateAlertNotificationsInputSchema},
   output: {schema: GenerateAlertNotificationsOutputSchema},
   tools: [sendEmail, sendSms],

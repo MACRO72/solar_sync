@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -9,7 +8,7 @@ import {
   signInWithEmailAndPassword,
   type User,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { app } from '@/firebase/config';
 import { Button } from '@/components/ui/button';
@@ -74,7 +73,7 @@ export default function LoginPage() {
   };
 
   const handleEmailAuth = async (values: z.infer<typeof formSchema>) => {
-    // Manual validation for phone during signup
+    // Phone is only strictly required during signup for new users
     if (mode === 'signup' && (!values.phone || values.phone.length < 10)) {
         form.setError('phone', { message: 'Phone number must be at least 10 digits for sign up.' });
         return;
