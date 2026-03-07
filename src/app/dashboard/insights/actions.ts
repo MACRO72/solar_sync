@@ -5,6 +5,7 @@ import { summarizePerformanceAnomalies, type SummarizePerformanceAnomaliesInput,
 import { analyzeCsvData, type AnalyzeCsvDataInput, type AnalyzeCsvDataOutput } from "@/ai/flows/analyze-csv-data";
 import { predictEfficiency, type PredictEfficiencyInput, type PredictEfficiencyOutput } from "@/ai/flows/predict-efficiency";
 import { predictPowerOutput, type PredictPowerOutputInput, type PredictPowerOutputOutput } from "@/ai/flows/predict-power-output";
+import { sendEmailInternal } from "@/ai/tools/send-notification";
 import { z } from "zod";
 
 // --- Maintenance Suggestion ---
@@ -221,5 +222,20 @@ export async function getPowerPrediction(prevState: PowerFormState, formData: Fo
       errors: { _form: [error.message || 'Failed to get prediction. Please try again.'] },
       data: null,
     };
+  }
+}
+
+// --- Raw Alert Trigger ---
+export async function triggerTestAlert(email: string) {
+  try {
+    const result = await sendEmailInternal({
+      subject: 'Test Alert',
+      message: 'This is a test alert sent from the SolarSync dashboard to verify your Brevo configuration.',
+      recipientEmail: email,
+    });
+    return result;
+  } catch (error: any) {
+    console.error('Failed to trigger test alert:', error);
+    return { status: 'error' as const, details: error.message };
   }
 }

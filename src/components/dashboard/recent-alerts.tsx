@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useDebounce } from 'use-debounce';
@@ -11,6 +10,7 @@ import { generateAlertNotifications } from '@/ai/flows/generate-alert-notificati
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase/auth/use-user';
 import { useToast } from '@/hooks/use-toast';
+import { triggerTestAlert } from '@/app/dashboard/insights/actions';
 
 const getIcon = (severity: 'High' | 'Medium' | 'Low') => {
     switch (severity) {
@@ -54,29 +54,32 @@ export function RecentAlerts() {
         let newAlert: Alert | null = null;
         
         try {
-            let alertContent;
             if (isTest) {
-                const eventDescription = `Simulated test event: System is reporting a high temperature scenario. This test is to confirm alert generation and notification delivery via Email. A high-priority email should be sent to the administrator.`;
-
-                alertContent = await generateAlertNotifications({
-                    eventDescription: eventDescription,
-                    urgencyLevel: 'high',
-                    affectedDevice: 'Test Panel Alpha',
-                    recipientEmail: user?.email || undefined,
-                });
-
-                newAlert = {
-                    id: `test-alert-${Date.now()}`,
-                    title: alertContent.title,
-                    description: alertContent.message,
-                    severity: 'High',
-                    timestamp: new Date().toLocaleTimeString(),
-                };
-
+                // Simplified "Test Alert" logic
+                if (user?.email) {
+                    const result = await triggerTestAlert(user.email);
+                    if (result.status === 'success') {
+                        newAlert = {
+                            id: `test-alert-${Date.now()}`,
+                            title: 'Test Alert',
+                            description: 'A test alert has been sent successfully to your email.',
+                            severity: 'Medium',
+                            timestamp: new Date().toLocaleTimeString(),
+                        };
+                        toast({
+                            title: "Test Alert Sent",
+                            description: "The test alert was successfully sent via email.",
+                        });
+                    } else {
+                        throw new Error(result.details);
+                    }
+                }
             } else {
+                // Real AI-detected alert logic
                 const latestDevice = deviceList[0];
                 const errorDevices = deviceList.filter(d => d.status === 'Error');
                 
+                let alertContent;
                 if (errorDevices.length > 0) {
                      alertContent = await generateAlertNotifications({
                         eventDescription: `Device "${errorDevices[0].name}" is reporting a critical error state. Immediate attention may be required.`,
@@ -122,12 +125,8 @@ export function RecentAlerts() {
                         };
                     }
                 }
-            }
-            
-            if (newAlert) {
-                setAlerts((prev) => [newAlert!, ...prev].slice(0, 10));
 
-                if (alertContent?.pushTitle && alertContent?.pushBody) {
+                if (newAlert && alertContent?.pushTitle && alertContent?.pushBody) {
                     toast({
                         title: alertContent.pushTitle,
                         description: alertContent.pushBody,
@@ -135,14 +134,18 @@ export function RecentAlerts() {
                     });
                 }
             }
+            
+            if (newAlert) {
+                setAlerts((prev) => [newAlert!, ...prev].slice(0, 10));
+            }
 
 
         } catch (error: any) {
-            console.error("Failed to generate alerts:", error);
+            console.error("Failed to generate/send alerts:", error);
             const isRateLimit = error.message?.includes('429') || error.message?.includes('Quota exceeded');
             
             toast({
-              title: isRateLimit ? "AI Busy (Rate Limit)" : "Alert Generation Failed",
+              title: isRateLimit ? "AI Busy (Rate Limit)" : "Alert Action Failed",
               description: isRateLimit 
                 ? "The AI is currently receiving too many requests. Please wait a few moments and try again." 
                 : (error.message || "An unexpected error occurred."),
