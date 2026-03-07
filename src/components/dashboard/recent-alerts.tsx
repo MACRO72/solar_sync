@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useDebounce } from 'use-debounce';
@@ -144,9 +143,13 @@ export function RecentAlerts() {
 
         } catch (error: any) {
             console.error("Failed to generate alerts:", error);
+            const isRateLimit = error.message?.includes('429') || error.message?.includes('Quota exceeded');
+            
             toast({
-              title: "Alert Generation Failed",
-              description: error.message || "An unexpected error occurred.",
+              title: isRateLimit ? "AI Busy (Rate Limit)" : "Alert Generation Failed",
+              description: isRateLimit 
+                ? "The AI is currently receiving too many requests. Please wait a few moments and try again." 
+                : (error.message || "An unexpected error occurred."),
               variant: "destructive",
             });
         } finally {

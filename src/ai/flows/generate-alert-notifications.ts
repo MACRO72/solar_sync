@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -82,7 +81,24 @@ const generateAlertNotificationsFlow = ai.defineFlow(
     outputSchema: GenerateAlertNotificationsOutputSchema,
   },
   async input => {
-    const {output} = await prompt(input);
-    return output!;
+    let retries = 0;
+    const maxRetries = 2;
+    
+    while (retries <= maxRetries) {
+      try {
+        const {output} = await prompt(input);
+        return output!;
+      } catch (error: any) {
+        const isRateLimit = error.message?.includes('429') || error.message?.includes('Quota exceeded');
+        if (isRateLimit && retries < maxRetries) {
+          retries++;
+          // Wait 3 seconds before retrying
+          await new Promise(resolve => setTimeout(resolve, 3000));
+          continue;
+        }
+        throw error;
+      }
+    }
+    throw new Error('AI processing failed after retries.');
   }
 );
