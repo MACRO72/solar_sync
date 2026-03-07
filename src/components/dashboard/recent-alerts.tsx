@@ -58,7 +58,7 @@ export function RecentAlerts() {
         try {
             let alertContent;
             if (isTest) {
-                const eventDescription = `Simulated test event: System is reporting a high temperature scenario. This test is to confirm alert generation and notification delivery via Email and SMS.`;
+                const eventDescription = `Simulated test event: System is reporting a high temperature scenario. This test is to confirm alert generation and notification delivery via Email and SMS. A high-priority SMS should be sent to the user.`;
 
                 alertContent = await generateAlertNotifications({
                     eventDescription: eventDescription,
@@ -144,12 +144,25 @@ export function RecentAlerts() {
 
         } catch (error: any) {
             console.error("Failed to generate alerts:", error);
+            toast({
+              title: "Alert Generation Failed",
+              description: error.message || "An unexpected error occurred.",
+              variant: "destructive",
+            });
         } finally {
             setIsGenerating(false);
         }
     }, [isGenerating, user?.email, phone, toast]);
 
     const handleTestAlert = () => {
+        if (!phone) {
+          toast({
+            title: "Phone Number Missing",
+            description: "Please update your profile with a phone number to receive SMS alerts.",
+            variant: "destructive",
+          });
+          return;
+        }
         generateAlerts([], true);
     }
 
@@ -168,7 +181,7 @@ export function RecentAlerts() {
                     <CardDescription>AI-detected events and system notifications.</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleTestAlert} disabled={isGenerating}>
-                    <TestTube2 className="mr-2 h-4 w-4" />
+                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TestTube2 className="mr-2 h-4 w-4" />}
                     Test Alert
                 </Button>
             </CardHeader>

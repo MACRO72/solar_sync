@@ -67,9 +67,11 @@ const prompt = ai.definePrompt({
   Affected Device: {{{affectedDevice}}}
 
   CRITICAL ACTIONS:
-  - If urgency is 'high' or 'medium', use 'sendEmail' to alert the administrator (using 'recipientEmail' if provided).
-  - If urgency is 'high' AND a 'recipientPhone' is provided, use 'sendSms' to send a brief summary of the alert to the user's phone.
+  - If urgency is 'high' or 'medium', you MUST use the 'sendEmail' tool to alert the administrator (using 'recipientEmail' if provided).
+  - If urgency is 'high' AND a 'recipientPhone' is provided, you MUST use the 'sendSms' tool to send a brief summary of the alert to the user's phone number: {{{recipientPhone}}}.
   - For 'low' urgency, just generate the notification content for the UI.
+
+  When using 'sendSms', ensure the message is clear, urgent, and provides a short summary of the event description.
   `,
 });
 
