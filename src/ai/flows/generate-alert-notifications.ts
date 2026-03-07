@@ -7,8 +7,8 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { sendEmail } from '@/ai/tools/send-notification';
-import { sendSms } from '@/ai/tools/send-sms';
+import { sendEmailInternal } from '@/ai/tools/send-notification';
+import { sendSmsInternal } from '@/ai/tools/send-sms';
 
 const GenerateAlertNotificationsInputSchema = z.object({
   eventDescription: z.string().describe('Description of the AI-detected event.'),
@@ -32,7 +32,9 @@ const prompt = ai.definePrompt({
   name: 'generateAlertNotificationsPrompt',
   input: {schema: GenerateAlertNotificationsInputSchema},
   output: {schema: GenerateAlertNotificationsOutputSchema},
-  tools: [sendEmail, sendSms],
+  config: {
+    model: 'googleai/gemini-1.5-flash-latest',
+  },
   prompt: `You are an AI assistant for SolarSync, a solar panel monitoring system.
   
   Current System Event: {{{eventDescription}}}
@@ -42,21 +44,15 @@ const prompt = ai.definePrompt({
   Your goal is to inform the user about this event using the appropriate communication channels.
   
   CRITICAL INSTRUCTIONS:
-  1. If urgency is 'high' or 'medium', you MUST call the 'sendEmail' tool.
-     - recipientEmail: {{{recipientEmail}}}
-     - subject: Critical System Event: {{{affectedDevice}}}
-     - message: A system event was detected on {{{affectedDevice}}}. Details: {{{eventDescription}}}
-  
-  2. If urgency is 'high' and a phone number is provided ({{{recipientPhone}}}), you MUST ALSO call the 'sendSms' tool.
-     - phoneNumber: {{{recipientPhone}}}
-     - message: SolarSync High Priority Alert: {{{eventDescription}}}
+  1. If urgency is 'high' or 'medium', you MUST ensure the email notification is prepared.
+  2. If urgency is 'high' and a phone number is provided, ensure the SMS notification is prepared.
   
   3. You MUST provide the following fields in your output for the UI dashboard:
      - title: A short, descriptive title for the alert.
      - message: A detailed explanation for the dashboard.
      - priority: The priority level ('high', 'medium', or 'low').
-     - pushTitle: A very short title for a simulated push notification toast.
-     - pushBody: A very short summary for a simulated push notification body.
+     - pushTitle: A very short title for a push notification.
+     - pushBody: A very short summary for a push notification.
   `,
 });
 
@@ -67,6 +63,23 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
   while (retries <= maxRetries) {
     try {
       const {output} = await prompt(input);
+      
+      // Execute the notifications based on the urgency
+      if (input.urgencyLevel !== 'low' && input.recipientEmail) {
+        await sendEmailInternal({
+          subject: output!.title,
+          message: output!.message,
+          recipientEmail: input.recipientEmail,
+        });
+      }
+      
+      if (input.urgencyLevel === 'high' && input.recipientPhone) {
+        await sendSmsInternal({
+          phoneNumber: input.recipientPhone,
+          message: `SolarSync Alert: ${output!.pushBody}`,
+        });
+      }
+
       return output!;
     } catch (error: any) {
       const isRateLimit = error.message?.includes('429') || error.message?.includes('Quota exceeded');

@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import { PageHeader } from '@/components/page-header';
@@ -5,8 +6,12 @@ import { PageTransition } from '@/components/page-transition';
 import { AppStateProvider } from '@/context/app-state-provider';
 import { RouteGuard } from '@/components/auth/route-guard';
 import { PhoneNumberRequirementModal } from '@/components/auth/phone-number-requirement-modal';
+import { useFCM } from '@/hooks/use-fcm';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  // Initialize FCM for push notifications
+  useFCM();
+
   return (
     <RouteGuard>
       <AppStateProvider>
