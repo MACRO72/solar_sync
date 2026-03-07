@@ -55,20 +55,19 @@ export function RecentAlerts() {
         
         try {
             if (isTest) {
-                // Simplified "Test Alert" logic
                 if (user?.email) {
                     const result = await triggerTestAlert(user.email);
                     if (result.status === 'success') {
                         newAlert = {
                             id: `test-alert-${Date.now()}`,
                             title: 'Test Alert',
-                            description: 'A test alert has been sent successfully to your email.',
+                            description: 'A literal "Test Alert" has been sent to your email.',
                             severity: 'Medium',
                             timestamp: new Date().toLocaleTimeString(),
                         };
                         toast({
                             title: "Test Alert Sent",
-                            description: "The test alert was successfully sent via email.",
+                            description: "A literal 'Test Alert' email was successfully sent.",
                         });
                     } else {
                         throw new Error(result.details);
@@ -82,7 +81,7 @@ export function RecentAlerts() {
                 let alertContent;
                 if (errorDevices.length > 0) {
                      alertContent = await generateAlertNotifications({
-                        eventDescription: `Device "${errorDevices[0].name}" is reporting a critical error state. Immediate attention may be required.`,
+                        eventDescription: `Device "${errorDevices[0].name}" is in an Error state.`,
                         urgencyLevel: 'high',
                         affectedDevice: errorDevices[0].name,
                         recipientEmail: user?.email || undefined,
@@ -108,10 +107,8 @@ export function RecentAlerts() {
                     const alertScore = (WEIGHTS.temp * riskT) + (WEIGHTS.dust * riskD) + (WEIGHTS.efficiency * riskE);
                     
                     if (alertScore > ALERT_THRESHOLD) {
-                        const eventDescription = `Anomalous sensor readings detected. Multiple factors are contributing to a high alert score (${alertScore.toFixed(2)}), including temperature, dust levels, or efficiency drops.`;
-                        
                         alertContent = await generateAlertNotifications({
-                            eventDescription,
+                            eventDescription: `System efficiency drop detected (Score: ${alertScore.toFixed(2)}).`,
                             urgencyLevel: 'high',
                             affectedDevice: latestDevice.name,
                             recipientEmail: user?.email || undefined,
@@ -142,13 +139,13 @@ export function RecentAlerts() {
 
         } catch (error: any) {
             console.error("Failed to generate/send alerts:", error);
-            const isRateLimit = error.message?.includes('429') || error.message?.includes('Quota exceeded');
+            const isRateLimit = error.message?.includes('429');
             
             toast({
-              title: isRateLimit ? "AI Busy (Rate Limit)" : "Alert Action Failed",
+              title: isRateLimit ? "AI Rate Limit" : "Action Failed",
               description: isRateLimit 
-                ? "The AI is currently receiving too many requests. Please wait a few moments and try again." 
-                : (error.message || "An unexpected error occurred."),
+                ? "Quota exceeded. Please wait and try again." 
+                : (error.message || "An error occurred."),
               variant: "destructive",
             });
         } finally {
@@ -172,7 +169,7 @@ export function RecentAlerts() {
             <CardHeader className="flex-row items-start justify-between">
                 <div>
                     <CardTitle>Recent Alerts</CardTitle>
-                    <CardDescription>AI-detected events and system notifications.</CardDescription>
+                    <CardDescription>AI monitoring and system notifications.</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" onClick={handleTestAlert} disabled={isGenerating}>
                     {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TestTube2 className="mr-2 h-4 w-4" />}
@@ -184,7 +181,7 @@ export function RecentAlerts() {
                      <div className="flex h-[350px] items-center justify-center text-center">
                         <div className='flex items-center gap-2'>
                            <Loader2 className="h-5 w-5 animate-spin"/>
-                           <p className="text-muted-foreground">Scanning for alerts...</p>
+                           <p className="text-muted-foreground">Monitoring sensors...</p>
                         </div>
                     </div>
                 ) : alerts.length > 0 ? (
@@ -206,7 +203,7 @@ export function RecentAlerts() {
                     </ScrollArea>
                 ) : (
                      <div className="flex h-[350px] items-center justify-center text-center">
-                        <p className="text-muted-foreground">No alerts to display.</p>
+                        <p className="text-muted-foreground">No alerts detected.</p>
                     </div>
                 )}
             </CardContent>

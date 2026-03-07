@@ -1,10 +1,9 @@
-
 'use server';
 
 /**
  * @fileOverview AI-powered alert notification generator.
  *
- * - generateAlertNotifications - A function that generates alert notifications based on AI-detected events and maintenance reminders.
+ * - generateAlertNotifications - A function that generates alert notifications based on AI-detected events.
  * - GenerateAlertNotificationsInput - The input type for the generateAlertNotifications function.
  * - GenerateAlertNotificationsOutput - The return type for the generateAlertNotifications function.
  */
@@ -54,21 +53,20 @@ const prompt = ai.definePrompt({
   input: {schema: GenerateAlertNotificationsInputSchema},
   output: {schema: GenerateAlertNotificationsOutputSchema},
   tools: [sendEmail],
-  prompt: `You are an AI assistant that generates alert notifications for a solar power system.
+  prompt: `You are an AI assistant for a solar power system.
 
-  Based on the event description, urgency level, and affected device, you will generate two things:
-  1. A standard alert notification with a 'title' and a detailed 'message' for display within a dashboard UI.
-  2. A push notification with a very concise 'pushTitle' and 'pushBody'.
+  Based on the event description, urgency level, and affected device, you will generate a notification.
 
   Event Description: {{{eventDescription}}}
   Urgency Level: {{{urgencyLevel}}}
   Affected Device: {{{affectedDevice}}}
 
   CRITICAL ACTIONS:
-  - If urgency is 'high' or 'medium', you MUST use the 'sendEmail' tool to alert the administrator (using 'recipientEmail' as the to address).
-  - For 'low' urgency, just generate the notification content for the UI.
+  - If urgency is 'high' or 'medium', you MUST use the 'sendEmail' tool to alert the user at {{{recipientEmail}}}.
+  - NEVER use an SMS tool. Only use 'sendEmail'.
+  - For 'low' urgency, just generate the notification content.
 
-  Ensure the email message is clear and provides a short summary of the event description.
+  Ensure the email message is clear and concise.
   `,
 });
 
@@ -88,12 +86,19 @@ const generateAlertNotificationsFlow = ai.defineFlow(
         return output!;
       } catch (error: any) {
         const isRateLimit = error.message?.includes('429') || error.message?.includes('Quota exceeded');
+        const isNotFound = error.message?.includes('404');
+
         if (isRateLimit && retries < maxRetries) {
           retries++;
-          // Wait 3 seconds before retrying
           await new Promise(resolve => setTimeout(resolve, 3000));
           continue;
         }
+        
+        // Log details if it's a 404 to help debugging, but don't retry 404s
+        if (isNotFound) {
+          console.error("AI Model Not Found (404). Please ensure the model identifier in genkit.ts is correct for your region.");
+        }
+        
         throw error;
       }
     }

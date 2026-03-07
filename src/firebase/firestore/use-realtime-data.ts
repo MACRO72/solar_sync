@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,11 +21,11 @@ export function useRealtimeData() {
         const timestamp = rawData.Time ? rawData.Time : new Date().toISOString();
 
         const voltage = parseFloat(rawData.Voltage || '0');
-        // Handle Current_mA as requested
+        // Handle Current_mA as provided in the hardware data
         const currentMA = parseFloat(rawData.Current_mA || rawData.Current || '0');
-        const current = Math.abs(currentMA / 1000); // Convert mA to A for calculations
+        const currentA = Math.abs(currentMA / 1000); 
         
-        const power = voltage * current;
+        const power = voltage * currentA;
         const temperature = parseFloat(rawData.Temperature || '0');
         const humidity = parseFloat(rawData.Humidity || '0');
         const irradiance = parseFloat(rawData.LightIntensity || '0');
