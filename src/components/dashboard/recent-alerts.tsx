@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useDebounce } from 'use-debounce';
@@ -11,7 +10,6 @@ import { generateAlertNotifications } from '@/ai/flows/generate-alert-notificati
 import { Button } from '@/components/ui/button';
 import { useUser } from '@/firebase/auth/use-user';
 import { useToast } from '@/hooks/use-toast';
-import { triggerTestAlert } from '@/app/dashboard/insights/actions';
 import { useAppState } from '@/context/app-state-provider';
 
 const getIcon = (severity: 'High' | 'Medium' | 'Low') => {
@@ -37,24 +35,28 @@ export function RecentAlerts() {
         
         try {
             if (isTest) {
-                // LITERAL TEST ALERT - NO AI GENERATION (UNTOUCHED)
-                if (user?.email) {
-                    const res = await triggerTestAlert(user.email, phone);
-                    if (res.status === 'success') {
-                        const testAlert: Alert = { 
-                            id: `test-${Date.now()}`, 
-                            title: 'Test Alert', 
-                            description: 'A literal "Test Alert" message was sent successfully.', 
-                            severity: 'Medium', 
-                            timestamp: new Date().toLocaleTimeString() 
-                        };
-                        setAlerts((p) => [testAlert, ...p].slice(0, 10));
-                        toast({ 
-                            title: "Test Alert Sent", 
-                            description: "Literal test messages sent via Email and SMS." 
-                        });
-                    }
-                }
+                // AI DRIVEN TEST ALERT
+                const content = await generateAlertNotifications({
+                    eventDescription: "This is a manually triggered system diagnostic test. Please generate a creative 'Test Successful' alert message to confirm communication channels are active.",
+                    urgencyLevel: 'medium',
+                    affectedDevice: 'Diagnostic Node',
+                    recipientEmail: user?.email || undefined,
+                    recipientPhone: phone || undefined,
+                });
+
+                const testAlert: Alert = { 
+                    id: `test-${Date.now()}`, 
+                    title: content.title, 
+                    description: content.message, 
+                    severity: 'Medium', 
+                    timestamp: new Date().toLocaleTimeString() 
+                };
+                setAlerts((p) => [testAlert, ...p].slice(0, 10));
+                
+                toast({ 
+                    title: content.pushTitle, 
+                    description: content.pushBody, 
+                });
             } else {
                 // AI DRIVEN ALERT - FOR REAL SENSORY EVENTS
                 const latest = deviceList[0];
@@ -92,7 +94,6 @@ export function RecentAlerts() {
 
                 setAlerts((p) => [newAlert, ...p].slice(0, 10));
                 
-                // Show local dashboard notification (Push Simulation)
                 toast({ 
                     title: content.pushTitle, 
                     description: content.pushBody, 
@@ -101,7 +102,6 @@ export function RecentAlerts() {
             }
         } catch (e: any) {
             console.error('Alert processing error:', e);
-            // Non-blocking error handling to keep monitoring active
         } finally {
             setIsGenerating(false);
         }
