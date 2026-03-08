@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview AI-powered alert notification generator using Gemini 2.0 Flash.
+ * @fileOverview AI-powered alert notification generator using Gemini.
  * This flow analyzes system events and generates multi-channel notifications
  * specifically optimized for mobile popups (Push, SMS, Email).
  */
@@ -21,11 +21,11 @@ const GenerateAlertNotificationsInputSchema = z.object({
 export type GenerateAlertNotificationsInput = z.infer<typeof GenerateAlertNotificationsInputSchema>;
 
 const GenerateAlertNotificationsOutputSchema = z.object({
-  title: z.string().describe('Alert title for the dashboard and email subject.'),
+  title: z.string().describe('Short, punchy alert title for email subjects (max 40 chars).'),
   message: z.string().describe('Detailed message for the dashboard and email body.'),
   priority: z.enum(['high', 'medium', 'low']).describe('Priority level.'),
-  pushTitle: z.string().describe('Short, punchy title optimized for mobile notification popups (max 30 chars).'),
-  pushBody: z.string().describe('Concise summary that fits entirely within a mobile notification preview (max 80 chars).'),
+  pushTitle: z.string().describe('Short title optimized for mobile notification popups (max 25 chars).'),
+  pushBody: z.string().describe('Concise summary that fits entirely within a mobile notification preview (max 60 chars).'),
 });
 export type GenerateAlertNotificationsOutput = z.infer<typeof GenerateAlertNotificationsOutputSchema>;
 
@@ -39,20 +39,20 @@ const prompt = ai.definePrompt({
   Urgency Level: {{{urgencyLevel}}}
   Affected Device: {{{affectedDevice}}}
   
-  Your goal is to inform the user about this event clearly and professionally.
+  Your goal is to inform the user about this event clearly.
   
   CRITICAL INSTRUCTIONS FOR MOBILE POPUPS:
-  1. The "pushTitle" and "pushBody" are for mobile lock-screen notifications. They must be extremely concise so the user can understand the situation without opening the app.
-  2. "pushTitle" should be short (e.g., "SolarSync Alert: Overheat").
-  3. "pushBody" should be the most critical info (e.g., "Panel #4 reached 65°C. Cooling system engaged.").
-  4. The "title" and "message" are for the dashboard and email where you have more space.
+  1. The "pushTitle" and "pushBody" are for mobile lock-screen notifications. They must be extremely short.
+  2. "title" will be used as the Email Subject. Mobile email notifications only show the first few words of the subject. Make it punchy (e.g., "SolarSync: Critical Error").
+  3. "pushTitle" (e.g., "SolarSync Alert").
+  4. "pushBody" should be the most critical info (e.g., "Panel #4 Overheat: 65°C").
   
   OUTPUT REQUIREMENTS:
-  - title: Professional subject line.
-  - message: Detailed explanation with context.
+  - title: Professional subject line (Max 40 chars).
+  - message: Detailed explanation.
   - priority: high, medium, or low.
-  - pushTitle: Short mobile popup title (max 30 chars).
-  - pushBody: Short mobile popup body (max 80 chars).
+  - pushTitle: Short mobile popup title (Max 25 chars).
+  - pushBody: Short mobile popup body (Max 60 chars).
   `,
 });
 
@@ -75,7 +75,7 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
       }
       
       if (input.urgencyLevel !== 'low' && input.recipientPhone) {
-        // SMS/Push content (Gemini generated content optimized for small screens)
+        // SMS/Push content
         await sendSmsInternal({
           phoneNumber: input.recipientPhone,
           message: `SolarSync: ${output.pushBody}`,
