@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview AI-powered alert notification generator.
+ * @fileOverview AI-powered alert notification generator using Gemini 1.5 Flash.
  */
 
 import {ai} from '@/ai/genkit';
@@ -29,7 +29,6 @@ export type GenerateAlertNotificationsOutput = z.infer<typeof GenerateAlertNotif
 
 const prompt = ai.definePrompt({
   name: 'generateAlertNotificationsPrompt',
-  model: 'googleai/gemini-1.5-flash',
   input: {schema: GenerateAlertNotificationsInputSchema},
   output: {schema: GenerateAlertNotificationsOutputSchema},
   prompt: `You are an AI assistant for SolarSync, a solar panel monitoring system.
@@ -71,7 +70,7 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
         });
       }
       
-      if (input.urgencyLevel === 'high' && input.recipientPhone) {
+      if (input.urgencyLevel !== 'low' && input.recipientPhone) {
         await sendSmsInternal({
           phoneNumber: input.recipientPhone,
           message: `SolarSync ALERT: ${output.pushBody}`,
@@ -80,6 +79,7 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
 
       return output;
     } catch (error: any) {
+      console.error('Alert Generation Error:', error);
       const isRateLimit = error.message?.includes('429') || error.message?.includes('Quota exceeded');
       if (isRateLimit && retries < maxRetries) {
         retries++;
