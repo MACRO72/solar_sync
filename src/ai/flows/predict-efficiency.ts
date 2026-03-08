@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview An AI agent to predict solar panel efficiency based on weather forecasts.
+ * @fileOverview An AI agent to predict solar panel efficiency based on weather forecasts using Gemini 2.0 Flash.
  *
  * - predictEfficiency - A function that takes location and returns an efficiency prediction.
  * - PredictEfficiencyInput - The input type for the predictEfficiency function.

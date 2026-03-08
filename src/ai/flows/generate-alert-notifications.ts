@@ -59,6 +59,7 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
   
   while (retries <= maxRetries) {
     try {
+      // Prompt uses the global default model (Gemini 2.0 Flash)
       const {output} = await prompt(input);
       if (!output) throw new Error('AI output was empty');
 
@@ -72,6 +73,7 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
       }
       
       if (input.urgencyLevel !== 'low' && input.recipientPhone) {
+        // SMS alert (Gemini generated content)
         await sendSmsInternal({
           phoneNumber: input.recipientPhone,
           message: `SolarSync ALERT: ${output.pushBody}`,

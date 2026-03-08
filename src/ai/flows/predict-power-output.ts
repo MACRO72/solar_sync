@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview An AI agent to predict solar panel power output based on weather forecasts.
+ * @fileOverview An AI agent to predict solar panel power output based on weather forecasts using Gemini 2.0 Flash.
  *
  * - predictPowerOutput - A function that takes a location and returns a power output prediction.
  * - PredictPowerOutputInput - The input type for the predictPowerOutput function.
