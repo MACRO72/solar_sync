@@ -1,9 +1,9 @@
 'use server';
 
 /**
- * @fileOverview Alert notification system.
- * Sends a static "alert message test via email" as requested to bypass AI generation errors
- * and ensure visibility in mobile popup windows.
+ * @fileOverview Formal Alert notification system.
+ * Sends a structured, formal notification containing the static string:
+ * "alert message test via email" as requested by the user.
  */
 
 import {ai} from '@/ai/genkit';
@@ -21,8 +21,8 @@ const GenerateAlertNotificationsInputSchema = z.object({
 export type GenerateAlertNotificationsInput = z.infer<typeof GenerateAlertNotificationsInputSchema>;
 
 const GenerateAlertNotificationsOutputSchema = z.object({
-  title: z.string().describe('Short, punchy alert title for email subjects.'),
-  message: z.string().describe('Detailed message.'),
+  title: z.string().describe('Formal email subject.'),
+  message: z.string().describe('Detailed formal message.'),
   priority: z.enum(['high', 'medium', 'low']).describe('Priority level.'),
   pushTitle: z.string().describe('Mobile notification title.'),
   pushBody: z.string().describe('Mobile notification body.'),
@@ -30,18 +30,20 @@ const GenerateAlertNotificationsOutputSchema = z.object({
 export type GenerateAlertNotificationsOutput = z.infer<typeof GenerateAlertNotificationsOutputSchema>;
 
 /**
- * Standardizes the alert to the user's requested static message.
- * This ensures the message appears clearly in mobile popups.
+ * Constructs a formal notification containing the required test string.
  */
 export async function generateAlertNotifications(input: GenerateAlertNotificationsInput): Promise<GenerateAlertNotificationsOutput> {
+  const testString = 'alert message test via email';
+  
   const staticOutput: GenerateAlertNotificationsOutput = {
-    // title is used as the Email Subject, which appears in mobile popups
-    title: 'alert message test via email',
-    message: 'alert message test via email',
+    // Subject line for email - appears in mobile popups
+    title: `SolarSync Official Alert: ${testString}`,
+    // Formal body text
+    message: `Dear User,\n\nThis is a formal notification from the SolarSync Monitoring System regarding your solar installation.\n\nStatus Update: ${testString}\nPriority Level: ${input.urgencyLevel.toUpperCase()}\nAffected Unit: ${input.affectedDevice || 'System Cluster'}\n\nPlease log in to your dashboard to review the full diagnostic data.\n\nBest Regards,\nSolarSync System Management`,
     priority: input.urgencyLevel,
-    pushTitle: 'SolarSync Alert',
-    // pushBody is used for FCM/Push, which appears in mobile popups
-    pushBody: 'alert message test via email',
+    pushTitle: 'SolarSync System Alert',
+    // Push body - appears in mobile popups
+    pushBody: testString,
   };
 
   try {
@@ -61,7 +63,7 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
       notificationPromises.push(
         sendSmsInternal({
           phoneNumber: input.recipientPhone,
-          message: `SolarSync: ${staticOutput.pushBody}`,
+          message: `SolarSync Formal Alert: ${testString}`,
         })
       );
     }
@@ -76,7 +78,7 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
   }
 }
 
-// Register as a flow for compatibility with the AI dev environment and internal hooks
+// Register as a flow
 export const generateAlertNotificationsFlow = ai.defineFlow(
   {
     name: 'generateAlertNotificationsFlow',
