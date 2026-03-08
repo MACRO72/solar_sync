@@ -41,18 +41,18 @@ const prompt = ai.definePrompt({
   Urgency Level: {{{urgencyLevel}}}
   Affected Device: {{{affectedDevice}}}
   
-  Your goal is to inform the user about this event using the appropriate communication channels.
+  Your goal is to inform the user about this event clearly and professionally.
   
-  CRITICAL INSTRUCTIONS:
-  1. If urgency is 'high' or 'medium', you MUST ensure the email notification is prepared.
-  2. If urgency is 'high' and a phone number is provided, ensure the SMS notification is prepared.
+  INSTRUCTIONS:
+  1. Based on the event, generate a concise title and a detailed message for the user dashboard.
+  2. If urgency is 'high' or 'medium' and recipient details are available, you will trigger notifications via the internal logic.
   
-  3. You MUST provide the following fields in your output for the UI dashboard:
-     - title: A short, descriptive title for the alert.
-     - message: A detailed explanation for the dashboard.
+  3. You MUST provide the following fields in your output:
+     - title: A short, descriptive title (e.g., "Critical Overheat Detected").
+     - message: A detailed explanation including potential causes and recommended steps.
      - priority: The priority level ('high', 'medium', or 'low').
-     - pushTitle: A very short title for a push notification.
-     - pushBody: A very short summary for a push notification.
+     - pushTitle: A very short title for a mobile push notification (max 30 chars).
+     - pushBody: A very short summary for a mobile push notification (max 60 chars).
   `,
 });
 
@@ -63,12 +63,13 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
   while (retries <= maxRetries) {
     try {
       const {output} = await prompt(input);
-      
+      if (!output) throw new Error('AI output was empty');
+
       // Execute the notifications based on the urgency
       if (input.urgencyLevel !== 'low' && input.recipientEmail) {
         await sendEmailInternal({
-          subject: output!.title,
-          message: output!.message,
+          subject: output.title,
+          message: output.message,
           recipientEmail: input.recipientEmail,
         });
       }
@@ -76,11 +77,11 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
       if (input.urgencyLevel === 'high' && input.recipientPhone) {
         await sendSmsInternal({
           phoneNumber: input.recipientPhone,
-          message: `SolarSync Alert: ${output!.pushBody}`,
+          message: `SolarSync ALERT: ${output.pushBody}`,
         });
       }
 
-      return output!;
+      return output;
     } catch (error: any) {
       const isRateLimit = error.message?.includes('429') || error.message?.includes('Quota exceeded');
       if (isRateLimit && retries < maxRetries) {
@@ -91,5 +92,5 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
       throw error;
     }
   }
-  throw new Error('Alert generation failed after retries.');
+  throw new Error('Alert generation failed after multiple retries.');
 }

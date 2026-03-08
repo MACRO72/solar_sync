@@ -37,7 +37,7 @@ export function RecentAlerts() {
         
         try {
             if (isTest) {
-                // LITERAL TEST ALERT - NO AI GENERATION
+                // LITERAL TEST ALERT - NO AI GENERATION (UNTOUCHED)
                 if (user?.email) {
                     const res = await triggerTestAlert(user.email, phone);
                     if (res.status === 'success') {
@@ -56,14 +56,28 @@ export function RecentAlerts() {
                     }
                 }
             } else {
-                // AI DRIVEN ALERT - FOR REAL EVENTS
+                // AI DRIVEN ALERT - FOR REAL SENSORY EVENTS
                 const latest = deviceList[0];
-                if (latest.status === 'Online' && (latest.temperature || 0) < 50) return; // Only alert for issues
+                
+                // --- Anomaly Detection Logic ---
+                const isHighTemp = (latest.temperature || 0) >= 60;
+                const isMediumTemp = (latest.temperature || 0) >= 50 && (latest.temperature || 0) < 60;
+                const isError = latest.status === 'Error' || latest.status === 'Offline';
+                const isLowEfficiency = (latest.irradiance || 0) > 500 && (latest.efficiency || 0) < 5;
 
+                // Exit if no anomaly detected
+                if (!isHighTemp && !isMediumTemp && !isError && !isLowEfficiency) {
+                    setIsGenerating(false);
+                    return;
+                }
+
+                const urgency = (isHighTemp || isError) ? 'high' : 'medium';
+                
+                // Call AI to interpret the anomaly
                 const content = await generateAlertNotifications({
-                    eventDescription: `Telemetry check: ${latest.status}, Temp: ${latest.temperature}°C, Power: ${latest.power}W.`,
-                    urgencyLevel: latest.status === 'Error' || (latest.temperature || 0) > 60 ? 'high' : 'medium',
-                    affectedDevice: latest.name,
+                    eventDescription: `Telemetry Anomaly Detected: Status=${latest.status}, Temp=${latest.temperature}°C, Power=${latest.power}W, Efficiency=${latest.efficiency}%, Irradiance=${latest.irradiance}lx. Reason: ${isHighTemp ? 'Critical Overheat' : isLowEfficiency ? 'Severe Efficiency Drop' : 'System Connectivity Failure'}.`,
+                    urgencyLevel: urgency,
+                    affectedDevice: latest.name || latest.id,
                     recipientEmail: user?.email || undefined,
                     recipientPhone: phone || undefined,
                 });
@@ -77,6 +91,8 @@ export function RecentAlerts() {
                 };
 
                 setAlerts((p) => [newAlert, ...p].slice(0, 10));
+                
+                // Show local dashboard notification (Push Simulation)
                 toast({ 
                     title: content.pushTitle, 
                     description: content.pushBody, 
@@ -84,20 +100,19 @@ export function RecentAlerts() {
                 });
             }
         } catch (e: any) {
-            console.error('Alert Error:', e);
-            toast({ 
-                title: "Alert System Unavailable", 
-                description: e.message || "Could not process alert.", 
-                variant: "destructive" 
-            });
+            console.error('Alert processing error:', e);
+            // Non-blocking error handling to keep monitoring active
         } finally {
             setIsGenerating(false);
         }
     }, [isGenerating, user?.email, phone, toast]);
 
+    // Background monitoring loop
     useEffect(() => { 
-        if (debouncedDevices.length > 0) handleAlert(debouncedDevices); 
-    }, [debouncedDevices, handleAlert]);
+        if (debouncedDevices.length > 0 && !loading) {
+            handleAlert(debouncedDevices); 
+        }
+    }, [debouncedDevices, handleAlert, loading]);
 
     return (
         <GlassCard className="h-full">
@@ -122,21 +137,24 @@ export function RecentAlerts() {
                         <div className="space-y-6 pr-4">
                             {alerts.map((a) => (
                                 <div key={a.id} className="flex items-start gap-4">
-                                    <div>{getIcon(a.severity)}</div>
+                                    <div className="mt-1">{getIcon(a.severity)}</div>
                                     <div className="flex-1">
                                         <div className="flex items-center justify-between">
                                             <p className="font-semibold">{a.title}</p>
                                             <p className="text-xs text-muted-foreground">{a.timestamp}</p>
                                         </div>
-                                        <p className="text-sm text-muted-foreground">{a.description}</p>
+                                        <p className="text-sm text-muted-foreground line-clamp-2">{a.description}</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
                     </ScrollArea>
                 ) : (
-                    <div className="flex h-[350px] items-center justify-center text-muted-foreground">
-                        No active alerts. All systems nominal.
+                    <div className="flex h-[350px] items-center justify-center text-center text-muted-foreground">
+                        <div className="space-y-2">
+                            <Bell className="mx-auto h-8 w-8 opacity-20" />
+                            <p>No active alerts.<br/>All systems nominal.</p>
+                        </div>
                     </div>
                 )}
             </CardContent>
