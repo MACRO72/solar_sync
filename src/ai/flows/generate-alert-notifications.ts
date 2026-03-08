@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview AI-powered alert notification generator using Gemini 2.0 Flash.
- * This flow analyzes system events and generates multi-channel notifications.
+ * This flow analyzes system events and generates multi-channel notifications
+ * specifically optimized for mobile popups (Push, SMS, Email).
  */
 
 import {ai} from '@/ai/genkit';
@@ -20,11 +21,11 @@ const GenerateAlertNotificationsInputSchema = z.object({
 export type GenerateAlertNotificationsInput = z.infer<typeof GenerateAlertNotificationsInputSchema>;
 
 const GenerateAlertNotificationsOutputSchema = z.object({
-  title: z.string().describe('Alert title for the dashboard.'),
-  message: z.string().describe('Detailed message for the dashboard.'),
+  title: z.string().describe('Alert title for the dashboard and email subject.'),
+  message: z.string().describe('Detailed message for the dashboard and email body.'),
   priority: z.enum(['high', 'medium', 'low']).describe('Priority level.'),
-  pushTitle: z.string().describe('Short push notification title.'),
-  pushBody: z.string().describe('Short push notification body.'),
+  pushTitle: z.string().describe('Short, punchy title optimized for mobile notification popups (max 30 chars).'),
+  pushBody: z.string().describe('Concise summary that fits entirely within a mobile notification preview (max 80 chars).'),
 });
 export type GenerateAlertNotificationsOutput = z.infer<typeof GenerateAlertNotificationsOutputSchema>;
 
@@ -40,16 +41,18 @@ const prompt = ai.definePrompt({
   
   Your goal is to inform the user about this event clearly and professionally.
   
-  INSTRUCTIONS:
-  1. Based on the event, generate a concise title and a detailed message for the user dashboard.
-  2. If urgency is 'high' or 'medium' and recipient details are available, notifications will be sent via Email and SMS.
+  CRITICAL INSTRUCTIONS FOR MOBILE POPUPS:
+  1. The "pushTitle" and "pushBody" are for mobile lock-screen notifications. They must be extremely concise so the user can understand the situation without opening the app.
+  2. "pushTitle" should be short (e.g., "SolarSync Alert: Overheat").
+  3. "pushBody" should be the most critical info (e.g., "Panel #4 reached 65°C. Cooling system engaged.").
+  4. The "title" and "message" are for the dashboard and email where you have more space.
   
-  3. You MUST provide the following fields in your output:
-     - title: A short, descriptive title (e.g., "Critical Overheat Detected").
-     - message: A detailed explanation including potential causes and recommended steps.
-     - priority: The priority level ('high', 'medium', or 'low').
-     - pushTitle: A very short title for a mobile push notification (max 30 chars).
-     - pushBody: A very short summary for a mobile push notification (max 60 chars).
+  OUTPUT REQUIREMENTS:
+  - title: Professional subject line.
+  - message: Detailed explanation with context.
+  - priority: high, medium, or low.
+  - pushTitle: Short mobile popup title (max 30 chars).
+  - pushBody: Short mobile popup body (max 80 chars).
   `,
 });
 
@@ -59,7 +62,6 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
   
   while (retries <= maxRetries) {
     try {
-      // Prompt uses the global default model (Gemini 2.0 Flash)
       const {output} = await prompt(input);
       if (!output) throw new Error('AI output was empty');
 
@@ -73,10 +75,10 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
       }
       
       if (input.urgencyLevel !== 'low' && input.recipientPhone) {
-        // SMS alert (Gemini generated content)
+        // SMS/Push content (Gemini generated content optimized for small screens)
         await sendSmsInternal({
           phoneNumber: input.recipientPhone,
-          message: `SolarSync ALERT: ${output.pushBody}`,
+          message: `SolarSync: ${output.pushBody}`,
         });
       }
 

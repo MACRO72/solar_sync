@@ -26,7 +26,7 @@ export function RecentAlerts() {
     const { phone } = useAppState();
     const [alerts, setAlerts] = useState<Alert[]>([]);
     const [isGenerating, setIsGenerating] = useState(false);
-    const [debouncedDevices] = useDebounce(devices, 45000); // Check for real alerts every 45s
+    const [debouncedDevices] = useDebounce(devices, 45000); 
     const { toast } = useToast();
 
     const handleAlert = useCallback(async (deviceList: Device[], isTest = false) => {
@@ -37,7 +37,7 @@ export function RecentAlerts() {
             if (isTest) {
                 // AI DRIVEN TEST ALERT
                 const content = await generateAlertNotifications({
-                    eventDescription: "This is a manually triggered system diagnostic test. Please generate a creative 'Test Successful' alert message to confirm communication channels (Email, SMS, Push) are active.",
+                    eventDescription: "This is a system diagnostic test. Please generate a 'Test Successful' alert. Ensure the pushTitle and pushBody are optimized for a mobile popup.",
                     urgencyLevel: 'medium',
                     affectedDevice: 'Diagnostic Node',
                     recipientEmail: user?.email || undefined,
@@ -53,6 +53,7 @@ export function RecentAlerts() {
                 };
                 setAlerts((p) => [testAlert, ...p].slice(0, 10));
                 
+                // This toast simulates the mobile popup experience in the browser
                 toast({ 
                     title: content.pushTitle, 
                     description: content.pushBody, 
@@ -61,13 +62,11 @@ export function RecentAlerts() {
                 // AI DRIVEN ALERT - FOR REAL SENSORY EVENTS
                 const latest = deviceList[0];
                 
-                // --- Anomaly Detection Logic ---
                 const isHighTemp = (latest.temperature || 0) >= 60;
                 const isMediumTemp = (latest.temperature || 0) >= 50 && (latest.temperature || 0) < 60;
                 const isError = latest.status === 'Error' || latest.status === 'Offline';
                 const isLowEfficiency = (latest.irradiance || 0) > 500 && (latest.efficiency || 0) < 5;
 
-                // Exit if no anomaly detected
                 if (!isHighTemp && !isMediumTemp && !isError && !isLowEfficiency) {
                     setIsGenerating(false);
                     return;
@@ -75,9 +74,8 @@ export function RecentAlerts() {
 
                 const urgency = (isHighTemp || isError) ? 'high' : 'medium';
                 
-                // Call AI to interpret the anomaly
                 const content = await generateAlertNotifications({
-                    eventDescription: `Telemetry Anomaly Detected: Status=${latest.status}, Temp=${latest.temperature}°C, Power=${latest.power}W, Efficiency=${latest.efficiency}%, Irradiance=${latest.irradiance}lx. Reason: ${isHighTemp ? 'Critical Overheat' : isLowEfficiency ? 'Severe Efficiency Drop' : 'System Connectivity Failure'}.`,
+                    eventDescription: `Telemetry Anomaly: Status=${latest.status}, Temp=${latest.temperature}°C, Power=${latest.power}W, Efficiency=${latest.efficiency}%. Priority: ${isHighTemp ? 'Overheat' : 'Low Efficiency'}.`,
                     urgencyLevel: urgency,
                     affectedDevice: latest.name || latest.id,
                     recipientEmail: user?.email || undefined,
@@ -107,7 +105,6 @@ export function RecentAlerts() {
         }
     }, [isGenerating, user?.email, phone, toast]);
 
-    // Background monitoring loop
     useEffect(() => { 
         if (debouncedDevices.length > 0 && !loading) {
             handleAlert(debouncedDevices); 
@@ -119,7 +116,7 @@ export function RecentAlerts() {
             <CardHeader className="flex-row items-start justify-between">
                 <div>
                     <CardTitle>Security & Alerts</CardTitle>
-                    <CardDescription>Real-time AI monitoring enabled.</CardDescription>
+                    <CardDescription>AI Mobile Push Monitoring Enabled.</CardDescription>
                 </div>
                 <Button variant="outline" size="sm" onClick={() => handleAlert([], true)} disabled={isGenerating}>
                     {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TestTube2 className="mr-2 h-4 w-4" />} 
