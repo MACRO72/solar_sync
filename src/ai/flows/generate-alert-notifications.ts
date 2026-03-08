@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -30,11 +29,9 @@ export type GenerateAlertNotificationsOutput = z.infer<typeof GenerateAlertNotif
 
 const prompt = ai.definePrompt({
   name: 'generateAlertNotificationsPrompt',
+  model: 'googleai/gemini-1.5-flash-latest',
   input: {schema: GenerateAlertNotificationsInputSchema},
   output: {schema: GenerateAlertNotificationsOutputSchema},
-  config: {
-    model: 'googleai/gemini-1.5-flash-latest',
-  },
   prompt: `You are an AI assistant for SolarSync, a solar panel monitoring system.
   
   Current System Event: {{{eventDescription}}}
