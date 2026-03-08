@@ -29,7 +29,7 @@ export type GenerateAlertNotificationsOutput = z.infer<typeof GenerateAlertNotif
 
 const prompt = ai.definePrompt({
   name: 'generateAlertNotificationsPrompt',
-  model: 'googleai/gemini-1.5-flash-latest',
+  model: 'googleai/gemini-1.5-flash',
   input: {schema: GenerateAlertNotificationsInputSchema},
   output: {schema: GenerateAlertNotificationsOutputSchema},
   prompt: `You are an AI assistant for SolarSync, a solar panel monitoring system.
