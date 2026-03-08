@@ -1,7 +1,8 @@
 'use server';
 
 /**
- * @fileOverview AI-powered alert notification generator using Gemini 1.5 Flash.
+ * @fileOverview AI-powered alert notification generator using Gemini 2.0 Flash.
+ * This flow analyzes system events and generates multi-channel notifications.
  */
 
 import {ai} from '@/ai/genkit';
