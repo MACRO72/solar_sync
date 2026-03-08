@@ -1,4 +1,3 @@
-
 'use client'
 import * as React from 'react';
 import { Bar, BarChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
@@ -310,4 +309,3 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
         </Card>
     )
 }
-    

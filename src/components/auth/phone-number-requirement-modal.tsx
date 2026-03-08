@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -26,7 +25,10 @@ export function PhoneNumberRequirementModal() {
   // Background check: only show if loaded, user is present, and phone is missing
   React.useEffect(() => {
     if (isLoaded && !userLoading && user && !phone) {
-      setIsOpen(true);
+      const timer = setTimeout(() => {
+        setIsOpen(true);
+      }, 1000); // Small delay to ensure background context is fully ready
+      return () => clearTimeout(timer);
     } else {
       setIsOpen(false);
     }

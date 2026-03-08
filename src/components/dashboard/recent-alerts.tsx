@@ -37,7 +37,7 @@ export function RecentAlerts() {
             if (isTest) {
                 // AI DRIVEN TEST ALERT
                 const content = await generateAlertNotifications({
-                    eventDescription: "This is a manually triggered system diagnostic test. Please generate a creative 'Test Successful' alert message to confirm communication channels are active.",
+                    eventDescription: "This is a manually triggered system diagnostic test. Please generate a creative 'Test Successful' alert message to confirm communication channels (Email, SMS, Push) are active.",
                     urgencyLevel: 'medium',
                     affectedDevice: 'Diagnostic Node',
                     recipientEmail: user?.email || undefined,

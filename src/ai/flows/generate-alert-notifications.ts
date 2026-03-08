@@ -41,7 +41,7 @@ const prompt = ai.definePrompt({
   
   INSTRUCTIONS:
   1. Based on the event, generate a concise title and a detailed message for the user dashboard.
-  2. If urgency is 'high' or 'medium' and recipient details are available, you will trigger notifications via the internal logic.
+  2. If urgency is 'high' or 'medium' and recipient details are available, notifications will be sent via Email and SMS.
   
   3. You MUST provide the following fields in your output:
      - title: A short, descriptive title (e.g., "Critical Overheat Detected").
@@ -83,7 +83,7 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
       const isRateLimit = error.message?.includes('429') || error.message?.includes('Quota exceeded');
       if (isRateLimit && retries < maxRetries) {
         retries++;
-        await new Promise(r => setTimeout(r, 2000 * retries));
+        await new Promise(r => setTimeout(r, 2000 * (retries + 1)));
         continue;
       }
       throw error;
