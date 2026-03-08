@@ -14,6 +14,7 @@ interface UserProfile {
 }
 
 interface AppState extends UserProfile {
+  isLoaded: boolean;
   setName: (name: string) => void;
   setEmail: (email: string) => void;
   setAvatar: (avatar: string) => void;
@@ -29,6 +30,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     avatar: '',
     phone: '',
   });
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const { user } = useUser();
   const firestore = useFirestore();
@@ -46,11 +48,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
             phone: data.phone || '',
           });
         }
+        setIsLoaded(true);
+      }, (error) => {
+        console.error("Error fetching user profile:", error);
+        setIsLoaded(true); // Set to true even on error to stop blocking UI
       });
 
       return () => unsubscribe();
     } else if (!user) {
         setProfile({ name: '', email: '', avatar: '', phone: ''});
+        setIsLoaded(false);
     }
   }, [user, firestore]);
   
@@ -62,6 +69,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const value = {
     ...profile,
+    isLoaded,
     setName,
     setEmail,
     setAvatar,

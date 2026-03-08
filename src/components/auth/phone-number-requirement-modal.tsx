@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -13,7 +14,7 @@ import { Loader2, Phone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export function PhoneNumberRequirementModal() {
-  const { phone, name, email } = useAppState();
+  const { phone, isLoaded } = useAppState();
   const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -22,26 +23,32 @@ export function PhoneNumberRequirementModal() {
   const [isSaving, setIsSaving] = React.useState(false);
   const [isOpen, setIsOpen] = React.useState(false);
 
+  // Background check: only show if loaded, user is present, and phone is missing
   React.useEffect(() => {
-    if (!userLoading && user && !phone) {
+    if (isLoaded && !userLoading && user && !phone) {
       setIsOpen(true);
     } else {
       setIsOpen(false);
     }
-  }, [user, userLoading, phone]);
+  }, [user, userLoading, phone, isLoaded]);
 
   const handleSave = async () => {
-    if (!inputPhone || inputPhone.length < 10) {
+    if (!inputPhone || inputPhone.trim().length < 10) {
       toast({ variant: 'destructive', title: 'Invalid Phone', description: 'Enter a valid number for alerts.' });
       return;
     }
     if (!user || !firestore) return;
     setIsSaving(true);
+    
     const userRef = doc(firestore, 'users', user.uid);
-    await setDoc(userRef, { phone: inputPhone }, { merge: true })
+    setDoc(userRef, { phone: inputPhone }, { merge: true })
       .then(() => {
-        toast({ title: 'Profile Updated', description: 'Phone number saved.' });
+        toast({ title: 'Profile Updated', description: 'Phone number saved for alerts.' });
         setIsOpen(false);
+      })
+      .catch((err) => {
+        console.error("Failed to save phone:", err);
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to update phone number.' });
       })
       .finally(() => setIsSaving(false));
   };
