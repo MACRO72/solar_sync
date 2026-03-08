@@ -65,26 +65,34 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
       const {output} = await prompt(input);
       if (!output) throw new Error('AI output was empty');
 
-      // Execute the notifications based on the urgency
-      if (input.urgencyLevel !== 'low' && input.recipientEmail) {
-        await sendEmailInternal({
-          subject: output.title,
-          message: output.message,
-          recipientEmail: input.recipientEmail,
-        });
+      // Parallel execution for notifications
+      const notificationPromises = [];
+
+      if (input.recipientEmail) {
+        notificationPromises.push(
+          sendEmailInternal({
+            subject: output.title,
+            message: output.message,
+            recipientEmail: input.recipientEmail,
+          })
+        );
       }
       
-      if (input.urgencyLevel !== 'low' && input.recipientPhone) {
-        // SMS/Push content
-        await sendSmsInternal({
-          phoneNumber: input.recipientPhone,
-          message: `SolarSync: ${output.pushBody}`,
-        });
+      if (input.recipientPhone) {
+        notificationPromises.push(
+          sendSmsInternal({
+            phoneNumber: input.recipientPhone,
+            message: `SolarSync: ${output.pushBody}`,
+          })
+        );
       }
+
+      // We await the notifications but don't block the AI response if they fail internally (they catch their own errors)
+      await Promise.allSettled(notificationPromises);
 
       return output;
     } catch (error: any) {
-      console.error('Alert Generation Error:', error);
+      console.error('Alert Generation Flow Error:', error.message);
       const isRateLimit = error.message?.includes('429') || error.message?.includes('Quota exceeded');
       if (isRateLimit && retries < maxRetries) {
         retries++;
