@@ -1,9 +1,9 @@
 'use server';
 
 /**
- * @fileOverview Formal Alert notification system.
- * Sends a structured, formal notification containing the static string:
- * "alert message test via email" as requested by the user.
+ * @fileOverview Formal Alert notification system optimized for mobile popups.
+ * Sends a structured, formal notification where the key message is placed 
+ * at the start of the subject and body to ensure visibility in mobile notifications.
  */
 
 import {ai} from '@/ai/genkit';
@@ -30,19 +30,20 @@ const GenerateAlertNotificationsOutputSchema = z.object({
 export type GenerateAlertNotificationsOutput = z.infer<typeof GenerateAlertNotificationsOutputSchema>;
 
 /**
- * Constructs a formal notification containing the required test string.
+ * Constructs a formal notification containing the required test string, 
+ * optimized for mobile popup visibility.
  */
 export async function generateAlertNotifications(input: GenerateAlertNotificationsInput): Promise<GenerateAlertNotificationsOutput> {
   const testString = 'alert message test via email';
   
   const staticOutput: GenerateAlertNotificationsOutput = {
-    // Subject line for email - appears in mobile popups
-    title: `SolarSync Official Alert: ${testString}`,
+    // Subject line: message is at the front for mobile popup visibility
+    title: `${testString} - SolarSync Alert`,
     // Formal body text
-    message: `Dear User,\n\nThis is a formal notification from the SolarSync Monitoring System regarding your solar installation.\n\nStatus Update: ${testString}\nPriority Level: ${input.urgencyLevel.toUpperCase()}\nAffected Unit: ${input.affectedDevice || 'System Cluster'}\n\nPlease log in to your dashboard to review the full diagnostic data.\n\nBest Regards,\nSolarSync System Management`,
+    message: `MESSAGE: ${testString}\n\nDear User,\n\nThis is a formal notification from the SolarSync Monitoring System.\n\nPriority Level: ${input.urgencyLevel.toUpperCase()}\nAffected Unit: ${input.affectedDevice || 'System Cluster'}\n\nPlease log in to your dashboard to review the full diagnostic data.\n\nBest Regards,\nSolarSync System Management`,
     priority: input.urgencyLevel,
-    pushTitle: 'SolarSync System Alert',
-    // Push body - appears in mobile popups
+    pushTitle: 'SolarSync Alert',
+    // Push body: message is direct for mobile popup visibility
     pushBody: testString,
   };
 
@@ -63,7 +64,7 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
       notificationPromises.push(
         sendSmsInternal({
           phoneNumber: input.recipientPhone,
-          message: `SolarSync Formal Alert: ${testString}`,
+          message: `SolarSync: ${testString}`,
         })
       );
     }
