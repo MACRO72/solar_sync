@@ -1,6 +1,7 @@
+
 'use client'
 import * as React from 'react';
-import { Bar, BarChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip } from "recharts"
+import { Bar, BarChart, Line, LineChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartConfig, ChartLegend, ChartLegendContent } from "@/components/ui/chart"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
@@ -35,7 +36,7 @@ const chartViewOptions: {value: ChartView, label: string}[] = [
     { value: 'temperature', label: 'Temperature' },
 ];
 
-export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: { fullHeight?: boolean, defaultPeriod?: TimePeriod }) {
+export function PerformanceChart({ fullHeight = false, defaultPeriod = '24h' }: { fullHeight?: boolean, defaultPeriod?: TimePeriod }) {
     const [timePeriod, setTimePeriod] = React.useState<TimePeriod>(defaultPeriod);
     const [chartView, setChartView] = React.useState<ChartView>('performance');
     const [chartType, setChartType] = React.useState<ChartType>('curve');
@@ -47,10 +48,10 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
         const tempCoefficient = 0.003;
         const dustFactor = 0.05;
 
-        // Filter devices based on the selected time period first
+        // Filter devices based on the selected time period
         const filteredDevices = devices.filter(device => {
             let deviceDate: Date;
-            if (device.lastSeen.includes('T') && device.lastSeen.endsWith('Z')) {
+            if (device.lastSeen.includes('T')) {
                 deviceDate = new Date(device.lastSeen);
             } else {
                 const timeParts = device.lastSeen.split(':');
@@ -58,11 +59,9 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
                 if (timeParts.length === 3) {
                     const [h, m, s] = timeParts.map(Number);
                     deviceDate.setHours(h, m, s, 0);
-                    if (deviceDate > now) {
-                        deviceDate.setDate(deviceDate.getDate() - 1);
-                    }
+                    if (deviceDate > now) deviceDate.setDate(deviceDate.getDate() - 1);
                 } else {
-                    return false; // Invalid time format
+                    return false;
                 }
             }
             if (isNaN(deviceDate.getTime())) return false;
@@ -74,117 +73,75 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
             return true;
         });
 
-        // If 'Live' view, process and return detailed data
+        // For Live view, return sorted data points
         if (timePeriod === '24h') {
             return filteredDevices.map(device => {
                 let deviceDate: Date;
-                 if (device.lastSeen.includes('T') && device.lastSeen.endsWith('Z')) {
+                if (device.lastSeen.includes('T')) {
                     deviceDate = new Date(device.lastSeen);
                 } else {
-                    deviceDate = parse(device.lastSeen, 'HH:mm:ss', new Date());
+                    const [h, m, s] = device.lastSeen.split(':').map(Number);
+                    deviceDate = new Date();
+                    deviceDate.setHours(h, m, s, 0);
                 }
 
-                const temp = device.temperature ?? 0;
-                const dust = device.dustDensity ?? 0;
-                const measuredEfficiency = device.efficiency ?? 0;
-                const baseEfficiency = measuredEfficiency > 0 ? (measuredEfficiency / ((1 - tempCoefficient * (temp - 25)) * (1 - dustFactor * dust))) : 0;
-                
                 return {
-                    time: format(deviceDate, 'HH:mm'),
+                    time: format(deviceDate, 'HH:mm:ss'),
                     date: deviceDate,
-                    measured: measuredEfficiency,
-                    base: Math.max(0, Math.min(100, baseEfficiency)),
+                    measured: device.efficiency ?? 0,
+                    base: (device.efficiency ?? 0) * 1.1, // Mock base line
                     power: device.power ?? 0,
-                    dust: dust,
-                    temperature: temp,
+                    dust: device.dustDensity ?? 0,
+                    temperature: device.temperature ?? 0,
                 };
             }).sort((a, b) => a.date.getTime() - b.date.getTime());
         }
 
-        // For '7d' and '30d', aggregate data by day
-        const dailyData: Record<string, {
-            temps: number[],
-            dusts: number[],
-            powers: number[],
-            measuredEffs: number[],
-            baseEffs: number[],
-            count: number
-        }> = {};
-
+        // Aggregate by day for longer periods
+        const dailyData: Record<string, any> = {};
         filteredDevices.forEach(device => {
-            let deviceDate: Date;
-            if (device.lastSeen.includes('T') && device.lastSeen.endsWith('Z')) {
-                deviceDate = new Date(device.lastSeen);
-            } else {
-                 deviceDate = parse(device.lastSeen, 'HH:mm:ss', new Date());
-                 if (deviceDate > new Date()) deviceDate.setDate(deviceDate.getDate() - 1);
-            }
-
-            const dayKey = format(startOfDay(deviceDate), 'yyyy-MM-dd');
+            const date = device.lastSeen.includes('T') ? new Date(device.lastSeen) : new Date();
+            const dayKey = format(startOfDay(date), 'yyyy-MM-dd');
             if (!dailyData[dayKey]) {
-                dailyData[dayKey] = { temps: [], dusts: [], powers: [], measuredEffs: [], baseEffs: [], count: 0 };
+                dailyData[dayKey] = { measured: [], power: [], dust: [], temp: [], count: 0 };
             }
-
-            const temp = device.temperature ?? 0;
-            const dust = device.dustDensity ?? 0;
-            const power = device.power ?? 0;
-            const measuredEfficiency = device.efficiency ?? 0;
-            const baseEfficiency = measuredEfficiency > 0 ? (measuredEfficiency / ((1 - tempCoefficient * (temp - 25)) * (1 - dustFactor * dust))) : 0;
-
-            dailyData[dayKey].temps.push(temp);
-            dailyData[dayKey].dusts.push(dust);
-            dailyData[dayKey].powers.push(power);
-            dailyData[dayKey].measuredEffs.push(measuredEfficiency);
-            dailyData[dayKey].baseEffs.push(Math.max(0, Math.min(100, baseEfficiency)));
+            dailyData[dayKey].measured.push(device.efficiency || 0);
+            dailyData[dayKey].power.push(device.power || 0);
+            dailyData[dayKey].dust.push(device.dustDensity || 0);
+            dailyData[dayKey].temp.push(device.temperature || 0);
             dailyData[dayKey].count++;
         });
 
-        return Object.entries(dailyData).map(([day, data]) => {
-            const avg = (arr: number[]) => arr.length > 0 ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
+        return Object.entries(dailyData).map(([day, val]) => {
+            const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
             return {
                 time: format(new Date(day), 'MMM d'),
                 date: new Date(day),
-                measured: avg(data.measuredEffs),
-                base: avg(data.baseEffs),
-                power: avg(data.powers),
-                dust: avg(data.dusts),
-                temperature: avg(data.temps),
+                measured: avg(val.measured),
+                base: avg(val.measured) * 1.1,
+                power: avg(val.power),
+                dust: avg(val.dust),
+                temperature: avg(val.temp),
             };
         }).sort((a, b) => a.date.getTime() - b.date.getTime());
 
     }, [devices, timePeriod]);
 
-
-    const getChartDescription = () => {
-        switch (chartView) {
-            case 'performance':
-                return 'Measured vs. Base Efficiency (%)';
-            case 'power':
-                return 'Real-time power output (W)';
-            case 'dust':
-                return 'Average dust accumulation level (µg/m³)';
-            case 'temperature':
-                return 'Temperature vs. Power Output';
-        }
-    }
-
     const renderChart = () => {
-        if (loading) {
-            return <div className="flex h-full items-center justify-center text-muted-foreground">Loading chart data...</div>;
-        }
-        if (processedData.length === 0) {
-            return <div className="flex h-full items-center justify-center text-muted-foreground">Waiting for device data...</div>;
-        }
+        if (loading) return <div className="flex h-full items-center justify-center text-muted-foreground">Syncing sensor nodes...</div>;
+        if (processedData.length === 0) return <div className="flex h-full items-center justify-center text-muted-foreground">Waiting for sensor data...</div>;
 
         if (chartView === 'temperature') {
              return (
-                 <LineChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="temperature" type="number" tickLine={false} tickMargin={10} axisLine={false} unit="°C" domain={['dataMin - 2', 'dataMax + 2']} />
-                    <YAxis dataKey="power" tickLine={false} axisLine={false} tickMargin={10} unit="W" />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                    <Line dataKey="power" type="monotone" stroke="var(--color-power)" strokeWidth={2} dot={true} />
-                </LineChart>
+                <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                        <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
+                        <YAxis tickLine={false} axisLine={false} tickMargin={10} unit="°C" />
+                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+                        <Line dataKey="temperature" type="monotone" stroke="var(--color-temperature)" strokeWidth={2} dot={false} />
+                    </LineChart>
+                </ResponsiveContainer>
             );
         }
 
@@ -193,108 +150,63 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '7d' }: {
             const color = chartView === 'performance' ? 'var(--color-measured)' : chartView === 'power' ? 'var(--color-power)' : 'var(--color-dust)';
             
             return (
-                <BarChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} tickMargin={10} />
-                    <Tooltip content={<ChartTooltipContent />} />
-                    <ChartLegend content={<ChartLegendContent />} />
-                    <Bar dataKey={dataKey} fill={color} radius={4} barSize={20} />
-                    {chartView === 'performance' && <Bar dataKey="base" fill="var(--color-base)" radius={4} barSize={20} opacity={0.3} />}
-                </BarChart>
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                        <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
+                        <YAxis tickLine={false} axisLine={false} tickMargin={10} />
+                        <Tooltip content={<ChartTooltipContent />} />
+                        <Bar dataKey={dataKey} fill={color} radius={4} barSize={20} />
+                    </BarChart>
+                </ResponsiveContainer>
             );
         }
 
-        // Default: Curve (Monotone Line)
-        switch (chartView) {
-            case 'performance':
-                return (
-                    <LineChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                        <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
-                        <YAxis tickLine={false} axisLine={false} tickMargin={10} unit="%" />
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                        <ChartLegend content={<ChartLegendContent />} />
-                        <Line dataKey="measured" type="monotone" stroke="var(--color-measured)" strokeWidth={2} dot={false} unit="%" />
-                        <Line dataKey="base" type="monotone" stroke="var(--color-base)" strokeWidth={2} strokeDasharray="5 5" dot={false} unit="%" />
-                    </LineChart>
-                );
-            case 'power':
-                 return (
-                    <LineChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                        <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
-                        <YAxis tickLine={false} axisLine={false} tickMargin={10} unit="W" />
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                        <ChartLegend content={<ChartLegendContent />} />
-                        <Line dataKey="power" type="monotone" stroke="var(--color-power)" strokeWidth={2} dot={false} name="Power" unit="W" />
-                    </LineChart>
-                );
-            case 'dust':
-                return (
-                    <LineChart accessibilityLayer data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                        <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
-                        <YAxis tickLine={false} axisLine={false} tickMargin={10} unit="µg/m³" />
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                        <ChartLegend content={<ChartLegendContent />} />
-                        <Line dataKey="dust" type="monotone" stroke="var(--color-dust)" strokeWidth={2} dot={false} name="Dust Level" />
-                    </LineChart>
-                );
-            default: return null;
-        }
+        return (
+            <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                    <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
+                    <YAxis tickLine={false} axisLine={false} tickMargin={10} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+                    <Line 
+                        dataKey={chartView === 'performance' ? 'measured' : chartView === 'power' ? 'power' : 'dust'} 
+                        type="monotone" 
+                        stroke={chartView === 'performance' ? 'var(--color-measured)' : chartView === 'power' ? 'var(--color-power)' : 'var(--color-dust)'} 
+                        strokeWidth={2} 
+                        dot={false} 
+                    />
+                </LineChart>
+            </ResponsiveContainer>
+        );
     }
     
     return (
         <Card className="animate-energy-wave rounded-2xl">
             <CardHeader className="flex flex-col items-stretch justify-between gap-4 md:flex-row">
                 <div>
-                    <CardTitle>Performance Overview</CardTitle>
-                    <CardDescription>
-                       {getChartDescription()}
-                    </CardDescription>
+                    <CardTitle>Sensor Performance Overview</CardTitle>
+                    <CardDescription>Real-time data stream from ESP32 node.</CardDescription>
                 </div>
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                     <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
-                        <Button 
-                            variant={chartType === 'curve' ? 'default' : 'ghost'} 
-                            size="sm" 
-                            className="rounded-md h-8 px-2"
-                            onClick={() => setChartType('curve')}
-                        >
+                        <Button variant={chartType === 'curve' ? 'default' : 'ghost'} size="sm" onClick={() => setChartType('curve')}>
                             <Activity className="h-4 w-4 mr-1" /> Curve
                         </Button>
-                        <Button 
-                            variant={chartType === 'bar' ? 'default' : 'ghost'} 
-                            size="sm" 
-                            className="rounded-md h-8 px-2"
-                            onClick={() => setChartType('bar')}
-                        >
+                        <Button variant={chartType === 'bar' ? 'default' : 'ghost'} size="sm" onClick={() => setChartType('bar')}>
                             <LayoutPanelLeft className="h-4 w-4 mr-1" /> Bar
                         </Button>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
                         {chartViewOptions.map(option => (
-                            <Button 
-                                key={option.value}
-                                variant={chartView === option.value ? 'secondary' : 'outline'}
-                                size="sm"
-                                className="rounded-full"
-                                onClick={() => setChartView(option.value)}
-                            >
+                            <Button key={option.value} variant={chartView === option.value ? 'secondary' : 'outline'} size="sm" className="rounded-full" onClick={() => setChartView(option.value)}>
                                 {option.label}
                             </Button>
                         ))}
                     </div>
                      <div className="flex items-center gap-2">
                         {timePeriodOptions.map(option => (
-                            <Button 
-                                key={option.value}
-                                variant={timePeriod === option.value ? 'default' : 'outline'}
-                                size="sm"
-                                className="rounded-full"
-                                onClick={() => setTimePeriod(option.value)}
-                            >
+                            <Button key={option.value} variant={timePeriod === option.value ? 'default' : 'outline'} size="sm" className="rounded-full" onClick={() => setTimePeriod(option.value)}>
                                 {option.label}
                             </Button>
                         ))}
