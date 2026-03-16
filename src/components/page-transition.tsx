@@ -19,12 +19,15 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
         variants={{
           initialState: {
             opacity: 0,
+            y: 10,
           },
           animateState: {
             opacity: 1,
+            y: 0,
           },
           exitState: {
             opacity: 0,
+            y: -10,
           },
         }}
       >

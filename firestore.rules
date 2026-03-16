@@ -10,9 +10,15 @@ service cloud.firestore {
       allow write: if false; // Disallow client-side writes for now
     }
 
-    // Users can only read and write their own profile data
+    // Allow checking for registered users (necessary for Forgot Password flow)
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Temporary rule for OTPs
+    match /otps/{email} {
+      allow read, write: if true; 
     }
   }
 }

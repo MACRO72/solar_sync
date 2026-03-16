@@ -74,3 +74,5 @@ export type HistoricalDataPeriod = {
 export type HistoricalData = {
     [key: string]: HistoricalDataPeriod;
 }
+
+export type MetricKey = 'voltage' | 'current' | 'power' | 'temperature' | 'irradiance' | 'dustDensity';
