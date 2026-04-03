@@ -57,3 +57,4 @@ serviceAccountKey.json
 # build artifacts / debug files
 tsc_output.txt
 *.zip
+*.log
