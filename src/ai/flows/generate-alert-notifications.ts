@@ -1,3 +1,5 @@
+'use server';
+
 import {z} from 'zod';
 import { sendEmailInternal } from '@/ai/tools/send-notification';
 import { sendSmsInternal } from '@/ai/tools/send-sms';
