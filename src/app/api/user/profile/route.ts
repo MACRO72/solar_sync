@@ -71,10 +71,10 @@ export async function PUT(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Profile Update API Error:', error);
-    // Generic error for production security, more detail in dev logs
     return NextResponse.json({ 
       error: 'Internal server error', 
-      message: process.env.NODE_ENV === 'development' ? error.message : 'An unexpected error occurred'
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, { status: 500 });
   }
 }

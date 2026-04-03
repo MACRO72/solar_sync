@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 /**
  * Robust handler for Gemini API calls using direct REST (fetch).
  * Bypasses Genkit/SDK abstractions for maximum control and compatibility with v1beta.
