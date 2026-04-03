@@ -1,4 +1,5 @@
 "use client";
+export const runtime = 'nodejs';
 
 import React from 'react';
 import { motion } from 'framer-motion';

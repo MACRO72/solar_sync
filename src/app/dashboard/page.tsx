@@ -1,4 +1,5 @@
 'use client';
+export const runtime = 'nodejs';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { OverviewStats } from "@/components/dashboard/overview-stats";
