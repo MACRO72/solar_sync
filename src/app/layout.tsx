@@ -1,23 +1,20 @@
-
-import type { Metadata } from 'next';
-import './globals.css';
-import { Toaster } from '@/components/ui/toaster';
-import { FirebaseClientProvider } from '@/firebase/client-provider';
-import { SmoothScrollProvider } from '@/components/smooth-scroll-provider';
+import type { Metadata } from "next";
+import "./globals.css";
+import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: 'SolarSync',
-  description: 'AI-powered solar efficiency dashboard',
+  title: "SolarSync",
+  description: "AI-powered solar efficiency dashboard",
   icons: {
-    icon: '/favicon.svg',
+    icon: "/favicon.svg",
   },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
@@ -33,12 +30,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
-        <FirebaseClientProvider>
-          <SmoothScrollProvider>
-            {children}
-          </SmoothScrollProvider>
-        </FirebaseClientProvider>
-        <Toaster />
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

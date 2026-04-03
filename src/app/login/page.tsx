@@ -1,5 +1,5 @@
-'use client';
-
+"use client";
+export const dynamic = "force-dynamic";
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, type User } from 'firebase/auth';

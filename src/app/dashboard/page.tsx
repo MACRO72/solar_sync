@@ -1,10 +1,11 @@
-'use client';
+"use client";
+export const dynamic = "force-dynamic";
 export const runtime = 'nodejs';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { OverviewStats } from "@/components/dashboard/overview-stats";
 import { RecentAlerts } from "@/components/dashboard/recent-alerts";
-import dynamic from 'next/dynamic';
+import nextDynamic from 'next/dynamic';
 import { Skeleton } from "@/components/ui/skeleton";
 import { SolarEnergyLoader } from "@/components/dashboard/solar-energy-loader";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,9 +29,9 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useScroll, useTransform } from 'framer-motion';
 
-const PerformanceChart = dynamic(
+const PerformanceChart = nextDynamic(
   () => import('@/components/dashboard/performance-chart').then(mod => mod.PerformanceChart),
-  { 
+  {
     ssr: false,
     loading: () => <Skeleton className="h-[300px] w-full bg-slate-800/50 rounded-2xl border border-white/5 animate-pulse" />
   }
@@ -53,10 +54,10 @@ export default function DashboardOverviewPage() {
   // Merge real sensor data with sim delta (pure frontend overlay)
   const simDevice = latestDevice ? {
     ...latestDevice,
-    power:       Math.max(0, (latestDevice.power       || 0) * sim.delta.powerFactor),
+    power: Math.max(0, (latestDevice.power || 0) * sim.delta.powerFactor),
     temperature: Math.max(0, (latestDevice.temperature || 0) + sim.delta.tempOffset),
     dustDensity: Math.max(0, (latestDevice.dustDensity || 0) + sim.delta.dustOffset),
-    irradiance:  Math.max(0, (latestDevice.irradiance  || 0) * sim.delta.powerFactor),
+    irradiance: Math.max(0, (latestDevice.irradiance || 0) * sim.delta.powerFactor),
   } : latestDevice;
 
   const { scrollYProgress } = useScroll();
@@ -67,7 +68,7 @@ export default function DashboardOverviewPage() {
     if (shouldShowLoader) {
       // Instant transition once data is ready
       if (devices.length > 0 || !firebaseLoading) {
-          setShouldShowLoader(false);
+        setShouldShowLoader(false);
       }
     }
   }, [shouldShowLoader, setShouldShowLoader, devices.length, firebaseLoading]);
@@ -120,9 +121,9 @@ export default function DashboardOverviewPage() {
               <SystemSummaryBanner
                 userName={userName}
                 data={simDevice ? {
-                  power:       simDevice.power       || 0,
+                  power: simDevice.power || 0,
                   temperature: simDevice.temperature || 0,
-                  irradiance:  simDevice.irradiance  || 0,
+                  irradiance: simDevice.irradiance || 0,
                   dustDensity: simDevice.dustDensity || 0,
                 } : null}
                 onAnalysis={handleAnalysis}
@@ -159,12 +160,12 @@ export default function DashboardOverviewPage() {
 
               <OverviewStats />
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 w-full">
-                  <div className="lg:col-span-2 flex flex-col">
-                      <PerformanceChart />
-                  </div>
-                  <div className="lg:col-span-1 flex flex-col">
-                      <RecentAlerts />
-                  </div>
+                <div className="lg:col-span-2 flex flex-col">
+                  <PerformanceChart />
+                </div>
+                <div className="lg:col-span-1 flex flex-col">
+                  <RecentAlerts />
+                </div>
               </div>
             </ScrollSection>
 
@@ -184,7 +185,7 @@ export default function DashboardOverviewPage() {
               {simDevice ? (
                 <div className="flex flex-col gap-8">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <EfficiencyAnalyzer 
+                    <EfficiencyAnalyzer
                       power={simDevice.power || 0}
                       irradiance={simDevice.irradiance || 0}
                       dustDensity={simDevice.dustDensity || 0}
@@ -192,7 +193,7 @@ export default function DashboardOverviewPage() {
                     <SystemHealthCard device={simDevice} />
                   </div>
                   <EnergyFlowVisualizer power={simDevice.power || 0} />
-                  <SolarPredictionChart 
+                  <SolarPredictionChart
                     historicalData={devices}
                     currentIrradiance={simDevice.irradiance || 0}
                     currentTemp={simDevice.temperature || 0}
@@ -202,14 +203,14 @@ export default function DashboardOverviewPage() {
                   <AIInsightsPanel key={analysisKey} data={simDevice as any} />
                 </div>
               ) : (
-                  <div className="h-96 bg-white/5 animate-pulse rounded-3xl" />
+                <div className="h-96 bg-white/5 animate-pulse rounded-3xl" />
               )}
             </ScrollSection>
 
             {/* SECTION 7: DIGITAL TWIN (Last) */}
             <ScrollSection id="digital-twin" className="pb-40">
               {latestDevice ? (
-                <SolarDigitalTwin 
+                <SolarDigitalTwin
                   lightIndex={latestDevice.irradiance || 0}
                   voltage={latestDevice.voltage || 0}
                   power={latestDevice.power || 0}
@@ -233,18 +234,18 @@ const ScrollSection = React.memo(({ id, children, className, delay = 0, forceVis
 
   const variants = {
     hidden: { opacity: 0, y: 40, filter: 'blur(15px)', scale: 0.96 },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
-      filter: 'blur(0px)', 
+    visible: {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
       scale: 1,
       transition: {
-          duration: 0.2,
-          staggerChildren: 0.05,
-          delayChildren: 0.05,
-          type: "spring",
-          damping: 30,
-          stiffness: 120,
+        duration: 0.2,
+        staggerChildren: 0.05,
+        delayChildren: 0.05,
+        type: "spring",
+        damping: 30,
+        stiffness: 120,
       }
     }
   };
@@ -255,7 +256,7 @@ const ScrollSection = React.memo(({ id, children, className, delay = 0, forceVis
   };
 
   return (
-      <motion.section
+    <motion.section
       id={id}
       initial={forceVisible ? "visible" : "hidden"}
       whileInView={!forceVisible ? "visible" : undefined}
@@ -265,7 +266,7 @@ const ScrollSection = React.memo(({ id, children, className, delay = 0, forceVis
       className={cn("w-full flex flex-col gap-10 py-10 scroll-mt-24 min-h-[50vh] justify-center", className)}
     >
       <motion.div variants={itemVariants} className="w-full h-full flex flex-col gap-10">
-          {children}
+        {children}
       </motion.div>
     </motion.section>
   );
@@ -275,67 +276,67 @@ ScrollSection.displayName = 'ScrollSection';
 
 
 const SystemHealthCard = React.memo(({ device }: { device: any }) => {
-    const status = useDeviceStatus(device.lastSeen);
-    
-    const healthStatus = React.useMemo(() => {
-        const sensorsActive = device.voltage > 0 || device.irradiance > 0;
-        
-        if (!status.isOnline) return { status: 'Critical', color: 'text-destructive', icon: XCircle };
-        if (!sensorsActive) return { status: 'Warning', color: 'text-[#FACC15]', icon: AlertCircle };
-        return { status: 'Healthy', color: 'text-[#22C55E]', icon: CheckCircle2 };
-    }, [device, status]);
+  const status = useDeviceStatus(device.lastSeen);
 
-    const HealthItem = ({ icon: Icon, label, status, isHealthy }: any) => (
-        <div className="flex items-center justify-between group">
-            <div className="flex items-center gap-3">
-                <div className="p-2 bg-white/5 rounded-lg border border-white/5 text-slate-400 group-hover:text-[#22D3EE] transition-colors">
-                    <Icon size={18} />
-                </div>
-                <span className="text-sm font-medium text-slate-300">{label}</span>
-            </div>
-            <span className={cn("text-xs font-bold", isHealthy ? "text-[#22C55E]" : "text-destructive")}>{status}</span>
+  const healthStatus = React.useMemo(() => {
+    const sensorsActive = device.voltage > 0 || device.irradiance > 0;
+
+    if (!status.isOnline) return { status: 'Critical', color: 'text-destructive', icon: XCircle };
+    if (!sensorsActive) return { status: 'Warning', color: 'text-[#FACC15]', icon: AlertCircle };
+    return { status: 'Healthy', color: 'text-[#22C55E]', icon: CheckCircle2 };
+  }, [device, status]);
+
+  const HealthItem = ({ icon: Icon, label, status, isHealthy }: any) => (
+    <div className="flex items-center justify-between group">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-white/5 rounded-lg border border-white/5 text-slate-400 group-hover:text-[#22D3EE] transition-colors">
+          <Icon size={18} />
         </div>
-    );
+        <span className="text-sm font-medium text-slate-300">{label}</span>
+      </div>
+      <span className={cn("text-xs font-bold", isHealthy ? "text-[#22C55E]" : "text-destructive")}>{status}</span>
+    </div>
+  );
 
-    return (
-        <GlassCard className="p-6 bg-[#0B1220]/50 border-white/5 flex flex-col h-full">
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-2">
-                    <ShieldCheck className="h-5 w-5 text-[#22D3EE]" />
-                    <h3 className="text-white font-bold text-lg tracking-tight">AI Health Monitor</h3>
-                </div>
-                <div className={cn("flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10", healthStatus.color)}>
-                    <healthStatus.icon size={14} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">{healthStatus.status}</span>
-                </div>
-            </div>
-            <div className="space-y-6">
-                <HealthItem 
-                    icon={Server} 
-                    label="ESP32 Processing" 
-                    status={status.isOnline ? 'Active Stream' : 'Link Failure'} 
-                    isHealthy={status.isOnline} 
-                />
-                <HealthItem 
-                    icon={Database} 
-                    label="Cloud Logic Engine" 
-                    status="Real-time Sync" 
-                    isHealthy={true} 
-                />
-                <HealthItem 
-                    icon={HardDrive} 
-                    label="Photovoltaic State" 
-                    status={device.voltage > 0.5 ? 'Generating' : 'Dormant (No Light)'} 
-                    isHealthy={true} 
-                />
-                <HealthItem 
-                    icon={Wifi} 
-                    label="Telemetry Stream" 
-                    status={status.isOnline ? 'Live Feed' : 'Stopped'} 
-                    isHealthy={status.isOnline} 
-                />
-            </div>
-        </GlassCard>
-    );
+  return (
+    <GlassCard className="p-6 bg-[#0B1220]/50 border-white/5 flex flex-col h-full">
+      <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-[#22D3EE]" />
+          <h3 className="text-white font-bold text-lg tracking-tight">AI Health Monitor</h3>
+        </div>
+        <div className={cn("flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10", healthStatus.color)}>
+          <healthStatus.icon size={14} />
+          <span className="text-[10px] font-bold uppercase tracking-widest">{healthStatus.status}</span>
+        </div>
+      </div>
+      <div className="space-y-6">
+        <HealthItem
+          icon={Server}
+          label="ESP32 Processing"
+          status={status.isOnline ? 'Active Stream' : 'Link Failure'}
+          isHealthy={status.isOnline}
+        />
+        <HealthItem
+          icon={Database}
+          label="Cloud Logic Engine"
+          status="Real-time Sync"
+          isHealthy={true}
+        />
+        <HealthItem
+          icon={HardDrive}
+          label="Photovoltaic State"
+          status={device.voltage > 0.5 ? 'Generating' : 'Dormant (No Light)'}
+          isHealthy={true}
+        />
+        <HealthItem
+          icon={Wifi}
+          label="Telemetry Stream"
+          status={status.isOnline ? 'Live Feed' : 'Stopped'}
+          isHealthy={status.isOnline}
+        />
+      </div>
+    </GlassCard>
+  );
 });
 SystemHealthCard.displayName = 'SystemHealthCard';
