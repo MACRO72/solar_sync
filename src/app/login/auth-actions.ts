@@ -1,144 +1,226 @@
 'use server';
 
 import { z } from 'zod';
-import { sendEmailInternal } from '@/ai/tools/send-notification';
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore, collection, query, where, getDocs, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
-import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getDatabase } from 'firebase-admin/database';
+import { getFirestore } from 'firebase-admin/firestore';
+import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { firebaseConfig } from '@/firebase/config';
-import { randomInt } from 'crypto';
+import { randomInt, createHash } from 'crypto';
+import { SignJWT, jwtVerify } from 'jose';
+import path from 'path';
 
-// Initialize a dedicated Firebase app for server actions using the client config
-const app = getApps().find(a => a.name === 'server-actions')
-  || initializeApp(firebaseConfig, 'server-actions');
+if (!getApps().length) {
+  let serviceAccountRaw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON!;
+  
+  // Robust sanitization for varied .env escaping styles
+  if (serviceAccountRaw.startsWith('"') && serviceAccountRaw.endsWith('"')) {
+    serviceAccountRaw = serviceAccountRaw.slice(1, -1);
+  }
+  
+  // Correctly handle standard JSON escapings for things like multiline private keys
+  serviceAccountRaw = serviceAccountRaw.replace(/\\n/g, '\n');
 
-const db = getFirestore(app);
-const auth = getAuth(app);
+  try {
+    const serviceAccount = JSON.parse(serviceAccountRaw);
+    initializeApp({
+      credential: cert(serviceAccount),
+      databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL
+    });
+  } catch (error: any) {
+    console.error("❌ Firebase Admin Initialization JSON Parse Failure:", error.message);
+    throw error;
+  }
+}
+
+const adminDb = getDatabase();
+const adminAuth = getAdminAuth();
+
+const getJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) throw new Error('JWT_SECRET environment variable is not set.');
+  return new TextEncoder().encode(secret);
+};
+
+async function lookupUserByEmail(emailInput: string) {
+  const email = emailInput.toLowerCase().trim();
+  
+  // PERFORMANT: Optimized lookup using indexed queries instead of scanning all users
+  const snapshot = await adminDb.ref('users').orderByChild('email').equalTo(email).limitToFirst(1).once('value');
+  const users = snapshot.val() || {};
+
+  let foundUser = null;
+  let userId = null;
+
+  for (let id in users) {
+    foundUser = users[id];
+    userId = id;
+    break;
+  }
+
+  // Fallback to Firestore (also optimized)
+  if (!foundUser) {
+    try {
+      const db = getFirestore();
+      const querySnapshot = await db.collection('users').where('email', '==', email).limit(1).get();
+      
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        foundUser = doc.data();
+        userId = doc.id;
+        
+        // Auto-migrate to RTDB as Single Source of Truth
+        await adminDb.ref(`users/${userId}`).update({ email: email });
+      }
+    } catch (e) {
+      console.warn("Firestore fallback error:", e);
+    }
+  }
+
+  return { user: foundUser, userId };
+}
 
 export async function checkUserRegistered(email: string) {
   try {
-    // FALLBACK: Use Firebase Auth REST API to check if email exists.
-    // This avoids Firestore security rules in the "registration check" phase.
-    const apiKey = firebaseConfig.apiKey;
-    const response = await fetch(
-      `https://identitytoolkit.googleapis.com/v1/accounts:createAuthUri?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          identifier: email,
-          continueUri: 'http://localhost', // Required but doesn't affect the check
-        }),
+    const { user } = await lookupUserByEmail(email);
+    return { exists: !!user, phone: user?.phone || null };
+  } catch (error: any) {
+    console.error('❌ User Registration Check Failed:', error);
+    throw new Error(`Registration verification error`);
+  }
+}
+
+export async function generateAndSendOTP(emailInput: string) {
+  const email = emailInput.toLowerCase().trim();
+  try {
+    const { user, userId } = await lookupUserByEmail(email);
+    if (!user || !userId) {
+      console.warn(`OTP requested for non-existent email: ${email}`);
+      return { status: 'success' };
+    }
+    const resetRef = adminDb.ref(`passwordResets/${userId}`);
+    const currentData = await resetRef.once('value');
+    
+    if (currentData.exists()) {
+      const { lastRequestTime } = currentData.val();
+      if (Date.now() - lastRequestTime < 60000) {
+        throw new Error('Please wait 60 seconds before requesting another code.');
       }
-    );
+    }
+
+    const otpCode = randomInt(100000, 999999).toString();
+    const otpHash = createHash('sha256').update(otpCode).digest('hex');
+    const expiresAt = Date.now() + 5 * 60 * 1000;
+
+    await resetRef.set({
+      otpHash,
+      expiresAt,
+      attempts: 0,
+      lastRequestTime: Date.now()
+    });
+
+    const brevoApiKey = process.env.BREVO_API_KEY;
+    if (!brevoApiKey) {
+      throw new Error('BREVO_API_KEY is not defined in the environment variables.');
+    }
+
+    const payload = {
+      sender: { name: 'SolarSync Security', email: 'sacreotadexter@gmail.com' },
+      to: [{ email: email }],
+      subject: 'SolarSync Verification Code',
+      textContent: `Your verification code is: ${otpCode}\n\nThis code expires in 5 minutes.`,
+    };
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': brevoApiKey,
+        'content-type': 'application/json',
+        'accept': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
 
     if (!response.ok) {
-       const err = await response.json();
-       throw new Error(err.error?.message || 'Auth API failed');
-    }
-
-    const data = await response.json();
-    console.log('🔍 Auth API Response for', email, ':', JSON.stringify(data, null, 2));
-
-    // data.registered is the standard flag for existing accounts
-    const isRegistered = data.registered === true;
-
-    return { 
-      exists: isRegistered, 
-      phone: null,
-    };
-  } catch (error: any) {
-    console.error('❌ User Registration Check Failed (REST API):', error);
-    throw new Error(`Registration verification error: ${error.message}`);
-  }
-}
-
-/**
- * Generates and sends a 6-digit OTP to the user.
- */
-export async function generateAndSendOTP(email: string) {
-  const otpCode = randomInt(100000, 999999).toString();
-  const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
-
-  try {
-    // Store OTP in Firestore
-    const otpRef = doc(db, 'otps', email);
-    await setDoc(otpRef, {
-      code: otpCode,
-      expiresAt: expiresAt,
-    });
-
-    // Send via Email
-    const emailRes = await sendEmailInternal({
-      subject: 'Your SolarSync Access Key OTP',
-      message: `Your one-time passkey is: ${otpCode}. This code will expire in 5 minutes.`,
-      recipientEmail: email,
-    });
-
-    if (emailRes.status !== 'success') {
-      throw new Error(`Email delivery failed: ${emailRes.details}`);
+      const errData = await response.json();
+      throw new Error(`Brevo API rejected email: ${JSON.stringify(errData)}`);
     }
 
     return { status: 'success' };
   } catch (error: any) {
-    console.error('❌ OTP Delivery Failed:', error);
-    throw new Error(`Failed to send OTP: ${error.message || 'Check server configuration'}`);
+    console.error('❌ OTP Delivery Error:', error);
+    // Temporarily throwing the real error to the frontend so you can see if Brevo is failing!
+    throw new Error(error.message);
   }
 }
 
-/**
- * Verifies the provided OTP code.
- */
-export async function verifyOTPCode(email: string, code: string) {
+export async function verifyOTPCode(emailInput: string, code: string) {
+  const email = emailInput.toLowerCase().trim();
   try {
-    const otpRef = doc(db, 'otps', email);
-    const otpDoc = await getDoc(otpRef);
+    const { user, userId } = await lookupUserByEmail(email);
+    if (!user || !userId) {
+      return { verified: false, message: 'Invalid code.' };
+    }
+    const resetRef = adminDb.ref(`passwordResets/${userId}`);
+    const snapshot = await resetRef.once('value');
+
+    if (!snapshot.exists()) {
+      return { verified: false, message: 'OTP not found or expired.' };
+    }
+
+    const data = snapshot.val();
     
-    if (!otpDoc.exists()) return { verified: false, message: 'OTP not found or expired.' };
+    if (Date.now() > data.expiresAt) {
+      await resetRef.remove();
+      return { verified: false, message: 'OTP expired.' };
+    }
 
-    const data = otpDoc.data();
-    if (data?.code !== code) return { verified: false, message: 'Invalid code.' };
-    if (Date.now() > data.expiresAt) return { verified: false, message: 'OTP expired.' };
+    if (data.attempts >= 3) {
+      await resetRef.remove();
+      return { verified: false, message: 'Too many failed attempts. Please request a new code.' };
+    }
 
-    return { verified: true };
+    const inputHash = createHash('sha256').update(code).digest('hex');
+    if (data.otpHash !== inputHash) {
+      await resetRef.update({ attempts: data.attempts + 1 });
+      return { verified: false, message: 'Invalid code.' };
+    }
+
+    await resetRef.remove();
+
+    const token = await new SignJWT({ userId, email })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('10m')
+      .sign(getJwtSecret());
+
+    return { verified: true, token };
   } catch (error: any) {
-    console.error('❌ OTP Verification System Error:', error);
-    throw new Error(`Verification system error: ${error.message || 'Check server logs'}`);
+    console.error('❌ OTP Verification Error:', error);
+    return { verified: false, message: 'Verification failed.' };
   }
 }
 
-/**
- * Initiates a standard Firebase password reset email.
- * Note: Admin password update requires valid server-side credentials (service account).
- */
-export async function initiatePasswordReset(email: string) {
+export async function updateUserPassword(emailInput: string, newPassword: string, token?: string) {
+  const email = emailInput.toLowerCase().trim();
+  if (!token) throw new Error('Unauthorized: Missing reset token');
+
   try {
-    await sendPasswordResetEmail(auth, email);
+    const { payload } = await jwtVerify(token, getJwtSecret());
+    if (payload.email !== email) throw new Error('Unauthorized: Token mismatch');
+
+    const userId = payload.userId as string;
     
-    // Clean up OTP if it exists
-    const otpRef = doc(db, 'otps', email);
-    await deleteDoc(otpRef);
+    await adminDb.ref(`users/${userId}`).update({ password: newPassword });
+    
+    try {
+      await adminAuth.updateUser(userId, { password: newPassword });
+    } catch (e) {
+      // Ignore if user isn't in Auth backend, ensuring RTDB is the unified source of truth
+    }
 
     return { status: 'success' };
   } catch (error: any) {
-    console.error('❌ Password Reset Initiation Failed:', error);
-    throw new Error(`Fallback reset failed: ${error.message}`);
+    console.error('❌ Password Reset Failed:', error);
+    throw new Error('Password reset failed. Token may be expired or invalid.');
   }
-}
-
-/**
- * Updates the user's password. 
- * WARNING: This will likely fail on local dev without a service account if using Admin SDK.
- * We'll keep it as a placeholder or use a secure alternative.
- */
-export async function updateUserPassword(email: string, newPassword: string) {
-  // If we had firebase-admin correctly configured with a service account:
-  /*
-  const user = await adminAuth.getUserByEmail(email);
-  await adminAuth.updateUser(user.uid, { password: newPassword });
-  */
-  
-  // Since we are using client SDK on server, we can't directly update passwords 
-  // without the user being signed in. We will use the standard reset email as a safe bridge.
-  return initiatePasswordReset(email);
 }

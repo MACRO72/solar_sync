@@ -6,7 +6,7 @@ import { Zap } from 'lucide-react';
 
 export function SolarEnergyLoader() {
   const [time, setTime] = useState(0);
-  const duration = 5000;
+  const duration = 3000;
 
   const statusMessages = [
     "Connecting to Solar Sensors...",

@@ -2,24 +2,34 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 
-const GlassCard = React.forwardRef<
+const GlassCardComponent = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement>
 >(({ className, ...props }, ref) => {
-
   return (
-    <Card
-      ref={ref}
-      className={cn(
-        "rounded-2xl backdrop-blur-sm border border-border/20 shadow-lg transition-all duration-300 hover:shadow-[0_0_40px_8px] hover:shadow-primary/30 hover:scale-[1.02] animate-energy-wave",
-        className
-      )}
-      {...props}
-    />
+    <motion.div
+      whileHover={{ y: -6, scale: 1.025 }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 500, damping: 28 }}
+      className="h-full"
+      style={{ willChange: "transform" }}
+    >
+      <Card
+        ref={ref}
+        className={cn(
+          "rounded-3xl backdrop-blur-md border border-white/10 shadow-2xl transition-all duration-500 hover:shadow-[0_20px_50px_rgba(8,_112,_184,_0.2)] bg-[#0B1220]/40 overflow-hidden",
+          className
+        )}
+        {...props}
+      />
+    </motion.div>
   )
 })
-GlassCard.displayName = "GlassCard"
+GlassCardComponent.displayName = "GlassCard"
 
-export { GlassCard, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+export const GlassCard = React.memo(GlassCardComponent)
+
+export { CardHeader, CardFooter, CardTitle, CardDescription, CardContent }

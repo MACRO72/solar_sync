@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useDebounce } from 'use-debounce';
 import { GlassCard, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/glass-card"
 import { AlertTriangle, Bell, Info, Loader2, TestTube2 } from 'lucide-react'
@@ -35,13 +36,18 @@ export function RecentAlerts() {
         
         try {
             if (isTest) {
-                // AI DRIVEN TEST ALERT
+                // INTELLIGENT AI-DRIVEN TEST ALERT
                 const content = await generateAlertNotifications({
-                    eventDescription: "This is a system diagnostic test. Please generate a 'Test Successful' alert. Ensure the pushTitle and pushBody are optimized for a mobile popup.",
+                    eventDescription: "SYSTEM DIAGNOSTIC TEST: AI-powered notification engine is being verified. Please generate a 'Test Successful' alert with details about the secure link to Brevo and Gemini. Ensure the tone is professional but reassuring.",
                     urgencyLevel: 'medium',
-                    affectedDevice: 'Diagnostic Node',
+                    affectedDevice: 'Diagnostic Internal Engine',
                     recipientEmail: user?.email || undefined,
                     recipientPhone: phone || undefined,
+                    telemetry: {
+                        temperature: 55, // Trigger medium AI enhancement if allowed
+                        dustLevel: 0,
+                        efficiency: 100
+                    }
                 });
 
                 const testAlert: Alert = { 
@@ -53,7 +59,6 @@ export function RecentAlerts() {
                 };
                 setAlerts((p) => [testAlert, ...p].slice(0, 10));
                 
-                // This toast simulates the mobile popup experience in the browser
                 toast({ 
                     title: content.pushTitle, 
                     description: content.pushBody, 
@@ -66,20 +71,43 @@ export function RecentAlerts() {
                 const isMediumTemp = (latest.temperature || 0) >= 50 && (latest.temperature || 0) < 60;
                 const isError = latest.status === 'Error' || latest.status === 'Offline';
                 const isLowEfficiency = (latest.irradiance || 0) > 500 && (latest.efficiency || 0) < 5;
+                const isDusty = (latest.dustDensity || 0) >= 150;
+                const isAbnormalTilt = (latest.tiltAngle != null) && (latest.tiltAngle < 20 || latest.tiltAngle > 40);
 
-                if (!isHighTemp && !isMediumTemp && !isError && !isLowEfficiency) {
+                if (!isHighTemp && !isMediumTemp && !isError && !isLowEfficiency && !isDusty && !isAbnormalTilt) {
                     setIsGenerating(false);
                     return;
                 }
 
                 const urgency = (isHighTemp || isError) ? 'high' : 'medium';
                 
+                // Add more context for Gemini to be "intelligent"
+                const context = [
+                    `Status: ${latest.status}`,
+                    `Temp: ${latest.temperature?.toFixed(1)}°C`,
+                    `Power: ${latest.power?.toFixed(1)}W`,
+                    `Efficiency: ${latest.efficiency?.toFixed(1)}%`,
+                    `Dust: ${latest.dustDensity?.toFixed(0)}µg/m³`,
+                    `Tilt: ${latest.tiltAngle?.toFixed(1)}°`,
+                ].join(', ');
+
                 const content = await generateAlertNotifications({
-                    eventDescription: `Telemetry Anomaly: Status=${latest.status}, Temp=${latest.temperature}°C, Power=${latest.power}W, Efficiency=${latest.efficiency}%. Priority: ${isHighTemp ? 'Overheat' : 'Low Efficiency'}.`,
+                    eventDescription: `TELEMETRY ANOMALY DETECTED: ${
+                        isHighTemp ? 'Critical Overheat' : 
+                        isError ? 'System Failure' : 
+                        isDusty ? 'High Dust' : 
+                        isAbnormalTilt ? 'Abnormal Tilt' : 'Low Efficiency'
+                    }.`,
                     urgencyLevel: urgency,
                     affectedDevice: latest.name || latest.id,
                     recipientEmail: user?.email || undefined,
                     recipientPhone: phone || undefined,
+                    telemetry: {
+                        dustLevel: latest.dustDensity,
+                        tiltAngle: latest.tiltAngle,
+                        efficiency: latest.efficiency,
+                        temperature: latest.temperature,
+                    }
                 });
 
                 const newAlert: Alert = { 
@@ -132,18 +160,33 @@ export function RecentAlerts() {
                 ) : alerts.length > 0 ? (
                     <ScrollArea className="h-[350px]">
                         <div className="space-y-6 pr-4">
-                            {alerts.map((a) => (
-                                <div key={a.id} className="flex items-start gap-4">
-                                    <div className="mt-1">{getIcon(a.severity)}</div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center justify-between">
-                                            <p className="font-semibold">{a.title}</p>
-                                            <p className="text-xs text-muted-foreground">{a.timestamp}</p>
-                                        </div>
-                                        <p className="text-sm text-muted-foreground line-clamp-2">{a.description}</p>
-                                    </div>
-                                </div>
-                            ))}
+                            <AnimatePresence initial={false}>
+                              {alerts.map((a, i) => (
+                                <motion.div
+                                  key={a.id && a.id !== "" ? a.id : `alert-key-${i}`}
+  
+
+                                  initial={{ opacity: 0, y: -16, scale: 0.97 }}
+                                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                                  exit={{ opacity: 0, x: 30, scale: 0.95 }}
+                                  transition={{
+                                    duration: 0.35,
+                                    delay: i === 0 ? 0 : 0,
+                                    ease: 'easeOut',
+                                  }}
+                                  className="flex items-start gap-4"
+                                >
+                                  <div className="mt-1">{getIcon(a.severity)}</div>
+                                  <div className="flex-1">
+                                      <div className="flex items-center justify-between">
+                                          <p className="font-semibold">{a.title}</p>
+                                          <p className="text-xs text-muted-foreground">{a.timestamp}</p>
+                                      </div>
+                                      <p className="text-sm text-muted-foreground line-clamp-2">{a.description}</p>
+                                  </div>
+                                </motion.div>
+                              ))}
+                            </AnimatePresence>
                         </div>
                     </ScrollArea>
                 ) : (

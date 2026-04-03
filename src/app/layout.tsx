@@ -3,10 +3,14 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
+import { SmoothScrollProvider } from '@/components/smooth-scroll-provider';
 
 export const metadata: Metadata = {
   title: 'SolarSync',
   description: 'AI-powered solar efficiency dashboard',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
@@ -30,7 +34,9 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
         <FirebaseClientProvider>
-          {children}
+          <SmoothScrollProvider>
+            {children}
+          </SmoothScrollProvider>
         </FirebaseClientProvider>
         <Toaster />
       </body>

@@ -1,10 +1,10 @@
+// Final dev server reload to solidify public/ assets and config changes
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
   /* config options here */
-  devIndicators: {
-    appIsrStatus: false,
-  },
+  devIndicators: false,
+
   typescript: {
     ignoreBuildErrors: true,
   },

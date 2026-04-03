@@ -1,0 +1,9 @@
+# Query: apply now
+# ContextLines: 1
+
+1 result - 1 file
+
+src\app\login\page.tsx:
+  382                          >
+  383:                             {mode === 'signin' ? 'Register Now' : 'Sign In'}
+  384                          </button>

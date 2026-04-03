@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
 import { GlassCard, CardHeader, CardTitle, CardContent } from '@/components/glass-card';
 import { cn } from '@/lib/utils';
 import { useRealtimeData } from '@/firebase/firestore/use-realtime-data';
@@ -11,6 +11,44 @@ import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { X, LucideIcon } from 'lucide-react';
 import type { MetricKey } from '@/lib/types';
+
+
+/** Parse the numeric portion and unit suffix from a value string like "3.14 V" */
+function parseValue(val: string | number): { num: number | null; prefix: string; suffix: string } {
+  const str = String(val);
+  // Match: optional leading sign, digits, optional decimal, then whatever follows
+  const match = str.match(/^([^\d-]*)(-?\d+\.?\d*)(.*)$/);
+  if (!match) return { num: null, prefix: '', suffix: str };
+  return { num: parseFloat(match[2]), prefix: match[1], suffix: match[3] };
+}
+
+/** Animated number that counts up from 0 on mount, then springs to new values */
+function AnimatedNumber({ value, decimals }: { value: number; decimals: number }) {
+  const spring = useSpring(0, { stiffness: 80, damping: 18, mass: 0.8 });
+  const display = useTransform(spring, (v) => v.toFixed(decimals));
+
+  React.useEffect(() => { spring.set(value); }, [spring, value]);
+  return <motion.span>{display}</motion.span>;
+}
+
+/** Renders value with count-up if numeric, or plain text otherwise */
+function AnimatedValue({ value, className }: { value: string | number; className?: string }) {
+  const { num, prefix, suffix } = React.useMemo(() => parseValue(value), [value]);
+  const decimals = React.useMemo(() => {
+    if (num === null) return 0;
+    const d = String(num).split('.')[1];
+    return d ? d.length : 0;
+  }, [num]);
+
+  if (num === null) return <span className={className}>{value}</span>;
+  return (
+    <span className={className}>
+      {prefix}
+      <AnimatedNumber value={num} decimals={decimals} />
+      {suffix}
+    </span>
+  );
+}
 
 interface MetricData {
   time: string;
@@ -196,8 +234,11 @@ export function ParallaxChartTile({
             </motion.div>
             
             <motion.div layout className={cn("flex flex-col", isExpanded ? "mt-4 mb-4 items-center" : "mt-2")}>
-                <motion.div layoutId={`val-${title}`} className={cn("font-bold tracking-tight", isExpanded ? "text-5xl text-white drop-shadow-md" : "text-3xl")}>
-                    {value}
+                <motion.div
+                  layoutId={`val-${title}`}
+                  className={cn("font-bold tracking-tight", isExpanded ? "text-5xl text-white drop-shadow-md" : "text-3xl")}
+                >
+                  <AnimatedValue value={value} />
                 </motion.div>
                 <AnimatePresence>
                     {!isExpanded && (
@@ -226,7 +267,6 @@ export function ParallaxChartTile({
                                 <Skeleton className="h-full w-full rounded-xl opacity-10 bg-white" />
                             </div>
                         ) : (
-                           <ResponsiveContainer width="100%" height="100%">
                                 <ChartContainer config={config} className="h-full w-full">
                                     <AreaChart data={chartData} margin={{ top: 30, right: 30, bottom: 20, left: 10 }}>
                                         <defs>
@@ -268,7 +308,6 @@ export function ParallaxChartTile({
                                         />
                                     </AreaChart>
                                 </ChartContainer>
-                           </ResponsiveContainer>
                         )}
                     </motion.div>
                 )}

@@ -7,14 +7,15 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <AnimatePresence mode="wait">
+    <AnimatePresence mode="popLayout">
       <motion.div
         key={pathname}
         initial="initialState"
         animate="animateState"
         exit="exitState"
         transition={{
-          duration: 0.3,
+          duration: 0.2, // Instant high-velocity transition
+          ease: "circOut",
         }}
         variants={{
           initialState: {

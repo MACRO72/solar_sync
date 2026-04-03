@@ -54,25 +54,27 @@ export function SolarPredictionChart({
     if (processedHistorical.length === 0) return [];
 
     const lastPoint = processedHistorical[processedHistorical.length - 1];
+    const firstPoint = processedHistorical[0];
     const basePower = lastPoint.power;
+
+    // Calculate a basic trend factor from recent history (-1 to 1)
+    const trendFactor = processedHistorical.length > 1 
+      ? (lastPoint.power - firstPoint.power) / Math.max(firstPoint.power, 1)
+      : 0;
 
     // 2. Generate Prediction Data (Next 3 hours)
     const predictions = [];
-    // Prediction logic based on prompt's weighted formula concept
-    // lightTrend influence (0.6), temperature penalty (0.1), dust penalty (0.2)
-    // We'll simulate a 3-hour window
     for (let i = 1; i <= 6; i++) {
       const hoursAhead = i * 0.5; // Every 30 mins
       const futureTime = addHours(new Date(), hoursAhead);
       
-      // Calculate a "prediction factor"
-      // In a real app we'd look at lightTrend, but here we'll assume a moderate growth/decay curve
-      const growthFactor = currentIrradiance > 600 ? 1.2 : 0.8;
       const dustPenalty = (currentDust / 500) * 0.2;
       const tempPenalty = (currentTemp > 40 ? (currentTemp - 40) * 0.05 : 0);
       
-      // Futuristic jitter/trend
-      const predictedValue = Math.max(0, basePower * (growthFactor - dustPenalty - tempPenalty) * (1 - (i * 0.05)));
+      // Project using trend + environmental penalties
+      // We decay the trend over time to avoid infinite growth/fall
+      const decay = 1 - (i * 0.1);
+      const predictedValue = Math.max(0, basePower * (1 + (trendFactor * decay) - dustPenalty - tempPenalty));
 
       predictions.push({
         time: format(futureTime, 'HH:mm'),
@@ -105,7 +107,6 @@ export function SolarPredictionChart({
       </div>
 
       <div className="h-[300px] w-full mt-4">
-        <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={chartData}>
             <defs>
               <linearGradient id="colorPower" x1="0" y1="0" x2="0" y2="1">
@@ -171,7 +172,6 @@ export function SolarPredictionChart({
             {/* Legend marker for Prediction */}
             <ReferenceLine x={chartData.find(d => d.type === 'historical')?.time} stroke="transparent" />
           </AreaChart>
-        </ResponsiveContainer>
       </div>
 
       <div className="flex items-center gap-6 mt-6 px-2">

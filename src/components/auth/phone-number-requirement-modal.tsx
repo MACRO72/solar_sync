@@ -41,7 +41,7 @@ export function PhoneNumberRequirementModal() {
     }
     if (!user || !firestore) return;
     setIsSaving(true);
-    
+
     const userRef = doc(firestore, 'users', user.uid);
     setDoc(userRef, { phone: inputPhone }, { merge: true })
       .then(() => {
@@ -56,7 +56,7 @@ export function PhoneNumberRequirementModal() {
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
+    <Dialog open={isOpen} onOpenChange={() => { }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">

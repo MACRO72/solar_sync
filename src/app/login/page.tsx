@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, type User } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
@@ -10,11 +10,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Logo } from '@/components/icons';
 import { Loader2, Eye, EyeOff, Sun, Zap, LayoutPanelTop, ArrowRight, ShieldCheck, Mail, Smartphone, KeyRound, CheckCircle2 } from 'lucide-react';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { checkUserRegistered, generateAndSendOTP, verifyOTPCode, updateUserPassword } from './auth-actions';
@@ -24,6 +24,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SolarEnergyLoader } from '@/components/dashboard/solar-energy-loader';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Valid email required.' }),
@@ -64,6 +65,7 @@ const ParticleBackground = () => {
             top: `${p.y}%`,
             width: p.size,
             height: p.size,
+            willChange: 'transform, opacity'
           }}
           animate={{
             y: [0, -40, 0],
@@ -86,6 +88,56 @@ export default function LoginPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [showPassword, setShowPassword] = useState(false);
+  const [showSuccessLoader, setShowSuccessLoader] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mousePosRef = useRef({ x: 0, y: 0 });
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    let animationFrameId: number;
+    let targetX = window.innerWidth / 2;
+    let targetY = window.innerHeight / 2;
+
+    mousePosRef.current = { x: targetX, y: targetY };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      targetX = e.clientX;
+      targetY = e.clientY;
+    };
+
+    const animate = () => {
+      const dx = targetX - mousePosRef.current.x;
+      const dy = targetY - mousePosRef.current.y;
+
+      mousePosRef.current = {
+        x: mousePosRef.current.x + dx * 0.05,
+        y: mousePosRef.current.y + dy * 0.05
+      };
+
+      if (containerRef.current) {
+        containerRef.current.style.setProperty('--mouse-x', `${mousePosRef.current.x}px`);
+        containerRef.current.style.setProperty('--mouse-y', `${mousePosRef.current.y}px`);
+
+        // Also update shifts for the grid
+        const xShift = (mousePosRef.current.x / window.innerWidth - 0.5) * -15;
+        const yShift = (mousePosRef.current.y / window.innerHeight - 0.5) * -15;
+        containerRef.current.style.setProperty('--grid-x', `${xShift}px`);
+        containerRef.current.style.setProperty('--grid-y', `${yShift}px`);
+      }
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    animate();
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+
   const [showReset, setShowReset] = useState(false);
   const router = useRouter();
   const firestore = useFirestore();
@@ -121,7 +173,18 @@ export default function LoginPage() {
       } else {
         await signInWithEmailAndPassword(auth, values.email, values.password);
       }
-      router.push('/dashboard');
+
+      // Cinematic Success Transition
+      setIsProcessing(false);
+      setShowSuccessLoader(true);
+
+      // Force sessionStorage to prevent dashboard's own loader from double-firing
+      sessionStorage.setItem('hasSeenSolarLoader', 'true');
+
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 3000);
+
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Error', description: error.message });
       setIsProcessing(false);
@@ -129,121 +192,65 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full flex overflow-hidden bg-[#060f1f]">
-      {/* Background Gradient Environment */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#060f1f] via-[#0b1d3a] to-[#081a33]" />
+    <div ref={containerRef} className="relative min-h-screen w-full flex overflow-hidden">
+      <AnimatePresence>
+        {showSuccessLoader && (
+          <SolarEnergyLoader key="success-loader" />
+        )}
+      </AnimatePresence>
 
-      {/* Interactive Particles */}
-      <ParticleBackground />
+      {/* 1. Base Dark Gradient */}
+      <div className="absolute inset-0 z-0 pointer-events-none bg-gradient-to-b from-[#0a192f] to-[#050d1a]" />
 
-      <main className="relative z-10 grid w-full lg:grid-cols-2">
-        {/* LEFT SIDE: Visual Section */}
-        <section className="hidden lg:flex flex-col items-center justify-center p-12 border-r border-white/5 relative bg-black/10">
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            {/* Faint grid pattern */}
-            <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
-          </div>
+      {/* 2. Ultra-small Smooth Soft Mouse "Energy Particle" Glow */}
+      <div
+        className="absolute inset-0 z-0 pointer-events-none blur-[40px] opacity-60"
+        style={{
+          background: `
+            radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), 
+              rgba(255,200,80,0.10) 0%, 
+              rgba(255,200,80,0.10) 2%, 
+              rgba(0,180,255,0.20) 2%, 
+              rgba(0,180,255,0.12) 4%, 
+              rgba(0,180,255,0.06) 8%, 
+              rgba(0,150,255,0.03) 20%, 
+              transparent 25%)
+          `,
+          willChange: 'background'
+        } as any}
+      />
 
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, ease: "easeOut" }}
-            className="relative w-full max-w-lg aspect-square flex items-center justify-center"
-          >
-            {/* Sun Graphic */}
-            <motion.div
-              className="absolute top-0 right-0 z-20"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
-            >
-              <div className="relative">
-                <Sun className="h-32 w-32 text-yellow-500 blur-[2px]" />
-                <motion.div
-                  className="absolute inset-0 bg-yellow-400/20 rounded-full blur-2xl"
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-                  transition={{ duration: 4, repeat: Infinity }}
-                />
-              </div>
-            </motion.div>
+      {/* 3. Grid Pattern Layer (Sharp) */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div
+          className="absolute inset-[-30px] transition-transform duration-[600ms] ease-out"
+          style={{
+            backgroundImage: 'linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)',
+            backgroundSize: '60px 60px',
+            animation: 'moveGradient 15s ease infinite',
+            transform: `translate(var(--grid-x, 0px), var(--grid-y, 0px))`,
+            willChange: 'transform'
+          } as any}
+        />
+      </div>
 
-            {/* Solar Panel Grid Animation */}
-            <div className="w-full h-full relative p-8">
-              <svg viewBox="0 0 400 300" className="w-full h-full drop-shadow-2xl">
-                <defs>
-                  <linearGradient id="panelGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#1e293b" />
-                    <stop offset="100%" stopColor="#0f172a" />
-                  </linearGradient>
+      {/* Glow behind login card */}
+      <div
+        className="absolute z-0 pointer-events-none"
+        style={{
+          width: '500px',
+          height: '500px',
+          background: 'radial-gradient(circle, rgba(0,180,255,0.2), transparent 70%)',
+          filter: 'blur(80px)',
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)'
+        }}
+      />
 
-                  {/* Sunlight Sweep Effect */}
-                  <linearGradient id="sweepGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stopColor="transparent" />
-                    <stop offset="45%" stopColor="transparent" />
-                    <stop offset="50%" stopColor="rgba(255, 255, 255, 0.15)" />
-                    <stop offset="55%" stopColor="transparent" />
-                    <stop offset="100%" stopColor="transparent" />
-                  </linearGradient>
-
-                  <clipPath id="panelClip">
-                    <rect x="50" y="50" width="300" height="200" rx="8" />
-                  </clipPath>
-                </defs>
-
-                {/* Main Panel Frame */}
-                <rect x="45" y="45" width="310" height="210" rx="12" fill="#334155" />
-                <rect x="50" y="50" width="300" height="200" rx="8" fill="url(#panelGrad)" />
-
-                {/* Grid Lines */}
-                {[...Array(6)].map((_, i) => (
-                  <line key={`v-${i}`} x1={50 + (i + 1) * (300 / 7)} y1="50" x2={50 + (i + 1) * (300 / 7)} y2="250" stroke="#475569" strokeWidth="1" />
-                ))}
-                {[...Array(4)].map((_, i) => (
-                  <line key={`h-${i}`} x1="50" y1={50 + (i + 1) * (200 / 5)} x2="350" y2={50 + (i + 1) * (200 / 5)} stroke="#475569" strokeWidth="1" />
-                ))}
-
-                {/* Sunlight Sweep Animation */}
-                <motion.rect
-                  x="-200" y="50" width="600" height="200"
-                  fill="url(#sweepGrad)"
-                  clipPath="url(#panelClip)"
-                  animate={{ x: [-200, 400] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                />
-
-                {/* Energy Flowing Dot */}
-                <motion.circle r="3" fill="#fbbf24"
-                  animate={{
-                    cx: [100, 150, 200, 250, 300],
-                    cy: [80, 120, 160, 200, 160],
-                    opacity: [0, 1, 1, 1, 0]
-                  }}
-                  transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                />
-              </svg>
-
-              {/* Float-up Efficiency stats */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
-                <motion.div
-                  animate={{ y: [20, -20], opacity: [0, 1, 0] }}
-                  transition={{ duration: 4, repeat: Infinity }}
-                  className="px-3 py-1 rounded-full bg-yellow-500/20 border border-yellow-500/40 backdrop-blur-sm text-[10px] text-yellow-400 font-bold tracking-widest flex items-center gap-1"
-                >
-                  <Zap className="h-2 w-2" /> ENERGY GAIN +4.2kW
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
-
-          <div className="mt-12 text-center">
-            <h2 className="text-2xl font-bold text-white tracking-tight">Intelligence at the Edge</h2>
-            <p className="text-slate-400 mt-2 max-w-sm text-balance">
-              Our AI models analyze atmospheric conditions and panel orientation to extract maximum power from every photon.
-            </p>
-          </div>
-        </section>
-
+      <main className="relative z-10 flex w-full flex-1 items-center justify-center">
         {/* RIGHT SIDE: Login Card Section */}
-        <section className="flex flex-col items-center justify-center p-6 relative">
+        <section className="flex flex-col items-center justify-center p-6 relative w-full">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -265,7 +272,7 @@ export default function LoginPage() {
             </div>
 
             {/* Login Card */}
-            <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-2xl p-8 shadow-2xl relative group overflow-hidden">
+            <div className="bg-white/[0.05] backdrop-blur-[20px] border border-white/[0.08] rounded-2xl p-8 shadow-[0_20px_40px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.15)] relative group overflow-hidden hover:-translate-y-1 transition-transform duration-500">
               {/* Card Micro-accent */}
               <div className="absolute top-0 right-0 p-2 opacity-50">
                 <ShieldCheck className="h-4 w-4 text-primary" />
@@ -309,7 +316,8 @@ export default function LoginPage() {
                               placeholder="name@solar-infra.com"
                               {...field}
                               disabled={isProcessing}
-                              className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 focus:ring-primary/50 focus:border-primary/50 placeholder:font-light"
+                              className="bg-black/30 border-white/[0.08] text-white placeholder:text-slate-500 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] focus-visible:ring-1 focus-visible:ring-cyan-500/50 focus-visible:border-cyan-500/50 focus-visible:shadow-[0_0_15px_rgba(14,165,233,0.2)] transition-all duration-300 placeholder:font-light"
+                              autoComplete="email"
                             />
                           </FormControl>
                           <FormMessage className="text-orange-400" />
@@ -325,7 +333,8 @@ export default function LoginPage() {
                                 placeholder="+1 (555) 000-0000"
                                 {...field}
                                 disabled={isProcessing}
-                                className="bg-black/20 border-white/10 text-white placeholder:text-slate-600 focus:ring-primary/50 focus:border-primary/50"
+                                className="bg-black/30 border-white/[0.08] text-white placeholder:text-slate-500 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] focus-visible:ring-1 focus-visible:ring-cyan-500/50 focus-visible:border-cyan-500/50 focus-visible:shadow-[0_0_15px_rgba(14,165,233,0.2)] transition-all duration-300"
+                                autoComplete="tel"
                               />
                             </FormControl>
                             <FormMessage className="text-orange-400" />
@@ -338,8 +347,8 @@ export default function LoginPage() {
                           <div className="flex items-center justify-between">
                             <FormLabel className="text-slate-400">Access Key</FormLabel>
                             {mode === 'signin' && (
-                              <button 
-                                type="button" 
+                              <button
+                                type="button"
                                 onClick={() => setShowReset(true)}
                                 className="text-[11px] font-semibold text-primary/80 hover:text-primary transition-colors"
                               >
@@ -353,7 +362,8 @@ export default function LoginPage() {
                                 type={showPassword ? 'text' : 'password'}
                                 {...field}
                                 disabled={isProcessing}
-                                className="bg-black/20 border-white/10 text-white focus:ring-primary/50 focus:border-primary/50 pr-10"
+                                className="bg-black/30 border-white/[0.08] text-white shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] focus-visible:ring-1 focus-visible:ring-cyan-500/50 focus-visible:border-cyan-500/50 focus-visible:shadow-[0_0_15px_rgba(14,165,233,0.2)] transition-all duration-300 pr-10"
+                                autoComplete="current-password"
                               />
                             </FormControl>
                             <button
@@ -370,7 +380,7 @@ export default function LoginPage() {
 
                       <Button
                         type="submit"
-                        className="w-full h-11 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold text-sm rounded-lg shadow-lg shadow-orange-500/10 transition-all hover:scale-[1.02] active:scale-[0.98] mt-2 group"
+                        className="w-full h-11 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-black font-bold text-sm rounded-lg shadow-[0_4px_14px_rgba(249,115,22,0.2)] hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] transition-all duration-300 hover:-translate-y-[2px] active:scale-[0.98] mt-2 group border border-orange-400/20"
                         disabled={isProcessing}
                       >
                         {isProcessing ? (
@@ -420,9 +430,9 @@ export default function LoginPage() {
         </section>
       </main>
 
-      <ResetPasswordModal 
-         open={showReset} 
-         onOpenChange={setShowReset} 
+      <ResetPasswordModal
+        open={showReset}
+        onOpenChange={setShowReset}
       />
 
       <style jsx global>{`
@@ -435,6 +445,20 @@ export default function LoginPage() {
         }
         .drop-shadow-glow {
           filter: drop-shadow(0 0 8px rgba(var(--primary-rgb), 0.3));
+        }
+        @keyframes gradient-shift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+        .animate-gradient-shift {
+          background-size: 200% 200%;
+          animation: gradient-shift 30s ease infinite;
+        }
+        @keyframes moveGradient {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-20px); }
+          100% { transform: translateY(0px); }
         }
       `}</style>
     </div>
@@ -449,6 +473,7 @@ function ResetPasswordModal({ open, onOpenChange }: { open: boolean, onOpenChang
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
 
@@ -457,6 +482,7 @@ function ResetPasswordModal({ open, onOpenChange }: { open: boolean, onOpenChang
     setEmail('');
     setOtp('');
     setNewPassword('');
+    setResetToken('');
     onOpenChange(false);
   };
 
@@ -484,7 +510,8 @@ function ResetPasswordModal({ open, onOpenChange }: { open: boolean, onOpenChang
     setIsProcessing(true);
     try {
       const res = await verifyOTPCode(email, otp);
-      if (res.verified) {
+      if (res.verified && res.token) {
+        setResetToken(res.token);
         setStep('newpass');
       } else {
         toast({ variant: 'destructive', title: 'Invalid OTP', description: res.message });
@@ -499,12 +526,12 @@ function ResetPasswordModal({ open, onOpenChange }: { open: boolean, onOpenChang
   const onUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword.length < 6) {
-        toast({ variant: 'destructive', title: 'Too Short', description: 'Passkey must be at least 6 characters.' });
-        return;
+      toast({ variant: 'destructive', title: 'Too Short', description: 'Passkey must be at least 6 characters.' });
+      return;
     }
     setIsProcessing(true);
     try {
-      await updateUserPassword(email, newPassword);
+      await updateUserPassword(email, newPassword, resetToken);
       setStep('success');
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Error', description: err.message });
@@ -535,7 +562,7 @@ function ResetPasswordModal({ open, onOpenChange }: { open: boolean, onOpenChang
         <div className="py-6">
           <AnimatePresence mode="wait">
             {step === 'identify' && (
-              <motion.form 
+              <motion.form
                 key="id" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                 onSubmit={onIdentify} className="space-y-4"
               >
@@ -543,7 +570,7 @@ function ResetPasswordModal({ open, onOpenChange }: { open: boolean, onOpenChang
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-500">Registered Email</label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                    <Input 
+                    <Input
                       required type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                       placeholder="name@solar-infra.com"
                       className="bg-black/20 border-white/10 pl-10 h-11 focus:ring-primary/50"
@@ -557,13 +584,13 @@ function ResetPasswordModal({ open, onOpenChange }: { open: boolean, onOpenChang
             )}
 
             {step === 'verify' && (
-              <motion.form 
+              <motion.form
                 key="ver" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                 onSubmit={onVerify} className="space-y-4"
               >
                 <div className="space-y-2 text-center">
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-400">Enter 6-Digit Code</label>
-                  <Input 
+                  <Input
                     required maxLength={6} value={otp} onChange={(e) => setOtp(e.target.value)}
                     placeholder="0 0 0 0 0 0"
                     className="bg-black/20 border-white/10 h-14 text-center text-2xl tracking-[0.5em] font-mono focus:ring-primary/50"
@@ -572,7 +599,7 @@ function ResetPasswordModal({ open, onOpenChange }: { open: boolean, onOpenChang
                 <Button type="submit" disabled={isProcessing} className="w-full bg-primary hover:bg-primary/90 text-black font-bold h-11">
                   {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Authorize Reset'}
                 </Button>
-                <button 
+                <button
                   type="button" onClick={() => setStep('identify')}
                   className="w-full text-xs text-slate-500 hover:text-white transition-colors"
                 >
@@ -582,13 +609,13 @@ function ResetPasswordModal({ open, onOpenChange }: { open: boolean, onOpenChang
             )}
 
             {step === 'newpass' && (
-              <motion.form 
+              <motion.form
                 key="pass" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
                 onSubmit={onUpdatePassword} className="space-y-4"
               >
                 <div className="space-y-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-500">New Access Key</label>
-                  <Input 
+                  <Input
                     required type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Min. 6 characters"
                     className="bg-black/20 border-white/10 h-11 focus:ring-primary/50"
@@ -601,7 +628,7 @@ function ResetPasswordModal({ open, onOpenChange }: { open: boolean, onOpenChang
             )}
 
             {step === 'success' && (
-              <motion.div 
+              <motion.div
                 key="succ" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
                 className="flex flex-col items-center justify-center text-center space-y-4"
               >

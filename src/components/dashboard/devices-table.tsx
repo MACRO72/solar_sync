@@ -1,4 +1,4 @@
-'use client';
+import * as React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { GlassCard, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/glass-card";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "../ui/button";
 import { Edit, Plus } from "lucide-react";
 import { RenameDeviceDialog } from "./rename-device-dialog";
-import * as React from 'react';
 import { useFirestore } from "@/firebase/provider";
 import { doc, onSnapshot } from "firebase/firestore";
+import { useDeviceStatus } from "@/hooks/use-device-status";
 
 export function DevicesTable() {
     const { data: devices, loading } = useRealtimeData();
@@ -110,22 +110,7 @@ export function DevicesTable() {
                                         </TableCell>
                                     </TableRow>
                                 ) : (
-                                    <TableRow key={latestDevice.id}>
-                                        <TableCell className="font-medium">{latestDevice.id}</TableCell>
-                                        <TableCell>{deviceName}</TableCell>
-                                        <TableCell>{getStatusBadge(latestDevice.status)}</TableCell>
-                                        <TableCell>{latestDevice.temperature?.toFixed(1) ?? 'N/A'}</TableCell>
-                                        <TableCell>{latestDevice.irradiance ?? 'N/A'}</TableCell>
-                                        <TableCell>{latestDevice.power ?? 'N/A'}</TableCell>
-                                        <TableCell>{latestDevice.efficiency?.toFixed(2) ?? 'N/A'}</TableCell>
-                                        <TableCell>{latestDevice.lastSeen}</TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" onClick={() => setIsRenameDialogOpen(true)}>
-                                                <Edit className="h-4 w-4" />
-                                                <span className="sr-only">Rename Device</span>
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
+                                    <DeviceRow key={latestDevice.id} device={latestDevice} deviceName={deviceName} setIsRenameDialogOpen={setIsRenameDialogOpen} />
                                 )}
                             </TableBody>
                         </Table>
@@ -134,4 +119,36 @@ export function DevicesTable() {
             </GlassCard>
         </>
     )
+}
+
+function DeviceRow({ device, deviceName, setIsRenameDialogOpen }: { device: any, deviceName: string, setIsRenameDialogOpen: (open: boolean) => void }) {
+    const status = useDeviceStatus(device.lastSeen);
+
+    const getStatusBadge = (isOnline: boolean) => {
+        return (
+            <Badge variant="outline" className={cn('text-[10px] font-extrabold uppercase tracking-widest px-2 py-0.5', isOnline ? "bg-[#22C55E]/10 border-[#22C55E]/30 text-[#22C55E]" : "bg-destructive/10 border-destructive/30 text-destructive")}>
+                <div className={cn("w-1.5 h-1.5 rounded-full mr-2", isOnline ? "bg-[#22C55E] animate-pulse" : "bg-destructive")} />
+                {isOnline ? 'Online' : 'Offline'}
+            </Badge>
+        )
+    }
+
+    return (
+        <TableRow className="hover:bg-white/5 transition-colors group">
+            <TableCell className="font-medium font-mono text-xs text-slate-400">{device.id}</TableCell>
+            <TableCell className="font-bold text-white">{deviceName}</TableCell>
+            <TableCell>{getStatusBadge(status.isOnline)}</TableCell>
+            <TableCell className="text-slate-300 font-medium">{device.temperature?.toFixed(1) ?? 'N/A'}</TableCell>
+            <TableCell className="text-slate-300 font-medium">{device.irradiance ?? 'N/A'}</TableCell>
+            <TableCell className="text-slate-300 font-medium">{device.power?.toFixed(2) ?? 'N/A'}</TableCell>
+            <TableCell className="text-[#22D3EE] font-bold">{device.efficiency?.toFixed(1) ?? 'N/A'}%</TableCell>
+            <TableCell className="text-xs text-slate-500 font-medium">{status.lastSeenRelative}</TableCell>
+            <TableCell className="text-right">
+                <Button variant="ghost" size="icon" className="text-slate-400 hover:text-white" onClick={() => setIsRenameDialogOpen(true)}>
+                    <Edit className="h-4 w-4" />
+                    <span className="sr-only">Rename Device</span>
+                </Button>
+            </TableCell>
+        </TableRow>
+    );
 }

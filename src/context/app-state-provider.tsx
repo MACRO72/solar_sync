@@ -15,6 +15,10 @@ interface UserProfile {
 
 interface AppState extends UserProfile {
   isLoaded: boolean;
+  shouldShowLoader: boolean;
+  activeSection: string;
+  setShouldShowLoader: (show: boolean) => void;
+  setActiveSection: (id: string) => void;
   setName: (name: string) => void;
   setEmail: (email: string) => void;
   setAvatar: (avatar: string) => void;
@@ -31,6 +35,17 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     phone: '',
   });
   const [isLoaded, setIsLoaded] = useState(false);
+  const [shouldShowLoader, setShouldShowLoader] = useState(false);
+  const [activeSection, setActiveSection] = useState('overview');
+
+  // Persistence check for initial login loader
+  useEffect(() => {
+    const hasSeenLoader = sessionStorage.getItem('hasSeenSolarLoader');
+    if (!hasSeenLoader) {
+        setShouldShowLoader(true);
+        sessionStorage.setItem('hasSeenSolarLoader', 'true');
+    }
+  }, []);
 
   const { user } = useUser();
   const firestore = useFirestore();
@@ -70,6 +85,10 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const value = {
     ...profile,
     isLoaded,
+    shouldShowLoader,
+    activeSection,
+    setShouldShowLoader,
+    setActiveSection,
     setName,
     setEmail,
     setAvatar,

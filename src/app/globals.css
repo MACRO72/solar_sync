@@ -6,6 +6,22 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* GPU-composited background: avoids the background-attachment:fixed repaint
+   penalty. This pseudo-element is on its own compositor layer. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 50% 0%, hsla(200, 100%, 60%, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, hsla(187, 100%, 42%, 0.1) 0%, transparent 40%),
+    repeating-linear-gradient(hsla(0,0%,100%,.03) 0px, hsla(0,0%,100%,.03) 1px, transparent 1px, transparent 80px),
+    repeating-linear-gradient(90deg, hsla(0,0%,100%,.03) 0px, hsla(0,0%,100%,.03) 1px, transparent 1px, transparent 80px);
+  will-change: auto;
+}
+
 @layer base {
   :root {
     --background: 221 73% 8%;
@@ -88,12 +104,77 @@ body {
   body {
     @apply text-foreground;
     background-color: hsl(var(--background));
-    background-image: 
-      repeating-linear-gradient(hsla(0,0%,100%,.05), hsla(0,0%,100%,.05) 1px, transparent 1px, transparent 40px),
-      repeating-linear-gradient(90deg, hsla(0,0%,100%,.05), hsla(0,0%,100%,.05) 1px, transparent 1px, transparent 40px),
-      linear-gradient(to bottom right, hsl(var(--background)), hsl(223, 59%, 15%));
-    background-attachment: fixed;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  /* Hide scrollbar for that clean, floor-like look */
+  html::-webkit-scrollbar {
+    display: none;
+  }
+  html {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
+
+/* Lenis Smooth Scroll Essential CSS */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+/* Eliminate mobile touch scroll latency: tells browser we only pan vertically
+   so it doesn't wait for JS before starting scroll compositing. */
+html,
+body {
+  touch-action: pan-y;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+  pointer-events: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* Minimalist Dark-Vibrant Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsla(var(--primary) / 0.1);
+  border-radius: 10px;
+  border: 1px solid hsla(var(--primary) / 0.05);
+  transition: all 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsla(var(--primary) / 0.3);
+  box-shadow: 0 0 10px hsla(var(--primary) / 0.5);
+}
+
+/* Offscreen Performance: Skip rendering sections that are NOT in view */
+section[id] {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 80vh;
 }
 
 @layer components {

@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getMessaging, getToken, onMessage, isSupported } from 'firebase/messaging';
 import { app } from '@/firebase/config';
 import { firebaseConfig } from '@/firebase/config';
 import { useUser } from '@/firebase/auth/use-user';
@@ -19,38 +19,44 @@ export function useFCM() {
   useEffect(() => {
     if (typeof window === 'undefined' || !user || !firestore) return;
 
-    const messaging = getMessaging(app);
+    let unsubscribe: (() => void) | undefined;
 
-    const requestPermission = async () => {
+    const setupMessaging = async () => {
       try {
+        const supported = await isSupported();
+        if (!supported) {
+          console.warn('Firebase FCM is not supported in this environment.');
+          return;
+        }
+
+        const messaging = getMessaging(app);
         const permission = await Notification.requestPermission();
+        
         if (permission === 'granted') {
-          const token = await getToken(messaging, {
-            vapidKey: firebaseConfig.vapidKey,
-          });
+          const token = await getToken(messaging, { vapidKey: firebaseConfig.vapidKey });
           if (token) {
             setFcmToken(token);
-            // Store token in Firestore for the user
             const userRef = doc(firestore, 'users', user.uid);
-            setDoc(userRef, { fcmToken: token }, { merge: true });
+            await setDoc(userRef, { fcmToken: token }, { merge: true });
           }
         }
+
+        unsubscribe = onMessage(messaging, (payload) => {
+          toast({
+            title: payload.notification?.title || 'System Alert',
+            description: payload.notification?.body || 'A new system event was detected.',
+          });
+        });
       } catch (error) {
-        console.error('An error occurred while retrieving token:', error);
+        console.error('FCM Setup safely bypassed runtime error:', error);
       }
     };
 
-    requestPermission();
+    setupMessaging();
 
-    // Handle foreground messages
-    const unsubscribe = onMessage(messaging, (payload) => {
-      toast({
-        title: payload.notification?.title || 'System Alert',
-        description: payload.notification?.body || 'A new system event was detected.',
-      });
-    });
-
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [user, firestore, toast]);
 
   return { fcmToken };

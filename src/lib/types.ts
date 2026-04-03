@@ -15,6 +15,7 @@ export type Device = {
   power?: number;
   efficiency?: number;
   energyOutput?: number; // Kept for compatibility if needed
+  tiltAngle?: number;
   location?: {
     lat: number;
     lng: number;
@@ -75,4 +76,4 @@ export type HistoricalData = {
     [key: string]: HistoricalDataPeriod;
 }
 
-export type MetricKey = 'voltage' | 'current' | 'power' | 'temperature' | 'irradiance' | 'dustDensity';
+export type MetricKey = 'voltage' | 'current' | 'power' | 'temperature' | 'irradiance' | 'dustDensity' | 'tiltAngle';

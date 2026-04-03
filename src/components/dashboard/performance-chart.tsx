@@ -10,14 +10,22 @@ import { format, parse, startOfDay } from 'date-fns';
 import { Activity, LayoutPanelLeft } from 'lucide-react';
 
 const chartConfig = {
-    measured: { label: "Measured", color: "hsl(var(--primary))" },
-    base: { label: "Base", color: "hsl(var(--chart-5))" },
+    measured: { label: "Efficiency (%)", color: "hsl(var(--primary))" },
     power: { label: "Power (W)", color: "hsl(var(--primary))" },
     voltage: { label: "Voltage (V)", color: "hsl(var(--primary))" },
     dust: { label: "Dust Level", color: "hsl(var(--chart-3))" },
     efficiency: { label: "Efficiency (%)", color: "hsl(var(--chart-2))" },
     temperature: { label: "Temperature (°C)", color: "hsl(var(--destructive))" },
+    predicted: { label: "Predicted", color: "#a78bfa" },
 } satisfies ChartConfig
+
+/** Simple Moving Average helper */
+function sma(values: number[], window = 5): number[] {
+    return values.map((_, i) => {
+        const slice = values.slice(Math.max(0, i - window + 1), i + 1);
+        return slice.reduce((a, b) => a + b, 0) / slice.length;
+    });
+}
 
 type TimePeriod = '24h' | '7d' | '30d';
 type ChartView = 'performance' | 'power' | 'dust' | 'temperature';
@@ -28,7 +36,6 @@ const timePeriodOptions: {value: TimePeriod, label: string}[] = [
     { value: '7d', label: '7d' },
     { value: '30d', label: '30d' },
 ];
-
 const chartViewOptions: {value: ChartView, label: string}[] = [
     { value: 'performance', label: 'Efficiency' },
     { value: 'power', label: 'Power' },
@@ -36,7 +43,7 @@ const chartViewOptions: {value: ChartView, label: string}[] = [
     { value: 'temperature', label: 'Temperature' },
 ];
 
-export function PerformanceChart({ fullHeight = false, defaultPeriod = '24h' }: { fullHeight?: boolean, defaultPeriod?: TimePeriod }) {
+export const PerformanceChart = React.memo(({ fullHeight = false, defaultPeriod = '24h' }: { fullHeight?: boolean, defaultPeriod?: TimePeriod }) => {
     const [timePeriod, setTimePeriod] = React.useState<TimePeriod>(defaultPeriod);
     const [chartView, setChartView] = React.useState<ChartView>('performance');
     const [chartType, setChartType] = React.useState<ChartType>('curve');
@@ -75,7 +82,7 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '24h' }: 
 
         // For Live view, return sorted data points
         if (timePeriod === '24h') {
-            return filteredDevices.map(device => {
+            const live = filteredDevices.map(device => {
                 let deviceDate: Date;
                 if (device.lastSeen.includes('T')) {
                     deviceDate = new Date(device.lastSeen);
@@ -89,12 +96,23 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '24h' }: 
                     time: format(deviceDate, 'HH:mm:ss'),
                     date: deviceDate,
                     measured: device.efficiency ?? 0,
-                    base: (device.efficiency ?? 0) * 1.1, // Mock base line
                     power: device.power ?? 0,
                     dust: device.dustDensity ?? 0,
                     temperature: device.temperature ?? 0,
+                    predicted: undefined as number | undefined,
+                    _sma: {} as any,
                 };
             }).sort((a, b) => a.date.getTime() - b.date.getTime());
+
+            // Attach SMA-5 predicted values
+            const measuredSma = sma(live.map(d => d.measured));
+            const powerSma    = sma(live.map(d => d.power));
+            const dustSma     = sma(live.map(d => d.dust));
+            const tempSma     = sma(live.map(d => d.temperature));
+            live.forEach((d, i) => {
+                d._sma = { measured: measuredSma[i], power: powerSma[i], dust: dustSma[i], temperature: tempSma[i] };
+            });
+            return live;
         }
 
         // Aggregate by day for longer periods
@@ -112,36 +130,87 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '24h' }: 
             dailyData[dayKey].count++;
         });
 
-        return Object.entries(dailyData).map(([day, val]) => {
+        const sorted = Object.entries(dailyData).map(([day, val]) => {
             const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
             return {
                 time: format(new Date(day), 'MMM d'),
                 date: new Date(day),
                 measured: avg(val.measured),
-                base: avg(val.measured) * 1.1,
                 power: avg(val.power),
                 dust: avg(val.dust),
                 temperature: avg(val.temp),
+                predicted: undefined as number | undefined,
             };
         }).sort((a, b) => a.date.getTime() - b.date.getTime());
 
+        // Attach SMA-5 predicted values for every field
+        const measuredSma = sma(sorted.map(d => d.measured));
+        const powerSma    = sma(sorted.map(d => d.power));
+        const dustSma     = sma(sorted.map(d => d.dust));
+        const tempSma     = sma(sorted.map(d => d.temperature));
+        sorted.forEach((d, i) => {
+            d.predicted = measuredSma[i]; // default; overridden in render
+            (d as any)._sma = { measured: measuredSma[i], power: powerSma[i], dust: dustSma[i], temperature: tempSma[i] };
+        });
+        return sorted;
+
     }, [devices, timePeriod]);
 
-    const renderChart = () => {
+    // Derive chart data with the correct 'predicted' key for the active view
+    const chartData = React.useMemo(() => {
+        if (!processedData.length) return processedData;
+        return processedData.map((d: any) => ({
+            ...d,
+            predicted: d._sma?.[
+                chartView === 'performance' ? 'measured' :
+                chartView === 'power'       ? 'power' :
+                chartView === 'dust'        ? 'dust' : 'temperature'
+            ] ?? undefined,
+        }));
+    }, [processedData, chartView]);
+
+    const renderedChart = React.useMemo(() => {
         if (loading) return <div className="flex h-full items-center justify-center text-muted-foreground">Syncing sensor nodes...</div>;
-        if (processedData.length === 0) return <div className="flex h-full items-center justify-center text-muted-foreground">Waiting for sensor data...</div>;
+        if (chartData.length === 0) return <div className="flex h-full items-center justify-center text-muted-foreground">Waiting for sensor data...</div>;
+
+        const predictedLine = (
+            <Line
+                dataKey="predicted"
+                name="Predicted"
+                type="monotone"
+                stroke="#a78bfa"
+                strokeWidth={2}
+                strokeDasharray="6 4"
+                dot={false}
+                isAnimationActive={false}
+                filter="url(#glow-predicted)"
+                connectNulls
+            />
+        );
+
+        const glowDef = (
+            <defs>
+                <filter id="glow-predicted" x="-20%" y="-50%" width="140%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feMerge>
+                        <feMergeNode in="blur" />
+                        <feMergeNode in="SourceGraphic" />
+                    </feMerge>
+                </filter>
+            </defs>
+        );
 
         if (chartView === 'temperature') {
              return (
-                <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                        <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
-                        <YAxis tickLine={false} axisLine={false} tickMargin={10} unit="°C" />
-                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                        <Line dataKey="temperature" type="monotone" stroke="var(--color-temperature)" strokeWidth={2} dot={false} />
-                    </LineChart>
-                </ResponsiveContainer>
+                 <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                     {glowDef}
+                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                     <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
+                     <YAxis tickLine={false} axisLine={false} tickMargin={10} unit="°C" />
+                     <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+                     <Line dataKey="temperature" type="monotone" stroke="var(--color-temperature)" strokeWidth={2} dot={false} isAnimationActive={false} />
+                     {predictedLine}
+                 </LineChart>
             );
         }
 
@@ -150,36 +219,38 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '24h' }: 
             const color = chartView === 'performance' ? 'var(--color-measured)' : chartView === 'power' ? 'var(--color-power)' : 'var(--color-dust)';
             
             return (
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                        <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                        <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
-                        <YAxis tickLine={false} axisLine={false} tickMargin={10} />
-                        <Tooltip content={<ChartTooltipContent />} />
-                        <Bar dataKey={dataKey} fill={color} radius={4} barSize={20} />
-                    </BarChart>
-                </ResponsiveContainer>
+                 <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                     <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                     <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
+                     <YAxis tickLine={false} axisLine={false} tickMargin={10} />
+                     <Tooltip content={<ChartTooltipContent />} />
+                     <Bar dataKey={dataKey} fill={color} radius={4} barSize={20} isAnimationActive={false} />
+                 </BarChart>
             );
         }
 
+        const activeKey = chartView === 'performance' ? 'measured' : chartView === 'power' ? 'power' : 'dust';
+        const activeColor = chartView === 'performance' ? 'var(--color-measured)' : chartView === 'power' ? 'var(--color-power)' : 'var(--color-dust)';
+
         return (
-            <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={processedData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
-                    <CartesianGrid vertical={false} strokeDasharray="3 3" />
-                    <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
-                    <YAxis tickLine={false} axisLine={false} tickMargin={10} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
-                    <Line 
-                        dataKey={chartView === 'performance' ? 'measured' : chartView === 'power' ? 'power' : 'dust'} 
-                        type="monotone" 
-                        stroke={chartView === 'performance' ? 'var(--color-measured)' : chartView === 'power' ? 'var(--color-power)' : 'var(--color-dust)'} 
-                        strokeWidth={2} 
-                        dot={false} 
-                    />
-                </LineChart>
-            </ResponsiveContainer>
+             <LineChart data={chartData} margin={{ top: 5, right: 20, bottom: 0, left: 0 }}>
+                 {glowDef}
+                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
+                 <XAxis dataKey="time" tickLine={false} tickMargin={10} axisLine={false} />
+                 <YAxis tickLine={false} axisLine={false} tickMargin={10} />
+                 <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" />} />
+                 <Line
+                     dataKey={activeKey}
+                     type="monotone"
+                     stroke={activeColor}
+                     strokeWidth={2}
+                     dot={false}
+                     isAnimationActive={false}
+                 />
+                 {predictedLine}
+             </LineChart>
         );
-    }
+    }, [loading, chartData, chartView, chartType]);
     
     return (
         <Card className="animate-energy-wave rounded-2xl">
@@ -215,9 +286,26 @@ export function PerformanceChart({ fullHeight = false, defaultPeriod = '24h' }: 
             </CardHeader>
             <CardContent>
                 <ChartContainer config={chartConfig} className={fullHeight ? "h-[400px] w-full" : "h-[300px] w-full"}>
-                   {renderChart()}
+                   {renderedChart}
                 </ChartContainer>
+                {/* Legend */}
+                {chartType === 'curve' && (
+                    <div className="flex items-center gap-6 mt-3 px-1">
+                        <div className="flex items-center gap-2">
+                            <div className="w-5 h-0.5 bg-[hsl(var(--primary))] rounded-full" />
+                            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Actual</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <svg width="20" height="4" className="overflow-visible">
+                                <line x1="0" y1="2" x2="20" y2="2" stroke="#a78bfa" strokeWidth="2" strokeDasharray="5 3"
+                                    style={{ filter: 'drop-shadow(0 0 3px #a78bfa)' }} />
+                            </svg>
+                            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Predicted (SMA-5)</span>
+                        </div>
+                    </div>
+                )}
             </CardContent>
         </Card>
     )
-}
+});
+PerformanceChart.displayName = 'PerformanceChart';

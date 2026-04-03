@@ -31,18 +31,19 @@ import { Logo } from './icons';
 import { useUser } from '@/firebase/auth/use-user';
 import { getAuth, signOut } from 'firebase/auth';
 import { useRealtimeData } from '@/firebase/firestore/use-realtime-data';
+import { useAppState } from '@/context/app-state-provider';
+import { useDeviceStatus } from '@/hooks/use-device-status';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import Papa from 'papaparse';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
 const menuItems = [
-  { path: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { path: '/dashboard/analytics', label: 'Analytics', icon: BarChart3 },
-  { path: '/dashboard/digital-twin', label: 'Digital Twin', icon: Box },
-  { path: '/dashboard/devices', label: 'Devices', icon: PanelTop },
-  { path: '/dashboard/connectivity', label: 'Connectivity', icon: Wifi },
-  { path: '/dashboard/insights', label: 'Insights', icon: Lightbulb },
+  { path: '#overview', label: 'Overview', icon: LayoutDashboard },
+  { path: '#analytics', label: 'Analytics', icon: BarChart3 },
+  { path: '#devices', label: 'Devices', icon: PanelTop },
+  { path: '#insights', label: 'Insights', icon: Lightbulb },
+  { path: '#digital-twin', label: 'Digital Twin', icon: Box },
 ];
 
 const getSeverityBadgeClass = (severity: 'High' | 'Medium' | 'Low') => {
@@ -58,38 +59,43 @@ const getSeverityBadgeClass = (severity: 'High' | 'Medium' | 'Low') => {
 
 export function PageHeader() {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
-  const highPriorityAlerts = alerts.filter(a => a.severity === 'High').length;
-  const pathname = usePathname();
+  const { activeSection, setShouldShowLoader } = useAppState();
   const { user } = useUser();
   const router = useRouter();
-  const { data: devices, loading } = useRealtimeData();
+  const pathname = usePathname();
   const { toast } = useToast();
+  const { data: devices, loading } = useRealtimeData();
+  
+  const highPriorityAlerts = React.useMemo(() => 
+    alerts.filter(a => a.severity === 'High').length, 
+  []);
 
-  // Heartbeat logic: Check if the latest data is within 15 seconds
-  const isConnected = React.useMemo(() => {
-    if (loading || !devices || devices.length === 0) return false;
-    
-    // Get latest device
-    const latest = devices[0];
-    if (!latest.lastSeen) return false;
-
-    let lastSeenDate: Date;
-    if (latest.lastSeen.includes('T')) {
-      lastSeenDate = new Date(latest.lastSeen);
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id.substring(1));
+    if (!element) return;
+    // Use Lenis if available so easing stays consistent — avoids two scroll
+    // engines fighting each other and producing jitter.
+    const lenis = (window as any).__lenis as { scrollTo: (el: HTMLElement, opts: object) => void } | undefined;
+    if (lenis) {
+      lenis.scrollTo(element, { offset: -80, duration: 1.0 });
     } else {
-      const [h, m, s] = latest.lastSeen.split(':').map(Number);
-      lastSeenDate = new Date();
-      lastSeenDate.setHours(h, m, s, 0);
+      element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
 
-    const diffInSeconds = (new Date().getTime() - lastSeenDate.getTime()) / 1000;
-    return diffInSeconds < 15; // 15 second heartbeat
-  }, [devices, loading]);
+  // Heartbeat logic using standardized hook
+  const status = useDeviceStatus(devices[0]?.lastSeen);
+  const isConnected = status.isOnline;
 
   const handleSignOut = async () => {
-    const auth = getAuth();
-    await signOut(auth);
-    router.push('/login');
+    setShouldShowLoader(true);
+    // Give time for the loader to animate in before final sign out and redirect
+    setTimeout(async () => {
+        const auth = getAuth();
+        await signOut(auth);
+        sessionStorage.removeItem('hasSeenSolarLoader');
+        router.push('/login');
+    }, 2500);
   };
 
   const getInitials = (name: string | null | undefined) => {
@@ -157,20 +163,22 @@ export function PageHeader() {
                     <span className="text-xl font-bold text-white tracking-tight">SolarSync</span>
                 </Link>
                  {menuItems.map((item) => (
-                    <Link
+                    <button
                       key={item.path}
-                      href={item.path}
-                      onClick={handleLinkClick}
+                      onClick={() => {
+                        scrollToSection(item.path);
+                        handleLinkClick();
+                      }}
                       className={cn(
-                          'flex items-center gap-4 px-2.5 py-2 rounded-lg transition-all duration-200',
-                          pathname === item.path
+                          'flex items-center gap-4 px-2.5 py-2 rounded-lg transition-all duration-200 w-full text-left',
+                          activeSection === item.path.substring(1)
                           ? 'text-[#22D3EE] bg-[#22D3EE]/5 border border-[#22D3EE]/10'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       )}
                       >
                       <item.icon className="h-5 w-5" />
                       {item.label}
-                    </Link>
+                    </button>
                 ))}
                  <button
                     onClick={handleDownloadCsv}
@@ -207,26 +215,32 @@ export function PageHeader() {
           {/* Desktop Navigation Tabs */}
           <nav className="hidden md:flex items-center gap-1 border-l border-slate-800 ml-4 pl-4 h-8">
             {menuItems.map((item) => {
-              const isActive = pathname === item.path;
+              const isActive = activeSection === item.path.substring(1);
               return (
-                <Link
+                <button
                   key={item.path}
-                  href={item.path}
+                  onClick={() => scrollToSection(item.path)}
                   className={cn(
-                    "relative flex items-center gap-2 px-4 py-1.5 text-sm font-semibold transition-all duration-300 rounded-full",
-                    isActive ? "text-[#22D3EE]" : "text-slate-400 hover:text-white hover:bg-white/5"
+                    "relative flex items-center gap-2 px-5 py-2.5 text-sm font-bold transition-all duration-300 rounded-full",
+                    isActive ? "text-[#22D3EE] drop-shadow-[0_0_12px_rgba(34,211,238,0.5)]" : "text-slate-400 hover:text-white hover:bg-white/5"
                   )}
                 >
-                  <item.icon className={cn("h-4 w-4", isActive && "drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]")} />
-                  {item.label}
+                  <motion.div 
+                    className="flex items-center gap-2"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <item.icon className={cn("h-4 w-4 transition-all", isActive && "stroke-[2.5]")} />
+                    {item.label}
+                  </motion.div>
                   {isActive && (
                     <motion.div
                       layoutId="activeTabUnderline"
-                      className="absolute -bottom-[21px] left-2 right-2 h-0.5 bg-[#22D3EE] shadow-[0_0_10px_rgba(34,211,238,0.8)]"
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      className="absolute -bottom-[21px] left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#22D3EE] to-transparent shadow-[0_0_15px_rgba(34,211,238,0.8)]"
+                      transition={{ type: "spring", bounce: 0.25, duration: 0.6 }}
                     />
                   )}
-                </Link>
+                </button>
               );
             })}
           </nav>
@@ -275,19 +289,15 @@ export function PageHeader() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-white/5 text-slate-300">
               <Bell className="h-5 w-5" />
-              {highPriorityAlerts > 0 && (
-                 <span className="absolute right-0 top-0 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white shadow-lg">
-                   {highPriorityAlerts}
-                 </span>
-              )}
             </Button>
+
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-96 bg-[#0B1220] border-slate-800 text-white shadow-2xl">
             <DropdownMenuLabel>Notifications</DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-slate-800" />
             <div className="flex flex-col gap-2 p-2 max-h-[400px] overflow-y-auto">
-            {alerts.slice(0, 5).map(alert => (
-               <div key={alert.id} className="grid grid-cols-[25px_1fr] items-start gap-3 rounded-md p-2 transition-colors hover:bg-white/5">
+            {alerts.slice(0, 5).map((alert, i) => (
+               <div key={alert.id && alert.id !== "" ? alert.id : `header-alert-${i}`} className="grid grid-cols-[25px_1fr] items-start gap-3 rounded-md p-2 transition-colors hover:bg-white/5">
                 <div className="flex h-5 w-5 items-center justify-center rounded-full bg-slate-800">
                     <Bell className="h-3 w-3 text-slate-400" />
                 </div>

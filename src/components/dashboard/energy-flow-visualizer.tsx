@@ -1,29 +1,18 @@
 "use client";
 
 import React, { useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Battery, Zap, LayoutPanelTop, ArrowRight, ArrowDown } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Sun, Battery, Zap, LayoutPanelTop } from 'lucide-react';
 import { GlassCard } from '@/components/glass-card';
 
 interface EnergyFlowVisualizerProps {
   power: number;
 }
 
-export function EnergyFlowVisualizer({ power }: EnergyFlowVisualizerProps) {
+export const EnergyFlowVisualizer = React.memo(({ power }: EnergyFlowVisualizerProps) => {
   const maxPower = 10; // Normalizing for particle speed
   const particleSpeed = Math.max(0.5, (power / maxPower) * 3);
   const particleCount = Math.min(15, Math.max(3, Math.floor(power * 2)));
-
-  const flowVariants = {
-    animate: {
-      x: [0, 100],
-      opacity: [0, 1, 0],
-      transition: {
-        x: { repeat: Infinity, duration: 2 / particleSpeed, ease: "linear" },
-        opacity: { repeat: Infinity, duration: 2 / particleSpeed, ease: "linear", times: [0, 0.5, 1] }
-      }
-    }
-  };
 
   return (
     <GlassCard className="p-8 bg-[#0B1220]/50 border-white/5 w-full overflow-hidden">
@@ -55,6 +44,7 @@ export function EnergyFlowVisualizer({ power }: EnergyFlowVisualizerProps) {
                initial={{ x: 0, opacity: 0 }}
                animate={{ x: "100%", opacity: [0, 1, 0] }}
                transition={{ repeat: Infinity, duration: 2, delay: i * 0.5, ease: "linear" }}
+               style={{ willChange: "transform, opacity" }}
              />
            ))}
         </div>
@@ -80,6 +70,7 @@ export function EnergyFlowVisualizer({ power }: EnergyFlowVisualizerProps) {
                initial={{ x: 0, opacity: 0 }}
                animate={{ x: "100%", opacity: [0, 1, 0] }}
                transition={{ repeat: Infinity, duration: 2 / particleSpeed, delay: i * (0.5 / particleSpeed), ease: "linear" }}
+               style={{ willChange: "transform, opacity" }}
              />
            ))}
         </div>
@@ -105,6 +96,7 @@ export function EnergyFlowVisualizer({ power }: EnergyFlowVisualizerProps) {
                initial={{ x: 0, opacity: 0 }}
                animate={{ x: "100%", opacity: [0, 1, 0] }}
                transition={{ repeat: Infinity, duration: 1.5, delay: i * 0.5, ease: "linear" }}
+               style={{ willChange: "transform, opacity" }}
              />
            ))}
         </div>
@@ -135,4 +127,5 @@ export function EnergyFlowVisualizer({ power }: EnergyFlowVisualizerProps) {
       </div>
     </GlassCard>
   );
-}
+});
+ EnergyFlowVisualizer.displayName = 'EnergyFlowVisualizer';
