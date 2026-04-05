@@ -19,19 +19,32 @@ function getAdminApp(): App {
   }
 
   try {
-    let parsedData = JSON.parse(serviceAccountRaw);
-    
-    // If the result is a string, it means the .env value was a stringified JSON inside a string.
-    // This happens frequently with certain environment variable loaders or if the value is double-quoted.
+    // Sanitize: strip surrounding quotes added by some .env loaders
+    let raw = serviceAccountRaw.trim();
+    if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+      raw = raw.slice(1, -1);
+    }
+
+    let parsedData: any;
+    try {
+      parsedData = JSON.parse(raw);
+    } catch {
+      // Last resort: the value was already parsed once (double-stringified)
+      parsedData = JSON.parse(JSON.stringify(raw));
+    }
+
+    // If the result is still a string, parse again (double-stringified case)
     if (typeof parsedData === 'string') {
       parsedData = JSON.parse(parsedData);
     }
-    
+
     const serviceAccount = parsedData;
-    
-    // Ensure newlines are proper in the private key if it's still escaped
+
+    // Final safety: convert any remaining \n literal sequences in private_key
     if (serviceAccount.private_key && typeof serviceAccount.private_key === 'string') {
-      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      serviceAccount.private_key = serviceAccount.private_key
+        .replace(/\\n/g, '\n') // escaped sequence
+        .replace(/\r/g, '');   // strip stray carriage returns
     }
 
     adminApp = initializeApp({

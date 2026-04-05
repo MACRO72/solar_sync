@@ -1,40 +1,13 @@
 'use server';
 
 import { z } from 'zod';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getDatabase } from 'firebase-admin/database';
-import { getFirestore } from 'firebase-admin/firestore';
-import { getAuth as getAdminAuth } from 'firebase-admin/auth';
-import { firebaseConfig } from '@/firebase/config';
+import { getAdminDb, getAdminAuth as getAdminAuthLib, getAdminFirestore } from '@/lib/firebase-admin';
 import { randomInt, createHash } from 'crypto';
 import { SignJWT, jwtVerify } from 'jose';
-import path from 'path';
+import { sendBrevoEmail } from '@/lib/brevo';
 
-if (!getApps().length) {
-  let serviceAccountRaw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON!;
-  
-  // Robust sanitization for varied .env escaping styles
-  if (serviceAccountRaw.startsWith('"') && serviceAccountRaw.endsWith('"')) {
-    serviceAccountRaw = serviceAccountRaw.slice(1, -1);
-  }
-  
-  // Correctly handle standard JSON escapings for things like multiline private keys
-  serviceAccountRaw = serviceAccountRaw.replace(/\\n/g, '\n');
-
-  try {
-    const serviceAccount = JSON.parse(serviceAccountRaw);
-    initializeApp({
-      credential: cert(serviceAccount),
-      databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL
-    });
-  } catch (error: any) {
-    console.error("❌ Firebase Admin Initialization JSON Parse Failure:", error.message);
-    throw error;
-  }
-}
-
-const adminDb = getDatabase();
-const adminAuth = getAdminAuth();
+const adminDb = getAdminDb();
+const adminAuth = getAdminAuthLib();
 
 const getJwtSecret = () => {
   const secret = process.env.JWT_SECRET;
@@ -61,7 +34,7 @@ async function lookupUserByEmail(emailInput: string) {
   // Fallback to Firestore (also optimized)
   if (!foundUser) {
     try {
-      const db = getFirestore();
+      const db = getAdminFirestore();
       const querySnapshot = await db.collection('users').where('email', '==', email).limit(1).get();
       
       if (!querySnapshot.empty) {
@@ -119,32 +92,11 @@ export async function generateAndSendOTP(emailInput: string) {
       lastRequestTime: Date.now()
     });
 
-    const brevoApiKey = process.env.BREVO_API_KEY;
-    if (!brevoApiKey) {
-      throw new Error('BREVO_API_KEY is not defined in the environment variables.');
-    }
-
-    const payload = {
-      sender: { name: 'SolarSync Security', email: 'sacreotadexter@gmail.com' },
-      to: [{ email: email }],
+    await sendBrevoEmail({
       subject: 'SolarSync Verification Code',
       textContent: `Your verification code is: ${otpCode}\n\nThis code expires in 5 minutes.`,
-    };
-
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': brevoApiKey,
-        'content-type': 'application/json',
-        'accept': 'application/json',
-      },
-      body: JSON.stringify(payload),
+      recipientEmail: email,
     });
-
-    if (!response.ok) {
-      const errData = await response.json();
-      throw new Error(`Brevo API rejected email: ${JSON.stringify(errData)}`);
-    }
 
     return { status: 'success' };
   } catch (error: any) {

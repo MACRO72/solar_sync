@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useRef, useState, useEffect, useMemo } from 'react';
+import React, { useRef, useState, useEffect, useMemo, Suspense } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { 
   OrbitControls, 
-  MeshDistortMaterial, 
+  MeshDistortMaterial,
   Sparkles,
   Sky,
   Stars,
@@ -13,12 +13,14 @@ import {
   Cylinder,
   Text,
   Cloud,
-  Clouds
+  Clouds,
+  MeshReflectorMaterial
 } from '@react-three/drei';
+
 import * as THREE from 'three';
 import { Zap, Sun, Thermometer, Info, AlertTriangle, CheckCircle2, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from "framer-motion";
-import { EffectComposer, Bloom } from '@react-three/postprocessing';
+// Post-processing imports removed for stabilization
 
 interface SolarDigitalTwinProps {
   lightIndex: number;
@@ -30,14 +32,18 @@ interface SolarDigitalTwinProps {
 
 const DEFAULT_TILT_DEG = 30; // degrees
 const TILT_ANGLE = (DEFAULT_TILT_DEG * Math.PI) / 180;
-const PANEL_WIDTH = 4.2;
-const PANEL_HEIGHT = 2.4;
+const PANEL_WIDTH = 3.6;
+const PANEL_HEIGHT = 2.0;
 
 // Centralized simulation driver mapped exactly to the real-world 24-hour clock
 const getSimProgress = () => {
   const now = new Date();
-  const secondsSinceMidnight = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds() + now.getMilliseconds() / 1000;
-  return secondsSinceMidnight / 86400; // 0 (midnight) to 1 (midnight)
+  const secondsSinceMidnight =
+    now.getHours() * 3600 +
+    now.getMinutes() * 60 +
+    now.getSeconds() +
+    now.getMilliseconds() / 1000;
+  return secondsSinceMidnight / 86400; // 0 (midnight) → 1 (midnight)
 };
 
 // Standard Materials mimicking real outdoor weathering as functional components to prevent React Element reuse crashes
@@ -45,7 +51,7 @@ const AluminumMaterial = () => <meshStandardMaterial color="#b0b5b9" metalness={
 const ConcreteMaterial = () => <meshStandardMaterial color="#888c8d" roughness={0.9} metalness={0.1} />;
 const RubberMaterial = () => <meshStandardMaterial color="#1a1a1a" roughness={0.9} />;
 const InverterMaterial = () => <meshStandardMaterial color="#e2e8f0" metalness={0.3} roughness={0.6} />;
-const GroundMaterial = () => <meshStandardMaterial color="#2d3330" roughness={0.95} metalness={0.05} />;
+const GroundMaterial = () => <meshStandardMaterial color="#1f2937" roughness={0.95} metalness={0.05} />;
 
 const calculateExpectedPower = (progress: number) => {
   // progress 0 = midnight, 0.5 = noon, 1.0 = midnight
@@ -55,6 +61,23 @@ const calculateExpectedPower = (progress: number) => {
   const incidence = Math.sin(angle); // 0 at dawn (6am), 1 at noon, 0 at dusk (6pm)
   return incidence > 0 ? incidence * 20.0 : 0; // 20W max
 };
+
+const WireCables = React.memo(() => {
+  const curve = useMemo(() => {
+    return new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(0, 1.55, -0.75), // accurately at bottom of junction box
+      new THREE.Vector3(1.5, 0.05, -0.6),  // sagging realistically down towards ground
+      new THREE.Vector3(3.1, 0.2, -1.0)    // directly entering inverter side
+    );
+  }, []);
+
+  return (
+    <mesh castShadow receiveShadow>
+      <tubeGeometry args={[curve, 32, 0.03, 8, false]} />
+      <RubberMaterial />
+    </mesh>
+  );
+});
 
 const SolarPanelModel = React.memo(({ temperature, dustIndex, power, expectedPower }: SolarDigitalTwinProps & { expectedPower: number }) => {
   const panelRef = useRef<THREE.Group>(null);
@@ -89,79 +112,72 @@ const SolarPanelModel = React.memo(({ temperature, dustIndex, power, expectedPow
         </Box>
 
         {/* Base Rails (Aluminum) */}
-        <Box args={[3.4, 0.05, 0.1]} position={[0, 0.15, -0.9]} castShadow receiveShadow><AluminumMaterial /></Box>
-        <Box args={[3.4, 0.05, 0.1]} position={[0, 0.15, 0.9]} castShadow receiveShadow><AluminumMaterial /></Box>
+        <Box args={[3.4, 0.05, 0.1]} position={[0, 0.15, -0.9]} castShadow><AluminumMaterial /></Box>
+        <Box args={[3.4, 0.05, 0.1]} position={[0, 0.15, 0.9]} castShadow><AluminumMaterial /></Box>
 
         {/* Support Struts */}
-        <Cylinder args={[0.04, 0.04, 0.6]} position={[-1.6, 0.45, 0.9]} castShadow receiveShadow><AluminumMaterial /></Cylinder>
-        <Cylinder args={[0.04, 0.04, 0.6]} position={[1.6, 0.45, 0.9]} castShadow receiveShadow><AluminumMaterial /></Cylinder>
-        <Cylinder args={[0.04, 0.04, 1.67]} position={[-1.6, 0.985, -0.9]} castShadow receiveShadow><AluminumMaterial /></Cylinder>
-        <Cylinder args={[0.04, 0.04, 1.67]} position={[1.6, 0.985, -0.9]} castShadow receiveShadow><AluminumMaterial /></Cylinder>
+        <Cylinder args={[0.04, 0.04, 0.6]} position={[-1.6, 0.45, 0.9]} castShadow><AluminumMaterial /></Cylinder>
+        <Cylinder args={[0.04, 0.04, 0.6]} position={[1.6, 0.45, 0.9]} castShadow><AluminumMaterial /></Cylinder>
+        <Cylinder args={[0.04, 0.04, 1.67]} position={[-1.6, 0.985, -0.9]} castShadow><AluminumMaterial /></Cylinder>
+        <Cylinder args={[0.04, 0.04, 1.67]} position={[1.6, 0.985, -0.9]} castShadow><AluminumMaterial /></Cylinder>
       </group>
 
       {/* TILTED PANEL ASSEMBLY */}
       <group position={[0, 1.3, 0]} rotation={[activeTilt, 0, 0]} ref={panelRef}>
         
         {/* Outer Heavy Aluminum Frame */}
-        <mesh receiveShadow castShadow>
+        <mesh castShadow receiveShadow>
           <boxGeometry args={[PANEL_WIDTH + 0.15, 0.1, PANEL_HEIGHT + 0.15]} />
           <AluminumMaterial />
         </mesh>
 
         {/* Backsheet */}
-        <mesh receiveShadow castShadow position={[0, 0.02, 0]}>
+        <mesh position={[0, 0.02, 0]}>
           <boxGeometry args={[PANEL_WIDTH, 0.02, PANEL_HEIGHT]} />
           <meshStandardMaterial color="#cbd5e1" roughness={0.9} />
         </mesh>
 
-        {/* PV Glass Array (Dark Silicon with subtle grid traces) */}
-        <mesh receiveShadow castShadow position={[0, 0.05, 0]}>
+        {/* PV Base Frame */}
+        <mesh position={[0, 0.045, 0]} receiveShadow>
           <boxGeometry args={[PANEL_WIDTH, 0.015, PANEL_HEIGHT]} />
-          <meshPhysicalMaterial
-            color={isActive ? "#0a1324" : "#05080f"} // Dulls out if dead
+          <meshStandardMaterial color="#0f172a" />
+        </mesh>
+
+        {/* PV Glass Array - GPU-light reflective material */}
+        <mesh position={[0, 0.053, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[PANEL_WIDTH, PANEL_HEIGHT]} />
+          <meshStandardMaterial
+            color="#081426"
+            roughness={0.05}
             metalness={0.9}
-            roughness={0.1 + dustFactor * 0.7}
-            clearcoat={1.0 - dustFactor * 0.9} // Dust severely ruins clearcoat
-            clearcoatRoughness={0.05 + dustFactor}
-            envMapIntensity={2.5}
-            specularIntensity={1.5}
+            envMapIntensity={1.5}
           />
         </mesh>
 
-        {/* Silver grid/busbar traces (Simulation of Mono-crystalline cells) */}
-        <gridHelper 
-          args={[PANEL_WIDTH, 14, 0x94a3b8, isActive ? 0x64748b : 0x334155]} 
-          position={[0, 0.06, 0]} 
-          scale={[1, 1, PANEL_HEIGHT / PANEL_WIDTH]}
-        />
+        {/* Silver grid/busbar traces */}
+        <group position={[0, 0.054, 0]}>
+          <gridHelper 
+            args={[1, 10, '#607d8b', '#607d8b']} 
+            scale={[PANEL_WIDTH, 1, PANEL_HEIGHT]} 
+          />
+        </group>
 
-        {/* Power Glow Feedback */}
-        <mesh position={[0, 0.065, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[PANEL_WIDTH, PANEL_HEIGHT]} />
-          <meshBasicMaterial ref={glowRef} color="#38bdf8" transparent blending={THREE.AdditiveBlending} depthWrite={false} />
-        </mesh>
+        {/* Mounting Screws/Bolts */}
+        <Cylinder args={[0.04, 0.04, 0.02]} position={[-PANEL_WIDTH/2 + 0.3, 0.065, -PANEL_HEIGHT/2 + 0.3]}><RubberMaterial /></Cylinder>
+        <Cylinder args={[0.04, 0.04, 0.02]} position={[PANEL_WIDTH/2 - 0.3, 0.065, -PANEL_HEIGHT/2 + 0.3]}><RubberMaterial /></Cylinder>
+        <Cylinder args={[0.04, 0.04, 0.02]} position={[-PANEL_WIDTH/2 + 0.3, 0.065, PANEL_HEIGHT/2 - 0.3]}><RubberMaterial /></Cylinder>
+        <Cylinder args={[0.04, 0.04, 0.02]} position={[PANEL_WIDTH/2 - 0.3, 0.065, PANEL_HEIGHT/2 - 0.3]}><RubberMaterial /></Cylinder>
 
-        {/* Heavy Junction Box on the back */}
-        <mesh position={[0, -0.1, -0.8]} castShadow receiveShadow>
+        {/* Junction Box */}
+        <mesh position={[0, -0.1, -0.8]}>
           <boxGeometry args={[0.3, 0.15, 0.3]} />
           <RubberMaterial />
         </mesh>
 
-        {/* Intense Temperature Heat Shimmer Layer */}
         {tempScale > 0.1 && (
           <mesh position={[0, 0.2, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-            <planeGeometry args={[PANEL_WIDTH, PANEL_HEIGHT, 64, 64]} />
-            <MeshDistortMaterial
-              color="#ffffff"
-              transparent
-              transmission={0.95} 
-              opacity={1}
-              ior={1.1} // Low index for air shimmer
-              distort={tempScale * 1.5}
-              speed={tempScale * 12}
-              thickness={0.5}
-              roughness={0}
-            />
+            <planeGeometry args={[PANEL_WIDTH, PANEL_HEIGHT]} />
+            <meshStandardMaterial color="#ffffff" transparent opacity={0.2} roughness={0} />
           </mesh>
         )}
       </group>
@@ -169,167 +185,140 @@ const SolarPanelModel = React.memo(({ temperature, dustIndex, power, expectedPow
   );
 });
 
-// Atmosphere helper to isolate Sky re-renders from the main EnvironmentSystem
-const DynamicSky = React.memo(() => {
-  const skyRef = useRef<any>(null);
-  
-  useFrame(() => {
-    if (!skyRef.current || !skyRef.current.material) return;
-    const progress = getSimProgress();
-    const angle = (progress - 0.25) * 2 * Math.PI;
-    const distance = 80;
-    const x = Math.cos(angle) * distance; 
-    const y = Math.sin(angle) * distance; 
-    const z = -30;
-    
-    // Correctly mutate the shader uniform directly for butter-smooth movement
-    const uniforms = skyRef.current.material.uniforms;
-    if (uniforms && uniforms.sunPosition) {
-      uniforms.sunPosition.value.set(x, y, z);
-    }
-  });
-
-  return <Sky ref={skyRef} turbidity={0.6} rayleigh={1.5} mieCoefficient={0.005} mieDirectionalG={0.8} />;
+const RealisticMoon = React.memo(({ position }: { position: [number, number, number] }) => {
+  return (
+    <mesh position={position}>
+      <sphereGeometry args={[12.0, 32, 32]} />
+      <meshBasicMaterial color="#ffffff" />
+    </mesh>
+  );
 });
 
-// Animated Sun & Sky System synced to real time
-const EnvironmentSystem = () => {
-  const sunLightRef = useRef<THREE.DirectionalLight>(null);
-  const moonLightRef = useRef<THREE.DirectionalLight>(null);
-  const ambientLightRef = useRef<THREE.AmbientLight>(null);
-  const hemiLightRef = useRef<THREE.HemisphereLight>(null);
-  const sunMeshRef = useRef<THREE.Mesh>(null);
-  const moonMeshRef = useRef<THREE.Mesh>(null);
-  const fogRef = useRef<THREE.Fog>(null);
-  const starsRef = useRef<THREE.Points>(null);
-  const cloudsRef = useRef<THREE.Group>(null);
 
-  useFrame(() => {
-    const progress = getSimProgress();
-    const angle = (progress - 0.25) * 2 * Math.PI;
-    const distance = 80;
-    const x = Math.cos(angle) * distance; 
-    const y = Math.sin(angle) * distance; 
-    const z = -30;
-    const mx = Math.cos(angle + Math.PI) * distance;
-    const my = Math.sin(angle + Math.PI) * distance;
 
-    const isDaytime = y > -5;
+// Consolidated lighting and atmospheric elements tied to exact simulation clock
+const CelestialBodies = React.memo(({ simProgress }: { simProgress: number }) => {
+  // Continuous 24-hour orbital angle
+  // 6 AM (0.25) = 0 rad, Noon (0.5) = PI/2, 6 PM (0.75) = PI, Midnight (0/1) = 3PI/2
+  const angle = (simProgress - 0.25) * 2 * Math.PI;
 
-    if (sunLightRef.current) {
-        sunLightRef.current.position.set(x, y, z);
-        const heightRatio = Math.max(0, Math.min(y / 40, 1.0));
-        sunLightRef.current.intensity = isDaytime ? Math.max(0, 0.5 + heightRatio * 3.0) : 0;
-        sunLightRef.current.color.lerpColors(new THREE.Color("#ffeedd"), new THREE.Color("#ffffff"), heightRatio);
-    }
+  const orbitalRadius = 120;
+  const zPlaneSky = -150; // Deep in the background sky
 
-    if (moonLightRef.current) {
-        moonLightRef.current.position.set(mx, my, z);
-        moonLightRef.current.intensity = !isDaytime ? 1.5 : 0;
-    }
+  const sunElevation = Math.sin(angle); // 1 = noon, 0 = horizon, -1 = midnight
+  const isNight = sunElevation < 0;
 
-    if (ambientLightRef.current) ambientLightRef.current.intensity = isDaytime ? 0.6 : 0.2;
-    if (hemiLightRef.current) hemiLightRef.current.intensity = isDaytime ? 0.8 : 0.3;
+  const sunPos: [number, number, number] = [
+    Math.cos(angle) * orbitalRadius * 2,
+    sunElevation * orbitalRadius * 1.5,
+    zPlaneSky,
+  ];
 
-    if (sunMeshRef.current) {
-      sunMeshRef.current.position.set(x, y, z);
-      sunMeshRef.current.visible = isDaytime;
-    }
-    if (moonMeshRef.current) {
-      moonMeshRef.current.position.set(mx, my, z);
-      moonMeshRef.current.visible = !isDaytime;
-    }
-
-    if (fogRef.current) {
-        const targetFog = isDaytime ? new THREE.Color('#6e8594') : new THREE.Color('#0a1220');
-        fogRef.current.color.lerp(targetFog, 0.05);
-    }
-
-    if (starsRef.current) starsRef.current.visible = !isDaytime;
-    if (cloudsRef.current) cloudsRef.current.visible = isDaytime;
-  });
+  const moonPos: [number, number, number] = [
+    -Math.cos(angle) * orbitalRadius * 2,
+    -sunElevation * orbitalRadius * 1.5,
+    zPlaneSky,
+  ];
 
   return (
     <>
-      <fog ref={fogRef} attach="fog" args={['#6e8594', 10, 80]} />
-      <ambientLight ref={ambientLightRef} intensity={0.6} />
-      <hemisphereLight ref={hemiLightRef} args={['#a3ccf0', '#2d3330', 0.8]} />
-      
-      <directionalLight
-        ref={sunLightRef}
-        castShadow
-        shadow-mapSize={[2048, 2048]}
-        shadow-bias={-0.0005}
+      {/* Dynamic ambient based on sun elevation */}
+      <ambientLight intensity={Math.max(0.15, sunElevation * 0.6)} />
+      <hemisphereLight args={['#b9d5ff', '#333311', Math.max(0.1, sunElevation * 0.5)]} />
+
+      {/* Real physical sky - GPU-safe now that shadows/reflector are off */}
+      <Sky
+        distance={450000}
+        sunPosition={sunPos}
+        turbidity={2}
+        rayleigh={0.5}
+        mieCoefficient={0.005}
+        mieDirectionalG={0.8}
       />
-      <directionalLight
-        ref={moonLightRef}
-        color="#a5c4f2"
-        castShadow
-        shadow-mapSize={[1024, 1024]}
-        shadow-bias={-0.0005}
+
+      {/* Image-based lighting — gives metallic panel real-world reflections */}
+      <Environment
+        preset={
+          isNight ? 'night' 
+          : sunElevation < 0.15 ? 'sunset'
+          : 'park'
+        }
+        background={false}
       />
-      
-      <DynamicSky />
-      
-      <mesh ref={sunMeshRef}><sphereGeometry args={[4, 16, 16]} /><meshBasicMaterial color="#ffffff" fog={false} /></mesh>
-      <mesh ref={moonMeshRef}><sphereGeometry args={[3.5, 16, 16]} /><meshBasicMaterial color="#a5c4f2" fog={false} /></mesh>
-      
-      <Clouds ref={cloudsRef} material={THREE.MeshBasicMaterial}>
-        <Cloud position={[0, 25, -40]} opacity={0.3} speed={0.4} bounds={[50, 5, 5]} segments={10} color="#ffffff" />
-      </Clouds>
-      <Stars ref={starsRef} radius={100} depth={50} count={3000} factor={4} saturation={0} fade speed={1} />
+
+      {/* Atmospheric depth fog */}
+      <fog attach="fog" args={[
+        isNight ? '#010510' : sunElevation > 0.3 ? '#87ceeb' : '#e8722a',
+        18,   // near
+        80    // far
+      ]} />
+
+      {/* Stars at night */}
+      <group visible={sunElevation < 0.15}>
+        <Stars radius={120} depth={60} count={2000} factor={4} fade speed={0.5} />
+      </group>
+
+      {/* Directional sun light — no shadow maps */}
+      <directionalLight
+        position={sunPos}
+        intensity={Math.max(0, sunElevation * 4.0)}
+        color={sunElevation < 0.15 ? '#ffb347' : '#ffffff'}
+      />
+
+      {/* Moon Mesh & moonlight */}
+      <group visible={isNight}>
+        <Suspense fallback={
+          <mesh position={moonPos}>
+            <sphereGeometry args={[12.0, 16, 16]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+        }>
+          <RealisticMoon position={moonPos} />
+        </Suspense>
+        <ambientLight intensity={Math.max(0, -sunElevation * 0.2)} color="#c8d8ff" />
+      </group>
     </>
   );
-};
+});
 
 const EquipmentConductor = React.memo(({ power }: { power: number }) => {
   const isActive = power > 0;
   
-  // Realistically thick power transfer conduit from the back of the panel down the frame
-  const curve = useMemo(() => new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0, 1.6, -0.65),   // Panel junction box
-    new THREE.Vector3(0, 1.6, -0.95),  // Back of mount
-    new THREE.Vector3(-0.1, 1.0, -0.95),// Drop down arm
-    new THREE.Vector3(-0.1, 0.1, -0.95),// Arrive at base
-    new THREE.Vector3(-0.1, 0.1, -1.5), // Loop backwards
-    new THREE.Vector3(3.3, 0.1, -1.5),  // Travel right along concrete base
-    new THREE.Vector3(3.5, 0.5, -1.2),  // Rise up into Inverter Box
-  ]), []);
-
-  const tubeGeo = useMemo(() => new THREE.TubeGeometry(curve, 128, 0.05, 12, false), [curve]);
-  
   return (
     <group>
-      {/* Rubber conduit cable */}
-      <mesh geometry={tubeGeo} castShadow receiveShadow>
-        <RubberMaterial />
-      </mesh>
-
-      {/* Commercial Inverter Box tightly modeled */}
-      <group position={[3.6, 0.6, -1.0]} castShadow receiveShadow>
-        <Box args={[1.0, 1.2, 0.6]} receiveShadow castShadow>
+      {/* Simplified Commercial Inverter Box tightly modeled (No complex tubeGeometry) */}
+      <group position={[3.6, 0.6, -1.0]}>
+        <Box args={[1.0, 1.2, 0.6]} castShadow receiveShadow>
           <InverterMaterial />
         </Box>
         
         {/* Heat vents (fake geometry via thin dark boxes) */}
-        <Box args={[0.02, 0.8, 0.4]} position={[0.51, 0, 0]}><RubberMaterial /></Box>
-        <Box args={[0.8, 0.05, 0.4]} position={[0, 0.61, 0]}><RubberMaterial /></Box>
-        
-        {/* Clear Industrial Labeling */}
-        <group position={[0, 0.3, 0.31]}>
-          <Text fontSize={0.12} color="#1e293b" anchorX="center" anchorY="bottom" characters="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!">
-            SOLAR INVERTER
-          </Text>
-          <Text fontSize={0.06} position={[0, -0.08, 0]} color="#475569" anchorX="center" anchorY="top">
-            A/C 240V - MAX 10kW
-          </Text>
-        </group>
+        <Box args={[0.02, 0.8, 0.4]} position={[0.51, 0, 0]} castShadow><RubberMaterial /></Box>
+        <Box args={[0.8, 0.05, 0.4]} position={[0, 0.61, 0]} castShadow><RubberMaterial /></Box>
         
         {/* Status Screen */}
         <mesh position={[0, 0, 0.305]}>
           <planeGeometry args={[0.6, 0.3]} />
           <meshBasicMaterial color={isActive ? "#0ea5e9" : "#1e293b"} />
         </mesh>
+        
+        {/* Labels */}
+        <Text
+          position={[0, 0.45, 0.31]}
+          fontSize={0.12}
+          color="#334155"
+          font="https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf"
+        >
+          SOLAR INVERTER
+        </Text>
+        <Text
+          position={[0, 0.28, 0.31]}
+          fontSize={0.05}
+          color="#64748b"
+          font="https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Me5WZLCzYlKw.ttf"
+        >
+          A/C 240V   MAX 10kW
+        </Text>
       </group>
 
     </group>
@@ -393,11 +382,12 @@ SunArcDisplay.displayName = 'SunArcDisplay';
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 export function SolarDigitalTwin(props: SolarDigitalTwinProps) {
-  const [simProgress, setSimProgress] = useState(getSimProgress);
+  const [simProgress, setSimProgress] = useState(0); // Initialized to 0 to avoid hydration mismatch
 
   // Sync React UI tightly with the ThreeJS continuous rendering loop
   // Lowered frequency for UI-only updates to 1s to save CPU
   useEffect(() => {
+    setSimProgress(getSimProgress()); // Set initial progress on mount
     const i = setInterval(() => {
       setSimProgress(getSimProgress());
     }, 1000);
@@ -453,8 +443,12 @@ export function SolarDigitalTwin(props: SolarDigitalTwinProps) {
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="w-full h-[640px] relative rounded-3xl overflow-hidden bg-[#0a1220] shadow-2xl flex flex-col">
-      <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-6">
+    <div className="w-full relative rounded-3xl overflow-hidden shadow-2xl" style={{ height: '640px', backgroundColor: '#0a1220' }}>
+      {/* 3D Canvas sits absolutely, covers the entire frame */}
+      <ThreeScene {...safeProps} expectedPower={expectedPower} simProgress={simProgress} />
+
+      {/* HUD Overlay — pointer-events-none except explicit UI children */}
+      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6" style={{ zIndex: 10 }}>
         <div className="flex justify-between items-start gap-4 flex-wrap">
           {/* Status + metrics panel */}
           <div className="bg-[#0f172a]/70 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-xl pointer-events-auto min-w-[300px]">
@@ -499,40 +493,80 @@ export function SolarDigitalTwin(props: SolarDigitalTwinProps) {
           <MetricCard icon={<Thermometer className="w-5 h-5 text-rose-400" />} label="Temperature" value={`${safeProps.temperature.toFixed(1)} °C`} trend={safeProps.temperature > 50 ? "up" : "down"} />
         </div>
       </div>
-
-      <ThreeScene {...safeProps} expectedPower={expectedPower} />
     </div>
   );
 }
 
-// Optimized 3D Scene to run on its own cycle
-const ThreeScene = React.memo((props: any) => (
-  <Canvas shadows={{ type: 1 }} camera={{ position: [-5, 2.5, 4.5], fov: 42 }}>
-    <OrbitControls 
-      enableZoom={true} 
-      enablePan={false}
-      minDistance={3}
-      maxDistance={12}
-      minPolarAngle={0} 
-      maxPolarAngle={Math.PI / 2 - 0.05}
-      target={[0, 0.5, 0]}
-    />
-    
-    <EnvironmentSystem />
-    <SolarPanelModel {...props} />
-    <EquipmentConductor power={props.power} />
-    <SimulationClock />
+// CRITICAL: wrapper div must have flex:1 + minHeight:0 so the Canvas
+// fills the available height in its flex-col parent.
+const ThreeScene = React.memo((props: any) => {
+  const [canvasKey, setCanvasKey] = useState(0);
 
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-      <planeGeometry args={[200, 200]} />
-      <GroundMaterial />
-    </mesh>
+  return (
+    <div style={{
+      position: 'absolute',
+      inset: 0,
+      zIndex: 0,
+      touchAction: 'none',
+      overscrollBehavior: 'none',
+      cursor: 'grab',
+    }}>
+      <Canvas
+        key={canvasKey}
+        shadows={false}
+        style={{ width: '100%', height: '100%', display: 'block' }}
+        camera={{ position: [-4.5, 2.5, 5.5], fov: 40 }}
+        gl={{ 
+          antialias: true, 
+          alpha: false,
+          powerPreference: 'high-performance',
+          preserveDrawingBuffer: false,
+        }}
+        onCreated={({ gl }) => {
+          gl.setClearColor('#0a1220', 1);
+          gl.domElement.addEventListener('webglcontextlost', (e) => {
+            e.preventDefault();
+            setTimeout(() => setCanvasKey(k => k + 1), 500);
+          });
+        }}
+      >
+        {/* Remove solid background to expose atmospheric sky gradients */}
+        <CelestialBodies simProgress={props.simProgress ?? 0} />
 
-    <EffectComposer>
-      <Bloom luminanceThreshold={2.0} mipmapBlur intensity={0.5} />
-    </EffectComposer>
-  </Canvas>
-));
+      <OrbitControls
+        makeDefault
+        enableZoom={true}
+        enablePan={true}
+        enableRotate={true}
+        enableDamping={true}
+        dampingFactor={0.05}
+        minDistance={3}
+        maxDistance={12}
+        minPolarAngle={0}
+        maxPolarAngle={Math.PI / 2 - 0.05}
+        minAzimuthAngle={-Infinity}
+        maxAzimuthAngle={Infinity}
+        target={[0, 1.0, 0]}
+      />
+
+      <SolarPanelModel {...props} expectedPower={props.expectedPower} />
+      <EquipmentConductor power={props.power} />
+      <WireCables />
+      <SimulationClock />
+
+      {/* Realistic rooftop ground */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]}>
+        <planeGeometry args={[200, 200]} />
+        <meshStandardMaterial 
+          color="#1a1a1a"
+          roughness={0.95}
+          metalness={0.05}
+        />
+      </mesh>
+    </Canvas>
+  </div>
+  );
+});
 
 const MetricCard = React.memo(({ icon, label, value, trend }: { icon: React.ReactNode, label: string, value: string, trend: "up" | "down" }) => (
   <motion.div 
