@@ -94,16 +94,16 @@ export function OverviewStats() {
 
     if (loading) {
         return (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6">
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 relative">
                 {Array.from({ length: 6 }).map((_, i) => (
                     <GlassCard key={i} className="h-full">
                         <CardHeader className="flex flex-row items-center justify-start gap-4 space-y-0 pb-2">
                              <Skeleton className="h-6 w-6" />
-                             <Skeleton className="h-4 w-24" />
+                             <Skeleton className="h-4 w-16 sm:w-24" />
                         </CardHeader>
                         <CardContent>
-                            <Skeleton className="h-7 w-20" />
-                            <Skeleton className="h-3 w-16 mt-1" />
+                            <Skeleton className="h-7 w-16 sm:w-20" />
+                            <Skeleton className="h-3 w-12 sm:w-16 mt-1" />
                         </CardContent>
                     </GlassCard>
                 ))}
@@ -140,7 +140,7 @@ export function OverviewStats() {
 
     return (
         <LayoutGroup>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-6 relative">
+            <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 relative">
                 {stats.map((stat, index) => {
                     const isExpanded = expandedIndex === index;
                     

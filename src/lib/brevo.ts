@@ -43,6 +43,7 @@ export async function sendBrevoEmail({
   };
 
   try {
+    console.log(`[Brevo] Attempting to send email to: ${recipientEmail} with subject: ${subject}`);
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -56,7 +57,7 @@ export async function sendBrevoEmail({
     const data = await response.json();
 
     if (!response.ok) {
-      console.error('❌ Brevo API Response Error:', data);
+      console.error('❌ Brevo API Response Error:', JSON.stringify(data, null, 2));
       throw new Error(`Brevo API rejected email: ${data.message || JSON.stringify(data)}`);
     }
 

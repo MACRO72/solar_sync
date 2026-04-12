@@ -101,14 +101,19 @@ export async function generateAlertNotifications(input: GenerateAlertNotificatio
   // 7. PERFORM NOTIFICATIONS
   try {
     const notificationPromises = [];
-    if (input.recipientEmail) {
+    const recipient = input.recipientEmail || process.env.ALERT_RECIPIENT_EMAIL;
+    
+    if (recipient) {
+      console.log(`[Notification] Queueing email to: ${recipient}`);
       notificationPromises.push(
         sendEmailInternal({
           subject: output.title,
           message: output.message,
-          recipientEmail: input.recipientEmail,
+          recipientEmail: recipient,
         })
       );
+    } else {
+      console.warn('[Notification] No recipient email found for alert.');
     }
     
     if (input.recipientPhone && output.priority === 'high') {

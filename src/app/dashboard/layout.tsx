@@ -18,7 +18,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <AppStateProvider>
         <div className="flex min-h-screen w-full flex-col">
           <PageHeader />
-          <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+          <main className="flex flex-1 flex-col gap-3 p-3 mt-14 sm:mt-16 sm:gap-4 sm:p-4 md:gap-6 md:p-6 lg:gap-8 lg:p-8 overflow-x-hidden">
             <PageTransition>{children}</PageTransition>
           </main>
           <PhoneNumberRequirementModal />

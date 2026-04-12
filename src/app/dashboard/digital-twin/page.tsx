@@ -13,27 +13,26 @@ export default function DigitalTwinPage() {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="flex flex-col gap-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex flex-col gap-4 sm:gap-6 min-h-screen sm:min-h-0 h-[calc(100vh-120px)] sm:h-auto overflow-hidden sm:overflow-visible"
     >
-      <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold text-white tracking-tight">Digital Twin</h1>
-        <p className="text-slate-400">
+      <div className="flex flex-col gap-1 shrink-0">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Digital Twin</h1>
+        <p className="text-slate-400 text-sm">
           Real-time 3D simulation of your solar energy system.
         </p>
       </div>
 
-      {loading ? (
-        <div className="w-full h-[600px] bg-[#0a0f19] rounded-3xl animate-pulse flex items-center justify-center border border-white/5">
-           <div className="flex flex-col items-center gap-4">
-              <Skeleton className="h-12 w-12 rounded-full" />
-              <Skeleton className="h-4 w-48" />
-           </div>
-        </div>
-      ) : latestDevice ? (
-        <div className="w-full h-[600px] min-h-[500px]">
+      <div className="flex-1 min-h-0 w-full rounded-3xl overflow-hidden relative border border-white/5 bg-[#0a0f19] touch-none overscroll-none">
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center">
+             <div className="flex flex-col items-center gap-4">
+                <Skeleton className="h-12 w-12 rounded-full" />
+                <Skeleton className="h-4 w-48" />
+             </div>
+          </div>
+        ) : latestDevice ? (
           <SolarDigitalTwin 
             lightIndex={latestDevice.irradiance || 0}
             voltage={latestDevice.voltage || 0}
@@ -41,12 +40,12 @@ export default function DigitalTwinPage() {
             temperature={latestDevice.temperature || 0}
             dustIndex={latestDevice.dustDensity || 0}
           />
-        </div>
-      ) : (
-        <div className="w-full h-[400px] flex items-center justify-center bg-[#0a0f19] rounded-3xl border border-white/5">
-          <p className="text-slate-500">Waiting for live sensor data...</p>
-        </div>
-      )}
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-slate-500">Waiting for live sensor data...</p>
+          </div>
+        )}
+      </div>
     </motion.div>
   );
 }

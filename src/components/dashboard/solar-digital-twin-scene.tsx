@@ -443,52 +443,61 @@ export function SolarDigitalTwin(props: SolarDigitalTwinProps) {
   const StatusIcon = statusConfig.icon;
 
   return (
-    <div className="w-full relative rounded-3xl overflow-hidden shadow-2xl" style={{ height: '640px', backgroundColor: '#0a1220' }}>
+    <div className="w-full relative rounded-3xl overflow-hidden shadow-2xl h-[500px] sm:h-[640px]" style={{ backgroundColor: '#0a1220' }}>
       {/* 3D Canvas sits absolutely, covers the entire frame */}
       <ThreeScene {...safeProps} expectedPower={expectedPower} simProgress={simProgress} />
 
       {/* HUD Overlay — pointer-events-none except explicit UI children */}
-      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-6" style={{ zIndex: 10 }}>
+      <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-3 sm:p-6" style={{ zIndex: 10 }}>
         <div className="flex justify-between items-start gap-4 flex-wrap">
           {/* Status + metrics panel */}
-          <div className="bg-[#0f172a]/70 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-xl pointer-events-auto min-w-[300px]">
-            <h3 className="text-white font-bold text-lg tracking-tight flex items-center gap-2">
+          <div className="bg-[#0f172a]/70 backdrop-blur-xl border border-white/10 rounded-2xl p-2 sm:p-4 shadow-xl pointer-events-auto w-full max-w-[210px] sm:max-w-[320px] sm:min-w-[300px]">
+            <h3 className="text-white font-bold text-[13px] sm:text-lg tracking-tight flex items-center gap-1.5 sm:gap-2">
               <Info className="w-5 h-5 text-cyan-400" />
               Environment Simulation
             </h3>
             <div className="mt-2 flex items-center gap-3">
               <span className="relative flex h-2 w-2">
                 <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${statusConfig.pulse} opacity-75`}></span>
-                <span className={`relative inline-flex rounded-full h-2 w-2 ${statusConfig.pulse}`}></span>
+                <span className={`relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 ${statusConfig.pulse}`}></span>
               </span>
-              <span className={`${statusConfig.color} text-xs font-bold tracking-widest uppercase flex items-center gap-1`}>
-                <StatusIcon className="w-3 h-3" /> {statusConfig.text}
+              <span className={`${statusConfig.color} text-[9px] sm:text-xs font-bold tracking-widest uppercase flex items-center gap-1`}>
+                <StatusIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {statusConfig.text}
               </span>
             </div>
-            <div className="mt-4 flex gap-4 pt-2 border-t border-white/10">
+            <div className="mt-2.5 sm:mt-4 flex gap-3 sm:gap-4 pt-2 border-t border-white/10">
               <div>
-                <p className="text-slate-500 text-[10px] uppercase font-extrabold tracking-widest">Expected</p>
-                <div className="text-xl font-light text-slate-300">{expectedPower.toFixed(1)} <span className="text-sm">W</span></div>
+                <p className="text-slate-500 text-[8px] sm:text-[10px] uppercase font-extrabold tracking-widest">
+                  <span className="sm:hidden">Exp.</span>
+                  <span className="hidden sm:inline">Expected</span>
+                </p>
+                <div className="text-sm sm:text-xl font-light text-slate-300">{expectedPower.toFixed(1)} <span className="text-[10px] sm:text-sm">W</span></div>
               </div>
-              <div className="border-l border-white/10 pl-4">
-                <p className="text-slate-400 text-[10px] uppercase font-extrabold tracking-widest text-[#38bdf8]">Actual Output</p>
-                <div className="text-2xl font-bold text-white">{safeProps.power.toFixed(1)} <span className="text-sm font-light text-slate-400">W</span></div>
+              <div className="border-l border-white/10 pl-2.5 sm:pl-4">
+                <p className="text-slate-400 text-[8px] sm:text-[10px] uppercase font-extrabold tracking-widest text-[#38bdf8]">
+                  <span className="sm:hidden">Actual</span>
+                  <span className="hidden sm:inline">Actual Output</span>
+                </p>
+                <div className="text-base sm:text-2xl font-bold text-white">{safeProps.power.toFixed(1)} <span className="text-[10px] sm:text-sm font-light text-slate-400">W</span></div>
               </div>
-              <div className="border-l border-white/10 pl-4">
-                <p className="text-slate-400 text-[10px] uppercase font-extrabold tracking-widest">Efficiency</p>
-                <div className="text-xl font-light text-white">{efficiency.toFixed(1)}<span className="text-sm font-light text-slate-400">%</span></div>
+              <div className="border-l border-white/10 pl-2.5 sm:pl-4">
+                <p className="text-slate-400 text-[8px] sm:text-[10px] uppercase font-extrabold tracking-widest">
+                  <span className="sm:hidden">Eff.</span>
+                  <span className="hidden sm:inline">Efficiency</span>
+                </p>
+                <div className="text-sm sm:text-xl font-light text-white">{efficiency.toFixed(0)}<span className="text-[10px] sm:text-sm font-light text-slate-400">%</span></div>
               </div>
             </div>
 
-            {/* ☀️ Sun Arc */}
-            <div className="mt-4 pt-3 border-t border-white/5">
+            {/* ☀️ Sun Arc - Hidden on mobile to reclaim space */}
+            <div className="hidden sm:block mt-4 pt-3 border-t border-white/5">
               <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mb-1">Sun Position</p>
               <SunArcDisplay simProgress={simProgress} />
             </div>
           </div>
         </div>
 
-        <div className="flex gap-4 items-end justify-center md:justify-start pointer-events-auto flex-wrap pb-[10px]">
+        <div className="flex gap-2 sm:gap-4 items-end justify-center md:justify-start pointer-events-auto flex-wrap pb-[5px] sm:pb-[10px]">
           <MetricCard icon={<Zap className="w-5 h-5 text-cyan-400" />} label="Voltage" value={`${safeProps.voltage.toFixed(1)} V`} trend="up" />
           <MetricCard icon={<Thermometer className="w-5 h-5 text-rose-400" />} label="Temperature" value={`${safeProps.temperature.toFixed(1)} °C`} trend={safeProps.temperature > 50 ? "up" : "down"} />
         </div>
@@ -501,21 +510,45 @@ export function SolarDigitalTwin(props: SolarDigitalTwinProps) {
 // fills the available height in its flex-col parent.
 const ThreeScene = React.memo((props: any) => {
   const [canvasKey, setCanvasKey] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      // Use standard mobile breakpoint or aspect ratio check
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Standard PC: [-4.5, 2.5, 5.5], fov: 40
+  // Mobile: Adjusted to move panel into the visible gap
+  const cameraConfig = useMemo(() => {
+    if (isMobile) {
+      return { position: [-5.5, 3.8, 9.5] as [number, number, number], fov: 42 };
+    }
+    return { position: [-4.5, 2.5, 5.5] as [number, number, number], fov: 40 };
+  }, [isMobile]);
 
   return (
-    <div style={{
-      position: 'absolute',
-      inset: 0,
-      zIndex: 0,
-      touchAction: 'none',
-      overscrollBehavior: 'none',
-      cursor: 'grab',
-    }}>
+    <div 
+      onPointerDown={(e) => e.stopPropagation()}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 0,
+        touchAction: 'none',
+        overscrollBehavior: 'none',
+        cursor: 'grab',
+      }}
+    >
       <Canvas
         key={canvasKey}
         shadows={false}
         style={{ width: '100%', height: '100%', display: 'block' }}
-        camera={{ position: [-4.5, 2.5, 5.5], fov: 40 }}
+        camera={cameraConfig}
         gl={{ 
           antialias: true, 
           alpha: false,
@@ -572,15 +605,15 @@ const MetricCard = React.memo(({ icon, label, value, trend }: { icon: React.Reac
   <motion.div 
     whileHover={{ scale: 1.05, y: -5 }}
     whileTap={{ scale: 0.98 }}
-    className="bg-[#0f172a]/70 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-xl min-w-[140px] transition-all duration-300 cursor-pointer group"
+    className="bg-[#0f172a]/70 backdrop-blur-xl border border-white/10 rounded-2xl p-2 sm:p-4 shadow-xl min-w-[110px] sm:min-w-[140px] transition-all duration-300 cursor-pointer group"
     style={{ willChange: "transform, opacity" }}
   >
-    <div className="flex items-center gap-2 mb-3 opacity-80 group-hover:opacity-100 transition-opacity">
+    <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-3 opacity-80 group-hover:opacity-100 transition-opacity">
       {icon}
-      <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">{label}</span>
+      <span className="text-[8px] sm:text-[10px] font-bold text-slate-300 uppercase tracking-widest">{label}</span>
     </div>
     <div className="flex items-end justify-between">
-      <span className="text-2xl font-bold text-white tracking-tight">{value}</span>
+      <span className="text-xl sm:text-2xl font-bold text-white tracking-tight">{value}</span>
       <span className={trend === "up" ? "text-emerald-400 font-bold" : "text-rose-400 font-bold"}>
         {trend === "up" ? "↑" : "↓"}
       </span>

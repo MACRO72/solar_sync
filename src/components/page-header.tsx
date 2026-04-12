@@ -137,8 +137,8 @@ export function PageHeader() {
 
 
   return (
-    <header className="sticky top-0 h-16 border-b bg-[#0B1220]/80 backdrop-blur-md px-4 md:px-6 z-50 flex items-center justify-between border-slate-800">
-      <div className="flex items-center gap-6">
+    <header className="fixed top-0 left-0 right-0 h-14 sm:h-16 border-b bg-[#0B1220]/80 backdrop-blur-md px-3 sm:px-4 md:px-6 z-50 flex items-center justify-between border-slate-800">
+      <div className="flex items-center gap-2 sm:gap-4 md:gap-6 min-w-0">
           <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
             <SheetTrigger asChild>
               <Button
@@ -213,7 +213,7 @@ export function PageHeader() {
           </Link>
 
           {/* Desktop Navigation Tabs */}
-          <nav className="hidden md:flex items-center gap-1 border-l border-slate-800 ml-4 pl-4 h-8">
+          <nav className="hidden md:flex items-center gap-0 lg:gap-1 border-l border-slate-800 ml-2 pl-2 lg:ml-4 lg:pl-4 h-8">
             {menuItems.map((item) => {
               const isActive = activeSection === item.path.substring(1);
               return (
@@ -221,7 +221,7 @@ export function PageHeader() {
                   key={item.path}
                   onClick={() => scrollToSection(item.path)}
                   className={cn(
-                    "relative flex items-center gap-2 px-5 py-2.5 text-sm font-bold transition-all duration-300 rounded-full",
+                    "relative flex items-center gap-1.5 px-3 lg:px-5 py-2.5 text-xs lg:text-sm font-bold transition-all duration-300 rounded-full",
                     isActive ? "text-[#22D3EE] drop-shadow-[0_0_12px_rgba(34,211,238,0.5)]" : "text-slate-400 hover:text-white hover:bg-white/5"
                   )}
                 >
@@ -246,7 +246,7 @@ export function PageHeader() {
           </nav>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3 shrink-0">
         {/* WiFi Status Indicator with Pulse Animation */}
         <TooltipProvider>
            <Tooltip>
@@ -292,7 +292,7 @@ export function PageHeader() {
             </Button>
 
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-96 bg-[#0B1220] border-slate-800 text-white shadow-2xl">
+          <DropdownMenuContent align="end" className="w-[min(24rem,calc(100vw-2rem))] bg-[#0B1220] border-slate-800 text-white shadow-2xl">
             <DropdownMenuLabel>Notifications</DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-slate-800" />
             <div className="flex flex-col gap-2 p-2 max-h-[400px] overflow-y-auto">

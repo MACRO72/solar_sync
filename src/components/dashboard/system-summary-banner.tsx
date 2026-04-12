@@ -339,7 +339,7 @@ export const SystemSummaryBanner = React.memo(function SystemSummaryBanner({
         )}
       />
 
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 px-6 py-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-4 sm:px-6 py-3 sm:py-4">
         {/* User Greeting */}
         {userName && (
           <div className="flex flex-col shrink-0 border-r border-slate-700/50 pr-4 hidden lg:flex">
@@ -372,18 +372,18 @@ export const SystemSummaryBanner = React.memo(function SystemSummaryBanner({
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -8 }}
               transition={{ duration: 0.3 }}
-              className="text-white font-bold text-sm leading-snug truncate"
+              className="text-white font-bold text-sm leading-snug"
             >
               {summary.headline}
             </motion.p>
           </AnimatePresence>
-          <p className="text-slate-400 text-xs mt-0.5 leading-relaxed line-clamp-1">
+          <p className="text-slate-400 text-xs mt-0.5 leading-relaxed line-clamp-2">
             {summary.sub}
           </p>
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
           <ActionButton
             id="btn-run-ai-analysis"
             label="Run AI Analysis"

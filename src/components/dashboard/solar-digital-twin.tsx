@@ -17,7 +17,7 @@ const SceneDynamic = dynamic(
   { 
     ssr: false, 
     loading: () => (
-      <div className="w-full h-[640px] flex items-center justify-center bg-[#0a1220] rounded-3xl">
+      <div className="w-full h-[500px] sm:h-[640px] flex items-center justify-center bg-[#0a1220] rounded-3xl">
         <Loader2 className="w-8 h-8 animate-spin text-cyan-400" />
       </div>
     )

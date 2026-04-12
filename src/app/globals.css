@@ -2,6 +2,14 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ─── Breakpoints (reference)
+   320px  – xs mobile
+   480px  – sm mobile
+   768px  – md tablet
+   1024px – lg desktop
+   1440px – xl large desktop
+─── */
+
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -241,3 +249,68 @@ section[id] {
     }
   }
 }
+
+/* ─── Responsive Utility Overrides ─────────────────────────────────── */
+
+/* Safe-area insets for notched phones */
+@supports (padding: max(0px)) {
+  .safe-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  .safe-top {
+    padding-top: max(0px, env(safe-area-inset-top));
+  }
+}
+
+/* Touch-friendly minimum tap target */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Prevent horizontal overflow at root */
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Responsive chart container height helpers */
+@media (max-width: 768px) {
+  .chart-container-md {
+    height: 220px !important;
+  }
+
+  /* Dashboard main padding on mobile */
+  .dashboard-main-padding {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Make tables horizontally scrollable on small screens */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Stack flex rows on mobile */
+  .mobile-stack {
+    flex-direction: column !important;
+  }
+
+  /* Notification dropdown narrower on mobile */
+  .notification-dropdown {
+    width: calc(100vw - 2rem) !important;
+    max-width: 24rem;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Slightly smaller text for very small screens */
+  .text-responsive-xl {
+    font-size: 1.25rem;
+  }
+  .text-responsive-2xl {
+    font-size: 1.5rem;
+  }
+}
+

@@ -114,7 +114,7 @@ export default function DashboardOverviewPage() {
             />
           </motion.div>
 
-          <div className="flex flex-col gap-4 w-full px-4 md:px-8 max-w-[1600px] mx-auto pb-20 pt-4">
+          <div className="flex flex-col gap-4 w-full px-0 sm:px-2 md:px-4 lg:px-8 max-w-[1600px] mx-auto pb-20 pt-4">
             {/* SECTION 1: OVERVIEW */}
             <ScrollSection id="overview" forceVisible={true} className="pt-0">
               {/* ── Smart system summary banner ── */}
@@ -138,7 +138,7 @@ export default function DashboardOverviewPage() {
                   whileTap={{ scale: 0.95 }}
                   transition={{ type: 'spring', stiffness: 400, damping: 20 }}
                   className={cn(
-                    "flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-widest border transition-all duration-300",
+                    "flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-widest border transition-all duration-300 min-h-[40px]",
                     sim.active
                       ? "bg-rose-500/10 border-rose-500/40 text-rose-300 hover:bg-rose-500/20"
                       : "bg-emerald-500/10 border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20"
@@ -159,11 +159,11 @@ export default function DashboardOverviewPage() {
               </div>
 
               <OverviewStats />
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 w-full">
-                <div className="lg:col-span-2 flex flex-col">
+              <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3 w-full">
+                <div className="lg:col-span-2 flex flex-col min-w-0">
                   <PerformanceChart />
                 </div>
-                <div className="lg:col-span-1 flex flex-col">
+                <div className="lg:col-span-1 flex flex-col min-w-0">
                   <RecentAlerts />
                 </div>
               </div>
@@ -183,8 +183,8 @@ export default function DashboardOverviewPage() {
             {/* SECTION 6: INSIGHTS */}
             <ScrollSection id="insights">
               {simDevice ? (
-                <div className="flex flex-col gap-8">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-6 md:gap-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
                     <EfficiencyAnalyzer
                       power={simDevice.power || 0}
                       irradiance={simDevice.irradiance || 0}
@@ -203,12 +203,12 @@ export default function DashboardOverviewPage() {
                   <AIInsightsPanel key={analysisKey} data={simDevice as any} />
                 </div>
               ) : (
-                <div className="h-96 bg-white/5 animate-pulse rounded-3xl" />
+                <div className="h-64 sm:h-96 bg-white/5 animate-pulse rounded-3xl" />
               )}
             </ScrollSection>
 
             {/* SECTION 7: DIGITAL TWIN (Last) */}
-            <ScrollSection id="digital-twin" className="pb-40">
+            <ScrollSection id="digital-twin" className="pb-40 touch-none overscroll-none">
               {latestDevice ? (
                 <SolarDigitalTwin
                   lightIndex={latestDevice.irradiance || 0}
@@ -218,7 +218,7 @@ export default function DashboardOverviewPage() {
                   dustIndex={latestDevice.dustDensity || 0}
                 />
               ) : (
-                <div className="w-full h-[600px] bg-[#0a0f19] rounded-3xl animate-pulse flex items-center justify-center border border-white/5" />
+                <div className="w-full h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] bg-[#0a0f19] rounded-3xl animate-pulse flex items-center justify-center border border-white/5" />
               )}
             </ScrollSection>
           </div>

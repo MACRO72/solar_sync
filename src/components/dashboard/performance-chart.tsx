@@ -254,30 +254,30 @@ export const PerformanceChart = React.memo(({ fullHeight = false, defaultPeriod 
     
     return (
         <Card className="animate-energy-wave rounded-2xl">
-            <CardHeader className="flex flex-col items-stretch justify-between gap-4 md:flex-row">
-                <div>
-                    <CardTitle>Sensor Performance Overview</CardTitle>
-                    <CardDescription>Real-time data stream from ESP32 node.</CardDescription>
+            <CardHeader className="flex flex-col items-stretch justify-between gap-3 md:flex-row">
+                <div className="min-w-0">
+                    <CardTitle className="text-base sm:text-lg">Sensor Performance Overview</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Real-time data stream from ESP32 node.</CardDescription>
                 </div>
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                     <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
-                        <Button variant={chartType === 'curve' ? 'default' : 'ghost'} size="sm" onClick={() => setChartType('curve')}>
-                            <Activity className="h-4 w-4 mr-1" /> Curve
+                        <Button variant={chartType === 'curve' ? 'default' : 'ghost'} size="sm" className="text-xs px-2 py-1 h-7" onClick={() => setChartType('curve')}>
+                            <Activity className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> Curve
                         </Button>
-                        <Button variant={chartType === 'bar' ? 'default' : 'ghost'} size="sm" onClick={() => setChartType('bar')}>
-                            <LayoutPanelLeft className="h-4 w-4 mr-1" /> Bar
+                        <Button variant={chartType === 'bar' ? 'default' : 'ghost'} size="sm" className="text-xs px-2 py-1 h-7" onClick={() => setChartType('bar')}>
+                            <LayoutPanelLeft className="h-3 w-3 sm:h-4 sm:w-4 mr-1" /> Bar
                         </Button>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 flex-wrap">
                         {chartViewOptions.map(option => (
-                            <Button key={option.value} variant={chartView === option.value ? 'secondary' : 'outline'} size="sm" className="rounded-full" onClick={() => setChartView(option.value)}>
+                            <Button key={option.value} variant={chartView === option.value ? 'secondary' : 'outline'} size="sm" className="rounded-full text-xs px-2 py-0.5 h-7" onClick={() => setChartView(option.value)}>
                                 {option.label}
                             </Button>
                         ))}
                     </div>
-                     <div className="flex items-center gap-2">
+                     <div className="flex items-center gap-1">
                         {timePeriodOptions.map(option => (
-                            <Button key={option.value} variant={timePeriod === option.value ? 'default' : 'outline'} size="sm" className="rounded-full" onClick={() => setTimePeriod(option.value)}>
+                            <Button key={option.value} variant={timePeriod === option.value ? 'default' : 'outline'} size="sm" className="rounded-full text-xs px-2 py-0.5 h-7" onClick={() => setTimePeriod(option.value)}>
                                 {option.label}
                             </Button>
                         ))}
@@ -285,7 +285,7 @@ export const PerformanceChart = React.memo(({ fullHeight = false, defaultPeriod 
                 </div>
             </CardHeader>
             <CardContent>
-                <ChartContainer config={chartConfig} className={fullHeight ? "h-[400px] w-full" : "h-[300px] w-full"}>
+                <ChartContainer config={chartConfig} className={fullHeight ? "h-[300px] sm:h-[400px] w-full" : "h-[220px] sm:h-[300px] w-full"}>
                    {renderedChart}
                 </ChartContainer>
                 {/* Legend */}
