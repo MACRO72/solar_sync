@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   // Use the deployment URL or a default fallback
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://solar-sync.vercel.app'
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://solar-sync-x.vercel.app'
 
   return [
     {
