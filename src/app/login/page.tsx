@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic";
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, type User } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, type User } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { useFirestore } from '@/firebase/provider';
 import { app } from '@/firebase/config';
@@ -152,11 +152,36 @@ export default function LoginPage() {
   const handleUserSetup = async (user: User, phone?: string) => {
     if (!firestore) return;
     const userRef = doc(firestore, 'users', user.uid);
-    await setDoc(userRef, {
+    const data: Record<string, any> = {
       name: user.displayName || user.email?.split('@')[0] || 'User',
       email: user.email,
       phone: phone || '',
-    }, { merge: true });
+    };
+    if (user.photoURL) data.photoURL = user.photoURL;
+    await setDoc(userRef, data, { merge: true });
+  };
+
+  const handleGoogleAuth = async () => {
+    setIsProcessing(true);
+    try {
+      const provider = new GoogleAuthProvider();
+      const cred = await signInWithPopup(auth, provider);
+      await handleUserSetup(cred.user);
+
+      // Cinematic Success Transition
+      setIsProcessing(false);
+      setShowSuccessLoader(true);
+      sessionStorage.setItem('hasSeenSolarLoader', 'true');
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 3000);
+    } catch (error: any) {
+      // User dismissed the popup — don't show an error toast
+      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+        toast({ variant: 'destructive', title: 'Google Sign-In Failed', description: error.message });
+      }
+      setIsProcessing(false);
+    }
   };
 
   const handleAuth = async (values: z.infer<typeof formSchema>) => {
@@ -327,10 +352,10 @@ export default function LoginPage() {
                       {mode === 'signup' && (
                         <FormField control={form.control} name="phone" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-400">Security Contact (Phone)</FormLabel>
+                            <FormLabel className="text-slate-400">Phone Number</FormLabel>
                             <FormControl>
                               <Input
-                                placeholder="+1 (555) 000-0000"
+                                placeholder="+91 9876543210"
                                 {...field}
                                 disabled={isProcessing}
                                 className="bg-black/30 border-white/[0.08] text-white placeholder:text-slate-500 shadow-[inset_0_2px_4px_rgba(0,0,0,0.3)] focus-visible:ring-1 focus-visible:ring-cyan-500/50 focus-visible:border-cyan-500/50 focus-visible:shadow-[0_0_15px_rgba(14,165,233,0.2)] transition-all duration-300"
@@ -345,14 +370,14 @@ export default function LoginPage() {
                       <FormField control={form.control} name="password" render={({ field }) => (
                         <FormItem>
                           <div className="flex items-center justify-between">
-                            <FormLabel className="text-slate-400">Access Key</FormLabel>
+                            <FormLabel className="text-slate-400">Password</FormLabel>
                             {mode === 'signin' && (
                               <button
                                 type="button"
                                 onClick={() => setShowReset(true)}
                                 className="text-[11px] font-semibold text-primary/80 hover:text-primary transition-colors"
                               >
-                                Forgot Key?
+                                Forgot Password?
                               </button>
                             )}
                           </div>
@@ -392,6 +417,38 @@ export default function LoginPage() {
                           </div>
                         )}
                       </Button>
+
+                      {/* OR Divider */}
+                      <div className="flex items-center gap-3 my-1">
+                        <div className="flex-1 h-px bg-white/[0.07]" />
+                        <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-widest">or</span>
+                        <div className="flex-1 h-px bg-white/[0.07]" />
+                      </div>
+
+                      {/* Google Sign-In Button */}
+                      <button
+                        type="button"
+                        id="google-signin-btn"
+                        onClick={handleGoogleAuth}
+                        disabled={isProcessing}
+                        className="w-full h-11 flex items-center justify-center gap-3 rounded-lg border border-white/[0.10] bg-white/[0.04] hover:bg-white/[0.08] text-white text-sm font-semibold transition-all duration-300 hover:-translate-y-[1px] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_2px_8px_rgba(0,0,0,0.2)] hover:shadow-[0_4px_16px_rgba(255,255,255,0.06)]"
+                      >
+                        {isProcessing ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <>
+                            {/* Google G logo SVG */}
+                            <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
+                              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
+                              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
+                              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
+                              <path fill="none" d="M0 0h48v48H0z" />
+                            </svg>
+                            Continue with Google
+                          </>
+                        )}
+                      </button>
                     </form>
                   </Form>
 

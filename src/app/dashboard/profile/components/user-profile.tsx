@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRef, useState, useEffect } from 'react';
@@ -9,141 +8,176 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Loader2, ArrowLeft } from 'lucide-react';
+import { Upload, Loader2, ArrowLeft, Camera } from 'lucide-react';
 import { useUser } from '@/firebase/auth/use-user';
 import { useFirestore } from '@/firebase/provider';
-import { doc, updateDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadString, getDownloadURL } from "firebase/storage";
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
-import type { SecurityRuleContext } from '@/firebase/errors';
+import { doc, updateDoc, setDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { app } from '@/firebase/config';
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 export function UserProfile() {
   const router = useRouter();
-  const { name, email, avatar, phone } = useAppState();
+  const { name, email, avatar, phone, setName, setEmail, setPhone, setAvatar } = useAppState();
   const { user } = useUser();
   const firestore = useFirestore();
 
-  const [currentName, setCurrentName] = useState(name);
-  const [currentEmail, setCurrentEmail] = useState(email);
-  const [currentAvatar, setCurrentAvatar] = useState(avatar);
-  const [currentPhone, setCurrentPhone] = useState(phone);
+  const [currentName, setCurrentName] = useState('');
+  const [currentEmail, setCurrentEmail] = useState('');
+  const [currentAvatar, setCurrentAvatar] = useState('');
+  const [currentPhone, setCurrentPhone] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Sync state from auth/context only on user change (initial load)
+  // NOT on every context update to avoid overwriting user edits
   useEffect(() => {
-    if (user) {
-        setCurrentName(user.displayName || name);
-        setCurrentEmail(user.email || email);
-        setCurrentAvatar(user.photoURL || avatar);
-        setCurrentPhone(phone);
-    }
-  }, [user, name, email, avatar, phone]);
+    setCurrentName(user?.displayName || name || '');
+    setCurrentEmail(user?.email || email || '');
+    setCurrentAvatar(user?.photoURL || avatar || '');
+    setCurrentPhone(phone || '');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
+  // ── Save profile text fields ─────────────────────────────────────────────
   const handleSave = async () => {
     if (!user || !firestore) {
-      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to update your profile.' });
+      toast({ variant: 'destructive', title: 'Not Authenticated', description: 'You must be logged in to update your profile.' });
       return;
     }
+
+    if (!currentName.trim()) {
+      toast({ variant: 'destructive', title: 'Name Required', description: 'Please enter your name.' });
+      return;
+    }
+
     setIsSaving(true);
-    
-    const userRef = doc(firestore, 'users', user.uid);
-    const updatedData = {
-        name: currentName,
-        email: currentEmail,
-        phone: currentPhone,
-      };
+    try {
+      const userRef = doc(firestore, 'users', user.uid);
+      await setDoc(userRef, {
+        name: currentName.trim(),
+        email: currentEmail.trim(),
+        phone: currentPhone.trim(),
+      }, { merge: true });
 
-    updateDoc(userRef, updatedData)
-        .then(() => {
-            toast({
-                title: 'Profile Updated',
-                description: 'Your profile information has been successfully saved. Redirecting to dashboard...',
-            });
-            setTimeout(() => {
-                router.push('/dashboard');
-            }, 1500);
-        })
-        .catch(async (serverError) => {
-             const permissionError = new FirestorePermissionError({
-                path: userRef.path,
-                operation: 'update',
-                requestResourceData: updatedData,
-            } satisfies SecurityRuleContext);
+      // Update context to reflect saved changes immediately
+      setName(currentName.trim());
+      setEmail(currentEmail.trim());
+      setPhone(currentPhone.trim());
 
-            errorEmitter.emit('permission-error', permissionError);
-        })
-        .finally(() => {
-            setIsSaving(false);
-        });
+      toast({
+        title: '✅ Profile Saved',
+        description: 'Your profile has been updated successfully.',
+      });
+
+      setTimeout(() => router.push('/dashboard'), 1200);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Save Failed',
+        description: error?.message || 'Could not save your profile. Please try again.',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
-  
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+
+  // ── Upload avatar ────────────────────────────────────────────────────────
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user || !firestore) {
-      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to upload an image.' });
+      toast({ variant: 'destructive', title: 'Not Authenticated', description: 'You must be logged in to upload an image.' });
       return;
     }
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      if (!file.type.startsWith('image/')) {
-        toast({ variant: 'destructive', title: 'Invalid File Type', description: 'Please upload an image file.' });
-        return;
-      }
-      
-      setIsUploading(true);
-      const reader = new FileReader();
-      reader.readAsDataURL(file);
-      reader.onloadend = async () => {
-        const dataUrl = reader.result as string;
-        
-        const storage = getStorage();
-        const storageRef = ref(storage, `avatars/${user.uid}`);
-        
-        try {
-          await uploadString(storageRef, dataUrl, 'data_url');
-          const downloadURL = await getDownloadURL(storageRef);
-          
-          setCurrentAvatar(downloadURL);
-          
-          const userRef = doc(firestore, 'users', user.uid);
-          const updatedData = { photoURL: downloadURL };
-          
-          updateDoc(userRef, updatedData)
-            .then(() => {
-                toast({ title: 'Avatar Updated', description: 'Your new avatar has been saved.' });
-            })
-            .catch((serverError) => {
-                 const permissionError = new FirestorePermissionError({
-                    path: userRef.path,
-                    operation: 'update',
-                    requestResourceData: updatedData,
-                } satisfies SecurityRuleContext);
 
-                errorEmitter.emit('permission-error', permissionError);
-            });
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-        } catch (error: any) {
-          toast({ variant: 'destructive', title: 'Upload Failed', description: error.message || 'Could not upload avatar.' });
-        } finally {
+    if (!file.type.startsWith('image/')) {
+      toast({ variant: 'destructive', title: 'Invalid File', description: 'Please select an image file (JPG, PNG, WebP, etc.).' });
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      toast({ variant: 'destructive', title: 'File Too Large', description: 'Image must be smaller than 5 MB.' });
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const storage = getStorage(app);
+      const storageRef = ref(storage, `avatars/${user.uid}`);
+      const uploadTask = uploadBytesResumable(storageRef, file);
+
+      uploadTask.on(
+        'state_changed',
+        (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          setUploadProgress(progress);
+        },
+        (error) => {
+          console.error('Avatar upload error:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Upload Failed',
+            description: error?.message || 'Could not upload your avatar. Check Storage rules.',
+          });
           setIsUploading(false);
+          setUploadProgress(0);
+        },
+        async () => {
+          try {
+            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+
+            // Update local preview immediately
+            setCurrentAvatar(downloadURL);
+
+            // Update context so avatar updates everywhere
+            setAvatar(downloadURL);
+
+            // Persist to Firestore
+            const userRef = doc(firestore, 'users', user.uid);
+            await setDoc(userRef, { photoURL: downloadURL }, { merge: true });
+
+            toast({ title: '✅ Avatar Updated', description: 'Your new profile picture has been saved.' });
+          } catch (error: any) {
+            console.error('Avatar save error:', error);
+            toast({
+              variant: 'destructive',
+              title: 'Save Failed',
+              description: error?.message || 'Could not save avatar URL.',
+            });
+          } finally {
+            setIsUploading(false);
+            setUploadProgress(0);
+            if (fileInputRef.current) fileInputRef.current.value = '';
+          }
         }
-      };
+      );
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Upload Failed',
+        description: error?.message || 'Could not upload your avatar.',
+      });
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
-  const handleUploadClick = () => {
-    fileInputRef.current?.click();
+  const getInitials = (n: string) => {
+    if (!n) return 'U';
+    return n.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   };
-
-  const getInitials = (name: string) => {
-    if (!name) return '';
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
-  }
 
   return (
     <Card className="animate-energy-wave">
@@ -160,49 +194,103 @@ export function UserProfile() {
           </Button>
         </div>
         <CardTitle>My Profile</CardTitle>
-        <CardDescription>Update your personal information and avatar.</CardDescription>
+        <CardDescription>Update your personal information and profile picture.</CardDescription>
       </CardHeader>
+
       <CardContent className="space-y-6">
+        {/* Avatar section */}
         <div className="flex items-center gap-6">
-          <Avatar className="h-20 w-20">
-            <AvatarImage src={currentAvatar} alt="User Avatar" />
-            <AvatarFallback>{getInitials(currentName)}</AvatarFallback>
-          </Avatar>
-           <div className="space-y-2">
-             <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleAvatarChange}
-                className="hidden"
-                accept="image/*"
-                disabled={isUploading}
-              />
-            <Button variant="outline" onClick={handleUploadClick} disabled={isUploading}>
-                {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                {isUploading ? 'Uploading...' : 'Upload Avatar'}
+          <div className="relative group">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={currentAvatar} alt="User Avatar" />
+              <AvatarFallback className="text-lg font-semibold">{getInitials(currentName)}</AvatarFallback>
+            </Avatar>
+            {/* Overlay hint */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer disabled:cursor-not-allowed"
+              aria-label="Change avatar"
+            >
+              <Camera className="h-6 w-6 text-white" />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleAvatarChange}
+              className="hidden"
+              accept="image/*"
+              disabled={isUploading}
+            />
+            <Button
+              id="upload-avatar-btn"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+            >
+              {isUploading
+                ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Uploading...</>
+                : <><Upload className="mr-2 h-4 w-4" />Upload Avatar</>
+              }
             </Button>
-           </div>
+            <p className="text-xs text-muted-foreground">JPG, PNG or WebP · Max 5 MB</p>
+            {isUploading && (
+              <div className="w-40">
+                <Progress value={uploadProgress} />
+                <p className="text-xs text-muted-foreground mt-1">{Math.round(uploadProgress)}%</p>
+              </div>
+            )}
+          </div>
         </div>
+
+        {/* Text fields */}
         <div className="space-y-2">
-          <Label htmlFor="name">Name</Label>
-          <Input id="name" value={currentName} onChange={(e) => setCurrentName(e.target.value)} disabled={isSaving} />
+          <Label htmlFor="profile-name">Name</Label>
+          <Input
+            id="profile-name"
+            value={currentName}
+            onChange={e => setCurrentName(e.target.value)}
+            disabled={isSaving}
+            placeholder="Your display name"
+          />
         </div>
+
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" value={currentEmail} onChange={(e) => setCurrentEmail(e.target.value)} disabled={isSaving} />
+          <Label htmlFor="profile-email">Email</Label>
+          <Input
+            id="profile-email"
+            type="email"
+            value={currentEmail}
+            onChange={e => setCurrentEmail(e.target.value)}
+            disabled={isSaving}
+            placeholder="you@example.com"
+          />
         </div>
+
         <div className="space-y-2">
-          <Label htmlFor="phone">Phone Number</Label>
-          <Input id="phone" type="tel" value={currentPhone} onChange={(e) => setCurrentPhone(e.target.value)} placeholder="+91 98765 43210" disabled={isSaving} />
+          <Label htmlFor="profile-phone">Phone Number</Label>
+          <Input
+            id="profile-phone"
+            type="tel"
+            value={currentPhone}
+            onChange={e => setCurrentPhone(e.target.value)}
+            placeholder="+91 98765 43210"
+            disabled={isSaving}
+          />
         </div>
       </CardContent>
+
       <CardFooter className="flex justify-between">
         <Button variant="ghost" onClick={() => router.push('/dashboard')} disabled={isSaving}>
-            Cancel
+          Cancel
         </Button>
-        <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSaving ? 'Saving...' : 'Save Changes'}
+        <Button id="save-profile-btn" onClick={handleSave} disabled={isSaving || isUploading}>
+          {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isSaving ? 'Saving...' : 'Save Changes'}
         </Button>
       </CardFooter>
     </Card>

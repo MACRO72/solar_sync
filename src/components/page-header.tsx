@@ -1,5 +1,5 @@
 "use client";
-import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut, Wifi, WifiOff, Download, Box } from 'lucide-react';
+import { Bell, Menu, LayoutDashboard, BarChart3, PanelTop, Lightbulb, Settings, User, LogOut, Wifi, WifiOff, Download, Box, ShieldCheck } from 'lucide-react';
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -187,6 +187,21 @@ export function PageHeader() {
                     <Download className="h-5 w-5" />
                     Download CSV
                  </button>
+                 {user?.email === 'nrjytube9@gmail.com' && (
+                   <Link
+                      href={'/dashboard/admin/devices'}
+                      onClick={handleLinkClick}
+                      className={cn(
+                          'flex items-center gap-4 px-2.5 py-2 transition-all duration-200 rounded-lg',
+                          pathname === '/dashboard/admin/devices'
+                          ? 'text-[#22D3EE] bg-[#22D3EE]/5 border border-[#22D3EE]/10'
+                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      )}
+                      >
+                      <ShieldCheck className="h-5 w-5" />
+                      Admin Panel
+                    </Link>
+                 )}
                  <Link
                       href={'/dashboard/settings'}
                       onClick={handleLinkClick}
@@ -339,6 +354,14 @@ export function PageHeader() {
                     Settings
                   </Link>
                 </DropdownMenuItem>
+                {user?.email === 'nrjytube9@gmail.com' && (
+                  <DropdownMenuItem asChild className="hover:bg-white/5 cursor-pointer">
+                    <Link href="/dashboard/admin/devices">
+                      <ShieldCheck className="mr-2 h-4 w-4" />
+                      Admin Panel
+                    </Link>
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator className="bg-slate-800" />
                 <DropdownMenuItem onClick={handleSignOut} className="text-destructive hover:bg-destructive/10 cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />

@@ -79,6 +79,38 @@ export function RecentAlerts() {
                     return;
                 }
 
+                let currentAlertType = '';
+                if (isHighTemp) currentAlertType = 'highTemp';
+                else if (isError) currentAlertType = 'error';
+                else if (isDusty) currentAlertType = 'dusty';
+                else if (isAbnormalTilt) currentAlertType = 'tilt';
+                else if (isLowEfficiency) currentAlertType = 'efficiency';
+                else if (isMediumTemp) currentAlertType = 'mediumTemp';
+
+                // Prevent email spamming
+                const lastAlertRaw = localStorage.getItem('lastSolarAlert');
+                if (lastAlertRaw) {
+                    try {
+                        const lastAlert = JSON.parse(lastAlertRaw);
+                        const now = Date.now();
+                        const timeSinceLastAlert = now - lastAlert.time;
+                        
+                        // 12-hour cooldown for the exact same alert condition
+                        if (lastAlert.type === currentAlertType && timeSinceLastAlert < 12 * 60 * 60 * 1000) {
+                            setIsGenerating(false);
+                            return;
+                        }
+                        
+                        // 30-minute global cooldown for any real alert
+                        if (timeSinceLastAlert < 30 * 60 * 1000) {
+                            setIsGenerating(false);
+                            return;
+                        }
+                    } catch (e) {}
+                }
+
+                localStorage.setItem('lastSolarAlert', JSON.stringify({ type: currentAlertType, time: Date.now() }));
+
                 const urgency = (isHighTemp || isError) ? 'high' : 'medium';
                 
                 // Add more context for Gemini to be "intelligent"

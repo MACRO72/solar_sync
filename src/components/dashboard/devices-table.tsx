@@ -13,10 +13,12 @@ import { RenameDeviceDialog } from "./rename-device-dialog";
 import { useFirestore } from "@/firebase/provider";
 import { doc, onSnapshot } from "firebase/firestore";
 import { useDeviceStatus } from "@/hooks/use-device-status";
+import { PairDeviceDialog } from "./pair-device-dialog";
 
 export function DevicesTable() {
     const { data: devices, loading } = useRealtimeData();
     const [isRenameDialogOpen, setIsRenameDialogOpen] = React.useState(false);
+    const [isPairDialogOpen, setIsPairDialogOpen] = React.useState(false);
     const [customDeviceName, setCustomDeviceName] = React.useState<string | null>(null);
     const firestore = useFirestore();
 
@@ -65,13 +67,18 @@ export function DevicesTable() {
                     currentName={deviceName}
                 />
             )}
+            <PairDeviceDialog 
+                isOpen={isPairDialogOpen} 
+                setIsOpen={setIsPairDialogOpen} 
+                onPaired={() => {}} 
+            />
             <GlassCard>
                 <CardHeader className="flex-row items-start justify-between">
                     <div>
                         <CardTitle>Device Fleet</CardTitle>
                         <CardDescription>Live status and telemetry of all ESP32 nodes.</CardDescription>
                     </div>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={() => setIsPairDialogOpen(true)}>
                         <Plus className="mr-2 h-4 w-4" />
                         Add New Device
                     </Button>

@@ -256,8 +256,8 @@ export const PerformanceChart = React.memo(({ fullHeight = false, defaultPeriod 
         <Card className="animate-energy-wave rounded-2xl">
             <CardHeader className="flex flex-col items-stretch justify-between gap-3 md:flex-row">
                 <div className="min-w-0">
-                    <CardTitle className="text-base sm:text-lg">Sensor Performance Overview</CardTitle>
-                    <CardDescription className="text-xs sm:text-sm">Real-time data stream from ESP32 node.</CardDescription>
+                    <CardTitle className="text-base sm:text-lg">System Efficiency Overview</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">Comparing real-time measured vs predicted efficiency.</CardDescription>
                 </div>
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:flex-wrap sm:items-center">
                     <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">

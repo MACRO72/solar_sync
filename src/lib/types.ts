@@ -77,3 +77,15 @@ export type HistoricalData = {
 }
 
 export type MetricKey = 'voltage' | 'current' | 'power' | 'temperature' | 'irradiance' | 'dustDensity' | 'tiltAngle';
+
+export type PairedDevice = {
+  deviceId: string;
+  claimedAt: number;
+};
+
+export type DeviceOwnershipRecord = {
+  owner: string;
+  status: 'unclaimed' | 'claimed';
+  pairingCode: string;
+  registeredAt: number;
+};
