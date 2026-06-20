@@ -59,7 +59,7 @@ const getSeverityBadgeClass = (severity: 'High' | 'Medium' | 'Low') => {
 
 export function PageHeader() {
   const [isSheetOpen, setIsSheetOpen] = React.useState(false);
-  const { activeSection, setShouldShowLoader } = useAppState();
+  const { activeSection, setShouldShowLoader, name, avatar } = useAppState();
   const { user } = useUser();
   const router = useRouter();
   const pathname = usePathname();
@@ -334,8 +334,8 @@ export function PageHeader() {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="rounded-full ring-1 ring-slate-800 p-0.5 hover:ring-[#22D3EE]/50 transition-all">
                     <Avatar className="h-8 w-8">
-                        <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || "User"} />
-                        <AvatarFallback className="bg-slate-800 text-slate-300">{getInitials(user?.displayName)}</AvatarFallback>
+                        <AvatarImage src={avatar || user?.photoURL || undefined} alt={name || user?.displayName || "User"} />
+                        <AvatarFallback className="bg-slate-800 text-slate-300">{getInitials(name || user?.displayName)}</AvatarFallback>
                     </Avatar>
                 </Button>
             </DropdownMenuTrigger>

@@ -10,6 +10,46 @@ import { getUserDevices } from '@/lib/device-service';
 const PANEL_AREA_M2 = 0.05;
 
 /**
+ * Helper to parse Date and Time strings from ESP32 into a Date object.
+ * Supports both YYYY-MM-DD and DD/MM/YYYY date formats.
+ */
+function parseDateTime(dateStr: string, timeStr: string): Date | null {
+  if (!dateStr || !timeStr) return null;
+  
+  const paddedTime = timeStr.split(':').map((p) => p.padStart(2, '0')).join(':');
+  
+  if (dateStr.includes('-')) {
+    // YYYY-MM-DD
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const year = parts[0].length === 4 ? parts[0] : parts[2];
+      const month = parts[0].length === 4 ? parts[1] : parts[1];
+      const day = parts[0].length === 4 ? parts[2] : parts[0];
+      const isoStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${paddedTime}`;
+      const parsed = new Date(isoStr);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+  } else if (dateStr.includes('/')) {
+    // DD/MM/YYYY
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      const year = parts[2].length === 4 ? parts[2] : parts[0];
+      const month = parts[1];
+      const day = parts[2].length === 4 ? parts[0] : parts[2];
+      const isoStr = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${paddedTime}`;
+      const parsed = new Date(isoStr);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+  }
+  
+  // Fallback direct parsing
+  const parsedDirect = new Date(`${dateStr}T${paddedTime}`);
+  if (!isNaN(parsedDirect.getTime())) return parsedDirect;
+  
+  return null;
+}
+
+/**
  * useRealtimeData hook
  * Listens to the 'devices/{deviceId}/history' path in Firebase Realtime Database
  * for the user's first paired device.
@@ -67,16 +107,9 @@ export function useRealtimeData() {
                       const lastRaw = rawReadings[rawReadings.length - 1].val;
                       const dateStr = lastRaw.Date || '';
                       const timeStr = lastRaw.Time || '';
-                      if (dateStr && timeStr) {
-                          const parts = dateStr.split('/');
-                          if (parts.length === 3) {
-                              const paddedTime = timeStr.split(':').map((p: string) => p.padStart(2, '0')).join(':');
-                              const isoStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}T${paddedTime}`;
-                              const parsedDate = new Date(isoStr);
-                              if (!isNaN(parsedDate.getTime())) {
-                                  offsetMs = nowMs - parsedDate.getTime();
-                              }
-                          }
+                      const parsedDate = parseDateTime(dateStr, timeStr);
+                      if (parsedDate) {
+                          offsetMs = nowMs - parsedDate.getTime();
                       }
                   }
 
@@ -89,16 +122,9 @@ export function useRealtimeData() {
                     const timeStr = rawData.Time || ''; 
                     let finalTimeMs = nowMs;
                     
-                    if (dateStr && timeStr) {
-                        const parts = dateStr.split('/');
-                        if (parts.length === 3) {
-                            const paddedTime = timeStr.split(':').map((p: string) => p.padStart(2, '0')).join(':');
-                            const isoStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}T${paddedTime}`;
-                            const parsedDate = new Date(isoStr);
-                            if (!isNaN(parsedDate.getTime())) {
-                                finalTimeMs = parsedDate.getTime() + offsetMs;
-                            }
-                        }
+                    const parsedDate = parseDateTime(dateStr, timeStr);
+                    if (parsedDate) {
+                        finalTimeMs = parsedDate.getTime() + offsetMs;
                     }
 
                     const timestamp = new Date(finalTimeMs).toISOString();
@@ -111,7 +137,8 @@ export function useRealtimeData() {
                     const power = voltage * currentA;
                     const temperature = parseFloat(rawData.Temperature || '0');
                     const humidity = parseFloat(rawData.Humidity || '0');
-                    const irradiance = parseFloat(rawData.LightIntensity || '0');
+                    const lightLux = parseFloat(rawData.LightIntensity || '0');
+                    const irradiance = lightLux / 120; // Convert Lux to W/m² (approximate for sunlight)
                     
                     // Average DustBlack and DustWhite for dust density
                     const dustBlack = parseFloat(rawData.DustBlack || '0');
@@ -120,7 +147,7 @@ export function useRealtimeData() {
 
                     let efficiency = 0;
                     if (irradiance > 0 && PANEL_AREA_M2 > 0) {
-                        // Assuming LightIntensity is given in W/m² directly.
+                        // LightIntensity was converted to W/m² above.
                         const inputPower = irradiance * PANEL_AREA_M2; 
                         if (inputPower > 0) {
                              efficiency = (power / inputPower) * 100;

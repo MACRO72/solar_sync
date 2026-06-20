@@ -17,16 +17,21 @@ export const registerDevice = async (deviceId: string) => {
     const deviceRef = ref(db, `devices/${deviceId}`);
     const snapshot = await get(deviceRef);
     
+    let currentData: any = {};
     if (snapshot.exists()) {
-        throw new Error('Device is already registered.');
+        currentData = snapshot.val();
+        if (currentData.status === 'claimed') {
+            throw new Error('Device is already registered and claimed.');
+        }
+        // If it exists but is unclaimed, we can generate a pairing code for it.
     }
 
     const code = generatePairingCode();
-    await set(deviceRef, {
+    await update(deviceRef, {
         pairingCode: code,
-        owner: '',
-        status: 'unclaimed',
-        registeredAt: Date.now()
+        owner: currentData.owner || '',
+        status: currentData.status || 'unclaimed',
+        registeredAt: currentData.registeredAt || Date.now()
     });
     return code;
 };
@@ -115,5 +120,18 @@ export const getAllDevices = async () => {
 export const deleteDevice = async (deviceId: string) => {
     const db = getDatabase(app);
     const deviceRef = ref(db, `devices/${deviceId}`);
+    
+    // Check if claimed to remove from user's Firestore list
+    const snapshot = await get(deviceRef);
+    if (snapshot.exists()) {
+        const data = snapshot.val();
+        if (data.owner) {
+            const firestore = getFirestore(app);
+            const userDevicesRef = doc(firestore, `users/${data.owner}/devices/${deviceId}`);
+            await deleteDoc(userDevicesRef).catch(() => {});
+        }
+    }
+    
+    // Remove from RTDB
     await remove(deviceRef);
 };

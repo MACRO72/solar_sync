@@ -12,6 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Loader2, ArrowLeft, Camera } from 'lucide-react';
 import { useUser } from '@/firebase/auth/use-user';
+import { updateProfile } from 'firebase/auth';
 import { useFirestore } from '@/firebase/provider';
 import { doc, updateDoc, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -66,6 +67,10 @@ export function UserProfile() {
         email: currentEmail.trim(),
         phone: currentPhone.trim(),
       }, { merge: true });
+
+      await updateProfile(user, {
+        displayName: currentName.trim(),
+      });
 
       // Update context to reflect saved changes immediately
       setName(currentName.trim());
@@ -146,6 +151,10 @@ export function UserProfile() {
             // Persist to Firestore
             const userRef = doc(firestore, 'users', user.uid);
             await setDoc(userRef, { photoURL: downloadURL }, { merge: true });
+
+            await updateProfile(user, {
+              photoURL: downloadURL
+            });
 
             toast({ title: '✅ Avatar Updated', description: 'Your new profile picture has been saved.' });
           } catch (error: any) {
@@ -256,6 +265,7 @@ export function UserProfile() {
             onChange={e => setCurrentName(e.target.value)}
             disabled={isSaving}
             placeholder="Your display name"
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
           />
         </div>
 
@@ -268,6 +278,7 @@ export function UserProfile() {
             onChange={e => setCurrentEmail(e.target.value)}
             disabled={isSaving}
             placeholder="you@example.com"
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
           />
         </div>
 
@@ -280,6 +291,7 @@ export function UserProfile() {
             onChange={e => setCurrentPhone(e.target.value)}
             placeholder="+91 98765 43210"
             disabled={isSaving}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }}
           />
         </div>
       </CardContent>
