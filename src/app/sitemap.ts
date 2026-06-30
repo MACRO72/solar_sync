@@ -1,18 +1,17 @@
 import { MetadataRoute } from 'next'
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  // Hardcoding the correct domain so Vercel env vars don't override it accidentally!
-  const baseUrl = 'https://solar-sync-x.vercel.app';
+const BASE_URL = 'https://solar-sync-x.vercel.app'
 
+export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: `${baseUrl}`,
+      url: `${BASE_URL}`,
       lastModified: new Date(),
-      changeFrequency: 'yearly',
-      priority: 1,
+      changeFrequency: 'weekly',
+      priority: 1.0,
     },
     {
-      url: `${baseUrl}/login`,
+      url: `${BASE_URL}/about`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.8,

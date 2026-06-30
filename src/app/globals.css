@@ -314,3 +314,9 @@ html, body {
   }
 }
 
+/* Landing page background grid animation */
+@keyframes moveGradient {
+  0%   { transform: translateY(0px); }
+  50%  { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
